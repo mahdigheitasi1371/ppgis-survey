@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""api_server.py — backend for the "Mein Stadtviertel" PPGIS survey.
+"""api_server.py — backend for the flood-risk / ecosystem-services PPGIS survey.
 
 Stores each submission in SQLite and exposes:
-  POST /api/responses          -> save one submission
-  GET  /api/responses?key=...  -> list all submissions (admin only)
+  POST /api/responses              -> save one submission
+  GET  /api/responses?key=...      -> list all submissions (admin only)
   GET  /api/responses/export.csv?key=...  -> CSV download (admin only)
+  POST /api/upload-audio           -> store a recorded voice note, returns a filename
+  GET  /api/audio/{filename}?key=...      -> stream back a stored voice note (admin only)
 
-Each map question can hold up to 10 marked points, stored as a JSON array
-of {lat, lng} objects in a TEXT column.
+Each mapping question (Q1-Q4) can hold up to 10 marked points, stored as a
+JSON array of point objects in a TEXT column. Q1 points carry a `severity`
+field, Q3 points carry a `helps` field.
 
 The admin key is read from the ADMIN_KEY environment variable so it is
 never committed to source control. Set it before starting the server:
@@ -19,65 +22,63 @@ import csv
 import io
 import json
 import os
+import re
 import sqlite3
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data.db")
+AUDIO_DIR = os.path.join(os.path.dirname(__file__), "audio_uploads")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "changeme")
 MAX_POINTS = 10
+MAX_AUDIO_BYTES = 8 * 1024 * 1024  # keep well under the 10MB request-body limit
+
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
 db = sqlite3.connect(DB_PATH, check_same_thread=False)
+
+SCHEMA_COLUMNS = [
+    "created_at TEXT",
+    "language TEXT",
+    "q1_flood_points TEXT",
+    "q2_green_points TEXT",
+    "q3_service_points TEXT",
+    "q4_safe_points TEXT",
+    "q5_concern INTEGER",
+    "q6_ranking TEXT",
+    "q7_exposed TEXT",
+    "q7_description TEXT",
+    "q7_audio_filename TEXT",
+    "q8_measures TEXT",
+    "q9_age_group TEXT",
+    "q9_gender TEXT",
+    "q9_education TEXT",
+    "q9_household_size TEXT",
+    "q9_household_composition TEXT",
+    "q10_postal_code TEXT",
+    "q10_years_at_address TEXT",
+    "q10_housing_type TEXT",
+    "q10_distance_green TEXT",
+    "q10_distance_water TEXT",
+]
+
 db.execute(
-    """
-    CREATE TABLE IF NOT EXISTS responses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        created_at TEXT,
-        language TEXT,
-        age_group TEXT,
-        residency_duration TEXT,
-        home_points TEXT,
-        favorite_points TEXT, favorite_reason TEXT,
-        unsafe_points TEXT, unsafe_reason TEXT,
-        leisure_points TEXT,
-        improve_points TEXT, improve_suggestion TEXT,
-        satisfaction INTEGER,
-        safety_day INTEGER,
-        safety_night INTEGER,
-        feedback TEXT
-    )
-    """
+    f"CREATE TABLE IF NOT EXISTS responses (id INTEGER PRIMARY KEY AUTOINCREMENT, {', '.join(SCHEMA_COLUMNS)})"
 )
-# Migrate older single-point schema (pre multi-point support) by rebuilding
-# the table. No production data is expected in the old shape, so this is a
-# safe one-time reset rather than a lossy migration of real responses.
+# This is a full replacement of the previous neighborhood-satisfaction survey
+# schema. No production data exists under the old shape, so rebuild the table
+# once if it doesn't already match the new flood/ecosystem-services schema.
 _existing_cols = {row[1] for row in db.execute("PRAGMA table_info(responses)").fetchall()}
-if "home_points" not in _existing_cols:
+if "q1_flood_points" not in _existing_cols:
     db.execute("DROP TABLE IF EXISTS responses")
     db.execute(
-        """
-        CREATE TABLE responses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT,
-            language TEXT,
-            age_group TEXT,
-            residency_duration TEXT,
-            home_points TEXT,
-            favorite_points TEXT, favorite_reason TEXT,
-            unsafe_points TEXT, unsafe_reason TEXT,
-            leisure_points TEXT,
-            improve_points TEXT, improve_suggestion TEXT,
-            satisfaction INTEGER,
-            safety_day INTEGER,
-            safety_night INTEGER,
-            feedback TEXT
-        )
-        """
+        f"CREATE TABLE responses (id INTEGER PRIMARY KEY AUTOINCREMENT, {', '.join(SCHEMA_COLUMNS)})"
     )
 db.commit()
 
@@ -94,45 +95,55 @@ app.add_middleware(
 )
 
 
-class Point(BaseModel):
+class FloodPoint(BaseModel):
+    lat: float
+    lng: float
+    severity: int | None = None  # 1 (very low) .. 5 (very high)
+
+
+class PlainPoint(BaseModel):
     lat: float
     lng: float
 
 
+class ServicePoint(BaseModel):
+    lat: float
+    lng: float
+    helps: str | None = None  # "yes" | "no" | "unsure"
+    source: str | None = None  # "q2" | "new"
+
+
 class SurveyResponse(BaseModel):
-    language: str | None = "de"
-    age_group: str | None = None
-    residency_duration: str | None = None
-    home_points: list[Point] | None = []
-    favorite_points: list[Point] | None = []
-    favorite_reason: str | None = ""
-    unsafe_points: list[Point] | None = []
-    unsafe_reason: str | None = ""
-    leisure_points: list[Point] | None = []
-    improve_points: list[Point] | None = []
-    improve_suggestion: str | None = ""
-    satisfaction: int | None = None
-    safety_day: int | None = None
-    safety_night: int | None = None
-    feedback: str | None = ""
+    language: str | None = "en"
+    q1_flood_points: list[FloodPoint] | None = []
+    q2_green_points: list[PlainPoint] | None = []
+    q3_service_points: list[ServicePoint] | None = []
+    q4_safe_points: list[PlainPoint] | None = []
+    q5_concern: int | None = None
+    q6_ranking: list[str] | None = []
+    q7_exposed: str | None = None
+    q7_description: str | None = ""
+    q7_audio_filename: str | None = None
+    q8_measures: str | None = ""
+    q9_age_group: str | None = None
+    q9_gender: str | None = None
+    q9_education: str | None = None
+    q9_household_size: str | None = None
+    q9_household_composition: str | None = None
+    q10_postal_code: str | None = ""
+    q10_years_at_address: str | None = None
+    q10_housing_type: str | None = None
+    q10_distance_green: str | None = None
+    q10_distance_water: str | None = None
 
 
-COLUMNS = [
-    "created_at", "language", "age_group", "residency_duration",
-    "home_points",
-    "favorite_points", "favorite_reason",
-    "unsafe_points", "unsafe_reason",
-    "leisure_points",
-    "improve_points", "improve_suggestion",
-    "satisfaction", "safety_day", "safety_night", "feedback",
-]
-
-POINT_COLUMNS = {"home_points", "favorite_points", "unsafe_points", "leisure_points", "improve_points"}
+COLUMNS = [c.split()[0] for c in SCHEMA_COLUMNS]
+POINT_COLUMNS = {"q1_flood_points", "q2_green_points", "q3_service_points", "q4_safe_points"}
 
 
 def _points_to_json(points):
     points = (points or [])[:MAX_POINTS]
-    return json.dumps([{"lat": p.lat, "lng": p.lng} for p in points])
+    return json.dumps([p.dict() for p in points])
 
 
 @app.post("/api/responses", status_code=201)
@@ -141,7 +152,7 @@ def create_response(item: SurveyResponse):
     values = [now, item.language]
     for c in COLUMNS[2:]:
         v = getattr(item, c)
-        values.append(_points_to_json(v) if c in POINT_COLUMNS else v)
+        values.append(_points_to_json(v) if c in POINT_COLUMNS else (json.dumps(v) if c == "q6_ranking" else v))
     placeholders = ", ".join("?" for _ in COLUMNS)
     cur = db.execute(
         f"INSERT INTO responses ({', '.join(COLUMNS)}) VALUES ({placeholders})", values
@@ -160,7 +171,15 @@ def _points_to_readable(json_str):
         pts = json.loads(json_str) if json_str else []
     except (TypeError, ValueError):
         return json_str
-    return "; ".join(f"{p['lat']:.5f},{p['lng']:.5f}" for p in pts)
+    parts = []
+    for p in pts:
+        extra = ""
+        if p.get("severity") is not None:
+            extra = f" [severity {p['severity']}]"
+        elif p.get("helps"):
+            extra = f" [helps: {p['helps']}]"
+        parts.append(f"{p['lat']:.5f},{p['lng']:.5f}{extra}")
+    return "; ".join(parts)
 
 
 @app.get("/api/responses")
@@ -178,6 +197,10 @@ def list_responses(key: str | None = Query(default=None)):
                 rec[c] = json.loads(rec[c]) if rec[c] else []
             except (TypeError, ValueError):
                 rec[c] = []
+        try:
+            rec["q6_ranking"] = json.loads(rec["q6_ranking"]) if rec["q6_ranking"] else []
+        except (TypeError, ValueError):
+            rec["q6_ranking"] = []
         result.append(rec)
     return result
 
@@ -196,6 +219,10 @@ def export_csv(key: str | None = Query(default=None)):
         rec = dict(zip(cols, row))
         for c in POINT_COLUMNS:
             rec[c] = _points_to_readable(rec[c])
+        try:
+            rec["q6_ranking"] = " > ".join(json.loads(rec["q6_ranking"])) if rec["q6_ranking"] else ""
+        except (TypeError, ValueError):
+            pass
         writer.writerow([rec[c] for c in cols])
     buf.seek(0)
     return StreamingResponse(
@@ -203,6 +230,34 @@ def export_csv(key: str | None = Query(default=None)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=umfrage_antworten.csv"},
     )
+
+
+_SAFE_EXT = re.compile(r"^[a-zA-Z0-9]{1,10}$")
+
+
+@app.post("/api/upload-audio")
+async def upload_audio(file: UploadFile = File(...)):
+    data = await file.read()
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="Audio recording too large")
+    ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else "webm"
+    if not _SAFE_EXT.match(ext):
+        ext = "webm"
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    with open(os.path.join(AUDIO_DIR, filename), "wb") as f:
+        f.write(data)
+    return {"filename": filename}
+
+
+@app.get("/api/audio/{filename}")
+def get_audio(filename: str, key: str | None = Query(default=None)):
+    _check_key(key)
+    if "/" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    path = os.path.join(AUDIO_DIR, filename)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path)
 
 
 @app.get("/api/health")
