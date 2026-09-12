@@ -46,6 +46,7 @@ db = sqlite3.connect(DB_PATH, check_same_thread=False)
 SCHEMA_COLUMNS = [
     "created_at TEXT",
     "language TEXT",
+    "location TEXT",
     "q1_flood_points TEXT",
     "q2_green_points TEXT",
     "q3_service_points TEXT",
@@ -59,11 +60,8 @@ SCHEMA_COLUMNS = [
     "q9_age_group TEXT",
     "q9_gender TEXT",
     "q9_education TEXT",
-    "q9_household_size TEXT",
-    "q9_household_composition TEXT",
     "q10_postal_code TEXT",
     "q10_years_at_address TEXT",
-    "q10_housing_type TEXT",
     "q10_distance_green TEXT",
     "q10_distance_water TEXT",
 ]
@@ -75,7 +73,7 @@ db.execute(
 # schema. No production data exists under the old shape, so rebuild the table
 # once if it doesn't already match the new flood/ecosystem-services schema.
 _existing_cols = {row[1] for row in db.execute("PRAGMA table_info(responses)").fetchall()}
-if "q1_flood_points" not in _existing_cols:
+if "q1_flood_points" not in _existing_cols or "location" not in _existing_cols:
     db.execute("DROP TABLE IF EXISTS responses")
     db.execute(
         f"CREATE TABLE responses (id INTEGER PRIMARY KEY AUTOINCREMENT, {', '.join(SCHEMA_COLUMNS)})"
@@ -115,6 +113,7 @@ class ServicePoint(BaseModel):
 
 class SurveyResponse(BaseModel):
     language: str | None = "en"
+    location: str | None = None  # "dortmund" | "bochum" | "essen"
     q1_flood_points: list[FloodPoint] | None = []
     q2_green_points: list[PlainPoint] | None = []
     q3_service_points: list[ServicePoint] | None = []
@@ -128,11 +127,8 @@ class SurveyResponse(BaseModel):
     q9_age_group: str | None = None
     q9_gender: str | None = None
     q9_education: str | None = None
-    q9_household_size: str | None = None
-    q9_household_composition: str | None = None
     q10_postal_code: str | None = ""
     q10_years_at_address: str | None = None
-    q10_housing_type: str | None = None
     q10_distance_green: str | None = None
     q10_distance_water: str | None = None
 

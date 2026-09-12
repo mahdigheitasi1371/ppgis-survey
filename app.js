@@ -7,7 +7,22 @@ const API = (() => {
   return placeholder.startsWith('__') ? 'http://localhost:8000' : placeholder;
 })();
 
-const BOCHUM = { lat: 51.4818, lng: 7.2162 };
+// Location choices — each has a Leaflet center/zoom near where the Emscher
+// river is actually visible. Bochum's own city area is not touched by the
+// Emscher itself (only tributary streams feed into it further north), so its
+// view is shifted slightly toward Gerthe/Hiltrop where the real river comes
+// into view near the city boundary.
+const LOCATIONS = {
+  dortmund: { lat: 51.4903, lng: 7.4686, zoom: 13 },
+  bochum: { lat: 51.5240, lng: 7.2220, zoom: 12, riverOutsideCity: true },
+  essen: { lat: 51.5130, lng: 7.0021, zoom: 13 },
+};
+
+// Real Emscher river geometry (OpenStreetMap contributors), simplified —
+// drawn bold on every map so respondents can orient themselves relative to
+// the river.
+const EMSCHER_SEGMENTS = [[[51.574083,7.371995],[51.574282,7.370794],[51.574736,7.369668],[51.577983,7.364532],[51.57878,7.362482],[51.580181,7.360046],[51.580435,7.359915],[51.580791,7.360017],[51.581524,7.358931],[51.581745,7.358208],[51.582305,7.357687],[51.582794,7.356325],[51.583301,7.356286],[51.583586,7.355702],[51.584503,7.354761],[51.585078,7.354531],[51.588022,7.350899],[51.593608,7.342652],[51.594571,7.333442],[51.596973,7.3036],[51.596897,7.302107],[51.596343,7.300643],[51.596329,7.299429]],[[51.498244,6.929222],[51.497743,6.928037],[51.496352,6.917789],[51.49546,6.903893],[51.495811,6.885611],[51.494986,6.848626]],[[51.557553,7.415417],[51.557882,7.415418],[51.560437,7.414054],[51.560803,7.413409],[51.561366,7.413186],[51.561757,7.412822],[51.562515,7.412899],[51.563919,7.412135],[51.564565,7.411697],[51.56557,7.41059],[51.567281,7.406935],[51.570057,7.40175],[51.571777,7.398888],[51.574522,7.392957],[51.576043,7.387716],[51.576586,7.384152],[51.576664,7.382354],[51.576236,7.379893],[51.574253,7.374141],[51.574083,7.371995]],[[51.493162,7.484203],[51.492402,7.482465],[51.491737,7.481579],[51.491213,7.48016],[51.491472,7.477444],[51.491315,7.477053]],[[51.49007,7.46792],[51.489283,7.465985]],[[51.489283,7.465985],[51.487596,7.461634],[51.486591,7.46004]],[[51.491315,7.477053],[51.491049,7.476962]],[[51.491049,7.476962],[51.490802,7.476727],[51.490742,7.475931],[51.49013,7.47448],[51.490008,7.471568],[51.490095,7.470923],[51.490512,7.469875],[51.49007,7.46792]],[[51.491798,7.440016],[51.492052,7.438905]],[[51.493966,7.554603],[51.496301,7.552469],[51.497073,7.550061],[51.497127,7.547958],[51.496669,7.546811],[51.496602,7.54603],[51.496003,7.543882],[51.495963,7.542214],[51.495637,7.541962],[51.495588,7.540927],[51.495292,7.540119],[51.495209,7.539328],[51.493753,7.537031],[51.491186,7.535887],[51.490601,7.535283],[51.490464,7.534757],[51.490015,7.534226],[51.48978,7.533622],[51.489438,7.532063],[51.489091,7.531657],[51.488506,7.530328],[51.487602,7.529356],[51.487072,7.527167]],[[51.491419,7.494704],[51.491472,7.492649],[51.491147,7.489953],[51.492124,7.487018],[51.493229,7.485896],[51.493403,7.484786],[51.493162,7.484203]],[[51.492052,7.438905],[51.492172,7.438632],[51.4927,7.438342],[51.494811,7.438801],[51.495173,7.438684],[51.496215,7.437364],[51.496708,7.435919],[51.497538,7.434813]],[[51.497538,7.434813],[51.498094,7.434354]],[[51.498094,7.434354],[51.498292,7.433964]],[[51.498292,7.433964],[51.49852,7.433237]],[[51.49852,7.433237],[51.49893,7.43244],[51.499906,7.432327],[51.50037,7.43182],[51.501568,7.431126],[51.502406,7.42914],[51.50311,7.428248],[51.504202,7.4278],[51.507064,7.426151],[51.50828,7.425652],[51.508539,7.425733]],[[51.486744,7.4556],[51.486763,7.45553]],[[51.486591,7.46004],[51.486388,7.459627]],[[51.486388,7.459627],[51.486182,7.458486],[51.486744,7.4556]],[[51.486763,7.45553],[51.487779,7.453081],[51.488054,7.451661],[51.488219,7.448249],[51.490254,7.446019],[51.49056,7.445495],[51.491022,7.444401],[51.49125,7.442145],[51.491798,7.440016]],[[51.509125,7.426057],[51.509726,7.426221]],[[51.508989,7.425986],[51.509125,7.426057]],[[51.508539,7.425733],[51.508989,7.425986]],[[51.509726,7.426221],[51.510955,7.426642],[51.515277,7.428676],[51.51599,7.428698],[51.519768,7.427125],[51.526271,7.424112],[51.527557,7.423299],[51.529134,7.421811],[51.530783,7.421383]],[[51.487072,7.527167],[51.486572,7.525494],[51.486474,7.524143],[51.486944,7.521723],[51.487081,7.521627],[51.487331,7.521773],[51.487917,7.521409],[51.488494,7.518971],[51.488791,7.518294],[51.491081,7.517154],[51.491531,7.51657],[51.491587,7.511808],[51.49188,7.510329],[51.491861,7.509194],[51.492759,7.507913],[51.492778,7.505497],[51.493477,7.503755],[51.493576,7.501888]],[[51.491375,7.495881],[51.491419,7.494704]],[[51.493604,7.501192],[51.493372,7.499735],[51.492813,7.498555]],[[51.493576,7.501888],[51.493604,7.501192]],[[51.492706,7.498381],[51.492059,7.498007],[51.491542,7.496794],[51.491375,7.495881]],[[51.492813,7.498555],[51.492706,7.498381]],[[51.545163,7.084968],[51.543627,7.079995],[51.52513,7.036377],[51.515307,7.012137],[51.513035,7.002056],[51.512905,6.989787],[51.512258,6.985964]],[[51.530783,7.421383],[51.531696,7.421626],[51.532492,7.422589],[51.533326,7.424777],[51.533744,7.425376],[51.53427,7.425701],[51.534941,7.425724],[51.540491,7.42331],[51.546171,7.421313],[51.553216,7.4191],[51.554011,7.419703],[51.554364,7.419716],[51.55461,7.419028],[51.554343,7.417885],[51.554501,7.417056],[51.554936,7.41673],[51.555162,7.416788],[51.55541,7.417864],[51.555733,7.418027],[51.556605,7.415433],[51.556948,7.415308],[51.557553,7.415417]],[[51.596483,7.298083],[51.596526,7.296484],[51.596136,7.295448],[51.595089,7.294608],[51.594114,7.293372],[51.593956,7.292662],[51.593592,7.292582],[51.593379,7.292092],[51.592951,7.292157],[51.592507,7.291764],[51.592662,7.291195],[51.592282,7.291152],[51.592152,7.290708],[51.591831,7.290499],[51.591565,7.289565],[51.590687,7.288321],[51.587615,7.285069],[51.586783,7.283584],[51.581624,7.266497],[51.581705,7.264199],[51.582616,7.261654],[51.582889,7.259971],[51.582767,7.258103],[51.582297,7.256593],[51.581277,7.255156],[51.577318,7.252687],[51.576367,7.251548],[51.575798,7.250145],[51.575042,7.247293],[51.573434,7.242987],[51.572333,7.238764],[51.571559,7.23659],[51.570318,7.234406],[51.567391,7.230955],[51.566274,7.229374],[51.565324,7.227694],[51.564037,7.224668],[51.563047,7.221297],[51.559996,7.205199],[51.557199,7.19801],[51.553258,7.182449],[51.551631,7.173407],[51.550748,7.163561],[51.55082,7.154296],[51.551382,7.144971],[51.550866,7.137998],[51.550877,7.129182],[51.54853,7.106506],[51.545956,7.089296],[51.545163,7.084968]],[[51.596329,7.299429],[51.596465,7.29821]],[[51.596465,7.29821],[51.596483,7.298083]]];
+
 const MAX_POINTS = 10;
 
 const state = {
@@ -15,6 +30,7 @@ const state = {
   lang: 'de',
   consentChecked: false,
   data: {
+    location: null,  // 'dortmund' | 'bochum' | 'essen'
     q1: [],  // {lat, lng, severity}
     q2: [],  // {lat, lng}
     q3: [],  // {lat, lng, helps, source}
@@ -28,11 +44,8 @@ const state = {
     q9_age_group: null,
     q9_gender: null,
     q9_education: null,
-    q9_household_size: null,
-    q9_household_composition: null,
     q10_postal_code: '',
     q10_years_at_address: null,
-    q10_housing_type: null,
     q10_distance_green: null,
     q10_distance_water: null,
   },
@@ -92,32 +105,11 @@ const OPTION_DEFS = {
       en: ['No / basic qualification', 'Secondary school (e.g. Abitur)', 'Vocational training', 'Bachelor’s degree', 'Master’s / doctorate', 'Other'],
     },
   },
-  household_size: {
-    codes: ['1', '2', '3', '4', '5p'],
-    labels: {
-      de: ['1 Person', '2 Personen', '3 Personen', '4 Personen', '5 oder mehr'],
-      en: ['1 person', '2 people', '3 people', '4 people', '5 or more'],
-    },
-  },
-  household_composition: {
-    codes: ['single', 'couple', 'family_children', 'shared_flat', 'multi_generational', 'other'],
-    labels: {
-      de: ['Alleinlebend', 'Paar ohne Kinder', 'Familie mit Kindern', 'Wohngemeinschaft', 'Mehrgenerationenhaushalt', 'Andere'],
-      en: ['Living alone', 'Couple, no children', 'Family with children', 'Shared flat', 'Multi-generational household', 'Other'],
-    },
-  },
   years_at_address: {
     codes: ['lt1', '1_5', '5_10', 'gt10'],
     labels: {
       de: ['weniger als 1 Jahr', '1–5 Jahre', '5–10 Jahre', 'mehr als 10 Jahre'],
       en: ['less than 1 year', '1–5 years', '5–10 years', 'more than 10 years'],
-    },
-  },
-  housing_type: {
-    codes: ['apartment', 'terraced', 'detached', 'other'],
-    labels: {
-      de: ['Wohnung/Mehrfamilienhaus', 'Reihenhaus', 'Einzel-/Doppelhaus', 'Andere'],
-      en: ['Apartment / multi-family building', 'Terraced house', 'Detached / semi-detached house', 'Other'],
     },
   },
   distance_band: {
@@ -143,15 +135,15 @@ const RANK_ITEMS = {
 // ----------------------------------------------------------------------------
 const TRANSLATIONS = {
   de: {
-    pageTitle: 'Hochwasserrisiko & Grünflächen — Umfrage',
-    brand: 'Mein Stadtviertel',
+    pageTitle: 'LiFRES — Hochwasserrisiko & Grünflächen — Umfrage',
+    brand: 'LiFRES',
+    brandTagline: 'Eine räumliche Perspektive aus Deutschland',
     themeToggleLabel: 'Farbschema wechseln',
     langToggleLabel: 'Sprache wechseln',
     back: '← Zurück',
     next: 'Weiter →',
     questionOf: (n) => `Frage ${n} von 10`,
     consent: {
-      kicker: 'PPGIS · Bürgerbeteiligung',
       title: 'Hochwasserrisiko & Zugang zur Natur',
       desc: 'Diese Umfrage untersucht, wie Anwohnerinnen und Anwohner Hochwasserrisiken und Grün-/Blauflächen in ihrem Wohnviertel wahrnehmen. Ihre Angaben helfen, den Zugang zur Natur und den Hochwasserschutz besser zu planen.',
       item1: '<strong>Dauer:</strong> ca. 8–12 Minuten',
@@ -165,6 +157,15 @@ const TRANSLATIONS = {
       start: 'Umfrage starten →',
       needConsent: 'Bitte bestätigen Sie die Einwilligung, um fortzufahren.',
       partner: 'Eine Umfrage in Zusammenarbeit mit der',
+    },
+    location: {
+      title: 'Ihr Stadtgebiet',
+      desc: 'Bitte wählen Sie das Stadtgebiet aus, auf das sich Ihre Antworten beziehen sollen. Die Karten in den folgenden Fragen zeigen dann jeweils Ihre Stadt.',
+      dortmund: 'Dortmund',
+      bochum: 'Bochum',
+      essen: 'Essen',
+      bochumNote: 'Hinweis: Die Emscher selbst verläuft nicht durch das Bochumer Stadtgebiet — sie ist auf der Karte an der nächstgelegenen Stelle nördlich der Stadtgrenze markiert.',
+      needSelection: 'Bitte wählen Sie ein Stadtgebiet, um fortzufahren.',
     },
     q1: {
       title: 'Hochwasserrisiko in Ihrem Viertel',
@@ -223,15 +224,12 @@ const TRANSLATIONS = {
       ageLabel: 'Altersgruppe',
       genderLabel: 'Geschlecht',
       educationLabel: 'Höchster Bildungsabschluss',
-      householdSizeLabel: 'Haushaltsgröße',
-      householdCompositionLabel: 'Haushaltszusammensetzung',
     },
     q10: {
       title: 'Wohnort & Exposition',
       postalLabel: 'Postleitzahl oder Stadtteil',
       postalPlaceholder: 'z. B. 44787',
       yearsLabel: 'Wohndauer an aktueller Adresse',
-      housingLabel: 'Wohnungstyp',
       distanceGreenLabel: 'Ungefähre Entfernung zur nächsten Grünfläche',
       distanceWaterLabel: 'Ungefähre Entfernung zum nächsten Gewässer',
     },
@@ -240,6 +238,7 @@ const TRANSLATIONS = {
       title: 'Übersicht',
       desc: 'Bitte überprüfen Sie Ihre Angaben, bevor Sie absenden.',
       labels: {
+        location: 'Ausgewähltes Stadtgebiet',
         q1: 'Hochwasserrisiko-Orte', q2: 'Grün-/Blauflächen', q3: 'Hochwasserschutz-Flächen',
         q4: 'Sichere Erholungsflächen', q5: 'Sorge vor Hochwasser', q6: 'Rangfolge Nutzen',
         q7: 'Frühere Betroffenheit', q8: 'Gewünschte Maßnahmen', q9: 'Persönliche Angaben', q10: 'Wohnort & Exposition',
@@ -257,19 +256,20 @@ const TRANSLATIONS = {
     mapMarked: (n, max) => `${n} von ${max} Orten markiert`,
     mapRemoveHint: 'Tippen Sie auf einen Marker, um ihn wieder zu entfernen.',
     mapMaxReached: 'Maximal 10 Orte erreicht — entfernen Sie einen, um einen neuen zu setzen.',
+    riverLabel: 'Emscher',
     cancel: 'Abbrechen',
     errorPrefix: 'Die Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut. (',
   },
   en: {
-    pageTitle: 'Flood Risk & Green Space — Survey',
-    brand: 'My Neighborhood',
+    pageTitle: 'LiFRES — Flood Risk & Green Space — Survey',
+    brand: 'LiFRES',
+    brandTagline: 'A Spatial Perspective from Germany',
     themeToggleLabel: 'Toggle color scheme',
     langToggleLabel: 'Change language',
     back: '← Back',
     next: 'Next →',
     questionOf: (n) => `Question ${n} of 10`,
     consent: {
-      kicker: 'PPGIS · Public Participation',
       title: 'Flood Risk & Access to Nature',
       desc: 'This survey explores how residents perceive flood risk and green/blue spaces in their neighborhood. Your answers help improve planning for nature access and flood protection.',
       item1: '<strong>Duration:</strong> approx. 8–12 minutes',
@@ -283,6 +283,15 @@ const TRANSLATIONS = {
       start: 'Start survey →',
       needConsent: 'Please confirm your consent to continue.',
       partner: 'A survey in collaboration with',
+    },
+    location: {
+      title: 'Your city area',
+      desc: 'Please select the city area your answers should relate to. The maps in the following questions will then show your city.',
+      dortmund: 'Dortmund',
+      bochum: 'Bochum',
+      essen: 'Essen',
+      bochumNote: 'Note: the Emscher itself does not flow through Bochum’s city area — it is marked on the map at the nearest point just north of the city boundary.',
+      needSelection: 'Please select a city area to continue.',
     },
     q1: {
       title: 'Flood risk in your neighborhood',
@@ -341,15 +350,12 @@ const TRANSLATIONS = {
       ageLabel: 'Age group',
       genderLabel: 'Gender',
       educationLabel: 'Highest level of education',
-      householdSizeLabel: 'Household size',
-      householdCompositionLabel: 'Household composition',
     },
     q10: {
       title: 'Residence & exposure',
       postalLabel: 'Postal code or district',
       postalPlaceholder: 'e.g. 44787',
       yearsLabel: 'Years lived at current address',
-      housingLabel: 'Housing type',
       distanceGreenLabel: 'Approximate distance to nearest green space',
       distanceWaterLabel: 'Approximate distance to nearest watercourse',
     },
@@ -358,6 +364,7 @@ const TRANSLATIONS = {
       title: 'Overview',
       desc: 'Please review your answers before submitting.',
       labels: {
+        location: 'Selected city area',
         q1: 'Flood risk places', q2: 'Green/blue spaces', q3: 'Flood-protection spaces',
         q4: 'Safe recreational areas', q5: 'Concern about flooding', q6: 'Benefit ranking',
         q7: 'Past exposure', q8: 'Desired measures', q9: 'Personal details', q10: 'Residence & exposure',
@@ -375,6 +382,7 @@ const TRANSLATIONS = {
     mapMarked: (n, max) => `${n} of ${max} places marked`,
     mapRemoveHint: 'Tap a marker to remove it.',
     mapMaxReached: 'Maximum of 10 places reached — remove one to add a new one.',
+    riverLabel: 'Emscher',
     cancel: 'Cancel',
     errorPrefix: 'The response could not be sent. Please try again. (',
   },
@@ -389,6 +397,7 @@ function t() {
 // ----------------------------------------------------------------------------
 const steps = [
   { id: 'consent', kind: 'consent' },
+  { id: 'location', kind: 'location' },
   { id: 'q1', kind: 'mapSeverity', key: 'q1', qNum: 1 },
   { id: 'q2', kind: 'mapSimple', key: 'q2', qNum: 2 },
   { id: 'q3', kind: 'mapService', key: 'q3', qNum: 3 },
@@ -478,7 +487,6 @@ function renderStep(step) {
   if (step.kind === 'consent') {
     const cs = tr.consent;
     frag.innerHTML = `
-      <p class="step-kicker">${cs.kicker}</p>
       <h1 class="step-title">${cs.title}</h1>
       <p class="step-desc">${cs.desc}</p>
       <div class="intro-list">
@@ -543,6 +551,35 @@ function renderStep(step) {
     partner.className = 'intro-partner';
     partner.innerHTML = `<span>${cs.partner}</span><img src="tu-dortmund-logo.svg" alt="TU Dortmund" class="partner-logo" />`;
     frag.appendChild(partner);
+    return frag;
+  }
+
+  if (step.kind === 'location') {
+    const stepTr = tr.location;
+    const cities = [
+      { code: 'dortmund', label: stepTr.dortmund },
+      { code: 'bochum', label: stepTr.bochum },
+      { code: 'essen', label: stepTr.essen },
+    ];
+    frag.innerHTML = `<h2 class="step-title">${stepTr.title}</h2><p class="step-desc">${stepTr.desc}</p>`;
+    const choice = document.createElement('div');
+    choice.className = 'location-choice';
+    cities.forEach(city => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'location-btn' + (state.data.location === city.code ? ' selected' : '');
+      btn.textContent = city.label;
+      btn.onclick = () => { state.data.location = city.code; render(); };
+      choice.appendChild(btn);
+    });
+    frag.appendChild(choice);
+    if (state.data.location === 'bochum') {
+      const note = document.createElement('p');
+      note.className = 'location-note';
+      note.textContent = stepTr.bochumNote;
+      frag.appendChild(note);
+    }
+    frag.appendChild(nav(true, tr.next, () => { state.step++; render(); }, !state.data.location));
     return frag;
   }
 
@@ -613,8 +650,6 @@ function renderStep(step) {
     frag.appendChild(buildSelectField(stepTr.ageLabel, 'age_group', 'q9_age_group'));
     frag.appendChild(buildSelectField(stepTr.genderLabel, 'gender', 'q9_gender'));
     frag.appendChild(buildSelectField(stepTr.educationLabel, 'education', 'q9_education'));
-    frag.appendChild(buildSelectField(stepTr.householdSizeLabel, 'household_size', 'q9_household_size'));
-    frag.appendChild(buildSelectField(stepTr.householdCompositionLabel, 'household_composition', 'q9_household_composition'));
     frag.appendChild(nav(true, tr.next, () => { state.step++; render(); }, false));
     return frag;
   }
@@ -636,7 +671,6 @@ function renderStep(step) {
     frag.appendChild(postalField);
 
     frag.appendChild(buildSelectField(stepTr.yearsLabel, 'years_at_address', 'q10_years_at_address'));
-    frag.appendChild(buildSelectField(stepTr.housingLabel, 'housing_type', 'q10_housing_type'));
     frag.appendChild(buildSelectField(stepTr.distanceGreenLabel, 'distance_band', 'q10_distance_green'));
     frag.appendChild(buildSelectField(stepTr.distanceWaterLabel, 'distance_band', 'q10_distance_water'));
 
@@ -649,7 +683,9 @@ function renderStep(step) {
     frag.innerHTML = `<p class="step-kicker">${rv.kicker}</p><h2 class="step-title">${rv.title}</h2><p class="step-desc">${rv.desc}</p>`;
     const list = document.createElement('div');
     list.className = 'review-list';
+    const locationLabels = { dortmund: tr.location.dortmund, bochum: tr.location.bochum, essen: tr.location.essen };
     const rows = [
+      [rv.labels.location, state.data.location ? locationLabels[state.data.location] : rv.notSet],
       [rv.labels.q1, tr.placesMarked(state.data.q1.length)],
       [rv.labels.q2, tr.placesMarked(state.data.q2.length)],
       [rv.labels.q3, tr.placesMarked(state.data.q3.length)],
@@ -658,8 +694,8 @@ function renderStep(step) {
       [rv.labels.q6, state.data.q6.map((k, i) => `${i + 1}. ${RANK_ITEMS[k][state.lang]}`).join(' · ')],
       [rv.labels.q7, state.data.q7_exposed === 'yes' ? rv.yes : (state.data.q7_exposed === 'no' ? rv.no : rv.notSet)],
       [rv.labels.q8, state.data.q8 ? state.data.q8.slice(0, 60) + (state.data.q8.length > 60 ? '…' : '') : rv.notSet],
-      [rv.labels.q9, [state.data.q9_age_group, state.data.q9_gender, state.data.q9_education, state.data.q9_household_size, state.data.q9_household_composition].filter(Boolean).length + ' / 5'],
-      [rv.labels.q10, [state.data.q10_postal_code, state.data.q10_years_at_address, state.data.q10_housing_type, state.data.q10_distance_green, state.data.q10_distance_water].filter(Boolean).length + ' / 5'],
+      [rv.labels.q9, [state.data.q9_age_group, state.data.q9_gender, state.data.q9_education].filter(Boolean).length + ' / 3'],
+      [rv.labels.q10, [state.data.q10_postal_code, state.data.q10_years_at_address, state.data.q10_distance_green, state.data.q10_distance_water].filter(Boolean).length + ' / 4'],
     ];
     rows.forEach(([k, v]) => {
       const row = document.createElement('div');
@@ -991,13 +1027,41 @@ function flashMaxHint(step) {
 }
 
 function makeMap(mapId) {
-  const map = L.map(mapId, { zoomControl: true }).setView([BOCHUM.lat, BOCHUM.lng], 13);
+  const locKey = state.data.location && LOCATIONS[state.data.location] ? state.data.location : 'bochum';
+  const loc = LOCATIONS[locKey];
+  const map = L.map(mapId, { zoomControl: true }).setView([loc.lat, loc.lng], loc.zoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19,
   }).addTo(map);
+  drawEmscherRiver(map, locKey);
   setTimeout(() => map.invalidateSize(), 50);
   return map;
+}
+
+// Draws the Emscher river in bold on the map so respondents can orient
+// themselves relative to it. For Bochum, whose city area the river does not
+// actually pass through, also attaches a small note near the nearest stretch.
+function drawEmscherRiver(map, locKey) {
+  const tr = t();
+  let lastLine = null;
+  EMSCHER_SEGMENTS.forEach(seg => {
+    lastLine = L.polyline(seg, { color: '#1565c0', weight: 5, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+  });
+  const loc = LOCATIONS[locKey];
+  if (loc && loc.riverOutsideCity && lastLine) {
+    const labelPoint = [51.5635, 7.226];
+    L.tooltip({ permanent: true, direction: 'top', className: 'river-label', offset: [0, -6] })
+      .setLatLng(labelPoint)
+      .setContent(tr.riverLabel)
+      .addTo(map);
+  } else if (lastLine) {
+    const midIdx = Math.floor(EMSCHER_SEGMENTS[0].length / 2);
+    L.tooltip({ permanent: true, direction: 'top', className: 'river-label', offset: [0, -6] })
+      .setLatLng(EMSCHER_SEGMENTS[0][midIdx] || EMSCHER_SEGMENTS[0][0])
+      .setContent(tr.riverLabel)
+      .addTo(map);
+  }
 }
 
 // Q2 / Q4 — simple point-only maps, no follow-up question
@@ -1168,6 +1232,7 @@ async function submitSurvey() {
     const d = state.data;
     const payload = {
       language: state.lang,
+      location: d.location,
       q1_flood_points: d.q1,
       q2_green_points: d.q2,
       q3_service_points: d.q3,
@@ -1181,11 +1246,8 @@ async function submitSurvey() {
       q9_age_group: d.q9_age_group,
       q9_gender: d.q9_gender,
       q9_education: d.q9_education,
-      q9_household_size: d.q9_household_size,
-      q9_household_composition: d.q9_household_composition,
       q10_postal_code: d.q10_postal_code,
       q10_years_at_address: d.q10_years_at_address,
-      q10_housing_type: d.q10_housing_type,
       q10_distance_green: d.q10_distance_green,
       q10_distance_water: d.q10_distance_water,
     };
@@ -1209,13 +1271,14 @@ function resetState() {
   state.step = 0;
   state.consentChecked = false;
   state.data = {
+    location: null,
     q1: [], q2: [], q3: [], q4: [],
     q5: null,
     q6: ['flood_absorption', 'recreation', 'wellbeing', 'biodiversity', 'cooling', 'aesthetic'],
     q7_exposed: null, q7_description: '', q7_audio_filename: null,
     q8: '',
-    q9_age_group: null, q9_gender: null, q9_education: null, q9_household_size: null, q9_household_composition: null,
-    q10_postal_code: '', q10_years_at_address: null, q10_housing_type: null, q10_distance_green: null, q10_distance_water: null,
+    q9_age_group: null, q9_gender: null, q9_education: null,
+    q10_postal_code: '', q10_years_at_address: null, q10_distance_green: null, q10_distance_water: null,
   };
   state.audio = { recording: false, mediaRecorder: null, chunks: [], blobUrl: null, uploading: false, uploadError: null };
   state.submitError = null;
@@ -1239,8 +1302,10 @@ const langButtons = document.querySelectorAll('.lang-btn');
 
 function updateStaticText() {
   const tr = t();
-  const brandEl = document.querySelector('.brand span');
+  const brandEl = document.querySelector('.brand-text span:first-child');
   if (brandEl) brandEl.textContent = tr.brand;
+  const taglineEl = document.querySelector('.brand-tagline');
+  if (taglineEl) taglineEl.textContent = tr.brandTagline || '';
   themeToggle.setAttribute('aria-label', tr.themeToggleLabel);
   document.title = tr.pageTitle;
   document.documentElement.lang = state.lang;

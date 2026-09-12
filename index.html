@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hochwasserrisiko & Grünflächen — Umfrage</title>
-<meta name="description" content="Eine kartenbasierte Umfrage zu Hochwasserrisiko und Grün-/Blauflächen im Emscher-Einzugsgebiet." />
+<title>LiFRES — Hochwasserrisiko & Grünflächen — Umfrage</title>
+<meta name="description" content="LiFRES — Linking Flood Risk and Ecosystem Services: A Spatial Perspective from Germany. Eine kartenbasierte Umfrage zu Hochwasserrisiko und Grün-/Blauflächen im Emscher-Einzugsgebiet." />
 
 <link rel="preconnect" href="https://api.fontshare.com" />
 <link href="https://api.fontshare.com/v2/css?f[]=chillax@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<link rel="stylesheet" href="style.css?v=4" />
+<link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
 
@@ -25,7 +25,10 @@
         <path d="M16 21C16 25 16 28 16 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         <circle cx="16" cy="13" r="2.5" fill="currentColor"/>
       </svg>
-      <span>Mein Stadtviertel</span>
+      <div class="brand-text">
+        <span>LiFRES</span>
+        <span class="brand-tagline"></span>
+      </div>
     </div>
     <div class="topbar-actions">
       <div class="lang-toggle" role="group" aria-label="Language / Sprache">
@@ -58,6 +61,6 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
