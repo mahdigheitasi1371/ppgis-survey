@@ -1,253 +1,216 @@
-// Participant language selector and runtime localization.
+// Full participant language selector and respondent-interface localization.
 (function () {
   if (typeof render === 'undefined') return;
 
   const UI = {
-    en:{name:'English',welcome:'Welcome',interactive:'Interactive survey',start:'Start survey',back:'Back',next:'Next',submit:'Submit',preview:'Preview complete',select:'— Select —',yes:'Yes',no:'No'},
-    de:{name:'Deutsch',welcome:'Willkommen',interactive:'Interaktive Umfrage',start:'Umfrage starten',back:'Zurück',next:'Weiter',submit:'Absenden',preview:'Vorschau beendet',select:'— Auswählen —',yes:'Ja',no:'Nein'},
-    fr:{name:'Français',welcome:'Bienvenue',interactive:'Enquête interactive',start:'Commencer',back:'Retour',next:'Suivant',submit:'Envoyer',preview:'Aperçu terminé',select:'— Sélectionner —',yes:'Oui',no:'Non'},
-    es:{name:'Español',welcome:'Bienvenido',interactive:'Encuesta interactiva',start:'Comenzar',back:'Atrás',next:'Siguiente',submit:'Enviar',preview:'Vista previa completa',select:'— Seleccionar —',yes:'Sí',no:'No'},
-    it:{name:'Italiano',welcome:'Benvenuto',interactive:'Sondaggio interattivo',start:'Inizia',back:'Indietro',next:'Avanti',submit:'Invia',preview:'Anteprima completata',select:'— Seleziona —',yes:'Sì',no:'No'},
-    nl:{name:'Nederlands',welcome:'Welkom',interactive:'Interactieve enquête',start:'Start enquête',back:'Terug',next:'Volgende',submit:'Verzenden',preview:'Voorbeeld voltooid',select:'— Selecteer —',yes:'Ja',no:'Nee'},
-    pl:{name:'Polski',welcome:'Witamy',interactive:'Interaktywna ankieta',start:'Rozpocznij',back:'Wstecz',next:'Dalej',submit:'Wyślij',preview:'Podgląd zakończony',select:'— Wybierz —',yes:'Tak',no:'Nie'},
-    pt:{name:'Português',welcome:'Bem-vindo',interactive:'Questionário interativo',start:'Iniciar',back:'Voltar',next:'Seguinte',submit:'Enviar',preview:'Pré-visualização concluída',select:'— Selecionar —',yes:'Sim',no:'Não'},
-    tr:{name:'Türkçe',welcome:'Hoş geldiniz',interactive:'Etkileşimli anket',start:'Anketi başlat',back:'Geri',next:'İleri',submit:'Gönder',preview:'Önizleme tamamlandı',select:'— Seçin —',yes:'Evet',no:'Hayır'},
-    ar:{name:'العربية',welcome:'مرحباً',interactive:'استبيان تفاعلي',start:'ابدأ الاستبيان',back:'رجوع',next:'التالي',submit:'إرسال',preview:'اكتملت المعاينة',select:'— اختر —',yes:'نعم',no:'لا'},
-    fa:{name:'فارسی',welcome:'خوش آمدید',interactive:'نظرسنجی تعاملی',start:'شروع نظرسنجی',back:'بازگشت',next:'بعدی',submit:'ارسال',preview:'پیش‌نمایش کامل شد',select:'— انتخاب کنید —',yes:'بله',no:'خیر'}
+    en:{name:'English',welcome:'Welcome',interactive:'Interactive survey',mapEnabled:'Map-enabled',mobileFriendly:'Mobile friendly',start:'Start survey',back:'Back',next:'Next',submit:'Submit',submitResponse:'Submit response',submitting:'Submitting…',preview:'Preview complete',previewMode:'Preview mode',select:'— Select —',yes:'Yes',no:'No',language:'Language',required:'Please answer this question before continuing.',requiredShort:'This question is required.',search:'Search',searchPlace:'Search city or place',useLocation:'Use my location',undo:'Undo',undoVertex:'Undo vertex',removeLastSaved:'Remove last saved',remove:'Remove',pointMap:'Point map',lineMap:'Line map',polygonMap:'Polygon map',textAnswer:'Text answer',openResponse:'Open response',number:'Number',email:'Email',phone:'Phone',date:'Date',time:'Time',dateTime:'Date & time',yesNo:'Yes or no',chooseOne:'Choose one',chooseMany:'Choose all that apply',dropdown:'Select an option',rating:'Rating',slider:'Scale',matrix:'Matrix',photo:'Photo',photos:'Photos',voice:'Voice response',video:'Video response',file:'File upload',signature:'Signature',ranking:'Ranking',allocation:'Allocation',information:'Information',section:'Section',consent:'Consent',tapPoint:'Pan or zoom the map, then tap to add a point.',tapDraw:'Tap the map to draw. Desktop: right-click to finish. Mobile: double-tap to finish.',pointsLimit:'Tap the map to select up to {n} {items}.',featuresLimit:'Tap the map to draw. Desktop: right-click to finish. Mobile: double-tap to finish. You can create up to {n} {items}.',selectedCount:'{a} of {b} selected',savedDraftCount:'{a} of {b} {items} saved · {c} draft {vertices}',pointAdded:'Point added. Add another point or continue.',locationSelected:'Location selected. Tap another place to move it.',maxPoints:'Maximum {n} points reached.',maxFeatures:'Maximum {n} {items} reached.',maxVertices:'Maximum {n} vertices reached for this {item}. Finish it or edit the draft.',addMoreVertices:'Add {n} more {vertices}, then finish the {item}.',readyFinish:'{item} ready — right-click on desktop or double-tap on mobile to finish.',minVertices:'Add at least {n} vertices before finishing this {item}.',featureSavedMax:'{item} {n} saved. Maximum number reached.',featureSavedNext:'{item} {n} saved. Start drawing {itemLower} {next}.',lastSavedRemoved:'Last saved {itemLower} removed.',finishDraft:'Finish the current {itemLower} before continuing.',atLeastOne:'Please finish at least one {itemLower} before continuing.',locationUnavailable:'Current location is not available in this browser.',requestingLocation:'Requesting your location…',locationCentered:'Map centered on your current location. Tap the map to continue your response.',locationDenied:'Location permission was not available. Search for a city or navigate manually.',searching:'Searching for that place…',noPlace:'No matching place was found. Try a larger nearby city.',movedTo:'Map moved to {place}. Tap the map to continue your response.',choosePlace:'Choose the matching place.',searchUnavailable:'Place search is temporarily unavailable. You can still pan and zoom the map manually.',startRecording:'Start recording',stopRecording:'Stop recording',upload:'Upload {item}',disabledPreview:'Disabled in preview.',recording:'Recording…',uploading:'Uploading…',recordingSaved:'Recording saved.',uploadFailed:'Upload failed.',cameraUnavailable:'Camera/microphone permission unavailable.',clearSignature:'Clear signature',cancel:'Cancel',save:'Save',tellMore:'Tell us more',thankYou:'Thank you'},
+    de:{name:'Deutsch',welcome:'Willkommen',interactive:'Interaktive Umfrage',mapEnabled:'Mit Kartenfunktion',mobileFriendly:'Mobilfreundlich',start:'Umfrage starten',back:'Zurück',next:'Weiter',submit:'Absenden',submitResponse:'Antwort absenden',submitting:'Wird gesendet…',preview:'Vorschau beendet',previewMode:'Vorschaumodus',select:'— Auswählen —',yes:'Ja',no:'Nein',language:'Sprache',required:'Bitte beantworten Sie diese Frage, bevor Sie fortfahren.',requiredShort:'Diese Frage ist erforderlich.',search:'Suchen',searchPlace:'Stadt oder Ort suchen',useLocation:'Meinen Standort verwenden',undo:'Rückgängig',undoVertex:'Letzten Punkt rückgängig',removeLastSaved:'Letztes gespeichertes Element entfernen',remove:'Entfernen',pointMap:'Punktkarte',lineMap:'Linienkarte',polygonMap:'Polygonkarte',textAnswer:'Textantwort',openResponse:'Offene Antwort',number:'Zahl',email:'E-Mail',phone:'Telefon',date:'Datum',time:'Uhrzeit',dateTime:'Datum & Uhrzeit',yesNo:'Ja oder Nein',chooseOne:'Eine Option wählen',chooseMany:'Mehrere Optionen wählen',dropdown:'Option auswählen',rating:'Bewertung',slider:'Skala',matrix:'Matrix',photo:'Foto',photos:'Fotos',voice:'Sprachantwort',video:'Videoantwort',file:'Datei hochladen',signature:'Unterschrift',ranking:'Rangfolge',allocation:'Verteilung',information:'Information',section:'Abschnitt',consent:'Einwilligung',tapPoint:'Karte verschieben oder zoomen und dann tippen, um einen Punkt hinzuzufügen.',tapDraw:'Tippen Sie auf die Karte zum Zeichnen. Desktop: Rechtsklick zum Abschließen. Mobil: Doppeltippen zum Abschließen.',pointsLimit:'Tippen Sie auf die Karte, um bis zu {n} {items} auszuwählen.',featuresLimit:'Tippen Sie auf die Karte zum Zeichnen. Desktop: Rechtsklick zum Abschließen. Mobil: Doppeltippen zum Abschließen. Sie können bis zu {n} {items} erstellen.',selectedCount:'{a} von {b} ausgewählt',savedDraftCount:'{a} von {b} {items} gespeichert · {c} Entwurfs-{vertices}',pointAdded:'Punkt hinzugefügt. Fügen Sie einen weiteren Punkt hinzu oder fahren Sie fort.',locationSelected:'Ort ausgewählt. Tippen Sie auf eine andere Stelle, um ihn zu verschieben.',maxPoints:'Maximal {n} Punkte erreicht.',maxFeatures:'Maximal {n} {items} erreicht.',maxVertices:'Maximal {n} Stützpunkte für dieses {item} erreicht. Schließen Sie es ab oder bearbeiten Sie den Entwurf.',addMoreVertices:'Fügen Sie noch {n} {vertices} hinzu und schließen Sie dann das {item} ab.',readyFinish:'{item} ist bereit — Desktop: Rechtsklick, Mobil: Doppeltippen zum Abschließen.',minVertices:'Fügen Sie mindestens {n} Stützpunkte hinzu, bevor Sie dieses {item} abschließen.',featureSavedMax:'{item} {n} gespeichert. Maximale Anzahl erreicht.',featureSavedNext:'{item} {n} gespeichert. Zeichnen Sie jetzt {itemLower} {next}.',lastSavedRemoved:'Letztes gespeichertes {itemLower} entfernt.',finishDraft:'Schließen Sie das aktuelle {itemLower} ab, bevor Sie fortfahren.',atLeastOne:'Bitte schließen Sie mindestens ein {itemLower} ab, bevor Sie fortfahren.',locationUnavailable:'Der aktuelle Standort ist in diesem Browser nicht verfügbar.',requestingLocation:'Standort wird abgefragt…',locationCentered:'Die Karte wurde auf Ihren aktuellen Standort zentriert. Tippen Sie auf die Karte, um fortzufahren.',locationDenied:'Die Standortfreigabe war nicht verfügbar. Suchen Sie eine Stadt oder navigieren Sie manuell.',searching:'Ort wird gesucht…',noPlace:'Kein passender Ort gefunden. Versuchen Sie eine größere Stadt in der Nähe.',movedTo:'Karte nach {place} verschoben. Tippen Sie auf die Karte, um fortzufahren.',choosePlace:'Wählen Sie den passenden Ort.',searchUnavailable:'Die Ortssuche ist vorübergehend nicht verfügbar. Sie können die Karte weiterhin manuell verschieben und zoomen.',startRecording:'Aufnahme starten',stopRecording:'Aufnahme stoppen',upload:'{item} hochladen',disabledPreview:'In der Vorschau deaktiviert.',recording:'Aufnahme läuft…',uploading:'Wird hochgeladen…',recordingSaved:'Aufnahme gespeichert.',uploadFailed:'Upload fehlgeschlagen.',cameraUnavailable:'Kamera-/Mikrofonberechtigung nicht verfügbar.',clearSignature:'Unterschrift löschen',cancel:'Abbrechen',save:'Speichern',tellMore:'Erzählen Sie uns mehr',thankYou:'Vielen Dank'},
+    fr:{name:'Français',welcome:'Bienvenue',interactive:'Enquête interactive',mapEnabled:'Avec carte',mobileFriendly:'Adapté au mobile',start:'Commencer',back:'Retour',next:'Suivant',submit:'Envoyer',submitResponse:'Envoyer la réponse',submitting:'Envoi…',preview:'Aperçu terminé',previewMode:'Mode aperçu',select:'— Sélectionner —',yes:'Oui',no:'Non',language:'Langue',required:'Veuillez répondre à cette question avant de continuer.',requiredShort:'Cette question est obligatoire.',search:'Rechercher',searchPlace:'Rechercher une ville ou un lieu',useLocation:'Utiliser ma position',undo:'Annuler',undoVertex:'Annuler le dernier sommet',removeLastSaved:'Supprimer le dernier élément enregistré',remove:'Supprimer',pointMap:'Carte de points',lineMap:'Carte de lignes',polygonMap:'Carte de polygones',textAnswer:'Réponse texte',openResponse:'Réponse ouverte',number:'Nombre',email:'E-mail',phone:'Téléphone',date:'Date',time:'Heure',dateTime:'Date et heure',yesNo:'Oui ou non',chooseOne:'Choisir une option',chooseMany:'Choisir plusieurs options',dropdown:'Sélectionner une option',rating:'Évaluation',slider:'Échelle',matrix:'Matrice',photo:'Photo',photos:'Photos',voice:'Réponse vocale',video:'Réponse vidéo',file:'Téléversement de fichier',signature:'Signature',ranking:'Classement',allocation:'Répartition',information:'Information',section:'Section',consent:'Consentement',tapPoint:'Déplacez ou zoomez la carte, puis touchez pour ajouter un point.',tapDraw:'Touchez la carte pour dessiner. Ordinateur : clic droit pour terminer. Mobile : double appui pour terminer.',pointsLimit:'Touchez la carte pour sélectionner jusqu’à {n} {items}.',featuresLimit:'Touchez la carte pour dessiner. Ordinateur : clic droit. Mobile : double appui. Vous pouvez créer jusqu’à {n} {items}.',selectedCount:'{a} sur {b} sélectionnés',savedDraftCount:'{a} sur {b} {items} enregistrés · {c} {vertices} du brouillon',pointAdded:'Point ajouté. Ajoutez-en un autre ou continuez.',locationSelected:'Lieu sélectionné. Touchez un autre endroit pour le déplacer.',maxPoints:'Maximum de {n} points atteint.',maxFeatures:'Maximum de {n} {items} atteint.',maxVertices:'Maximum de {n} sommets atteint pour cet élément.',addMoreVertices:'Ajoutez encore {n} {vertices}, puis terminez {item}.',readyFinish:'{item} prêt — clic droit sur ordinateur ou double appui sur mobile.',minVertices:'Ajoutez au moins {n} sommets avant de terminer {item}.',featureSavedMax:'{item} {n} enregistré. Maximum atteint.',featureSavedNext:'{item} {n} enregistré. Dessinez maintenant {itemLower} {next}.',lastSavedRemoved:'Dernier {itemLower} enregistré supprimé.',finishDraft:'Terminez le {itemLower} en cours avant de continuer.',atLeastOne:'Veuillez terminer au moins un {itemLower} avant de continuer.',locationUnavailable:'La position actuelle n’est pas disponible dans ce navigateur.',requestingLocation:'Demande de votre position…',locationCentered:'Carte centrée sur votre position. Touchez la carte pour continuer.',locationDenied:'Autorisation de localisation indisponible. Recherchez une ville ou naviguez manuellement.',searching:'Recherche du lieu…',noPlace:'Aucun lieu correspondant trouvé. Essayez une ville voisine plus grande.',movedTo:'Carte déplacée vers {place}. Touchez la carte pour continuer.',choosePlace:'Choisissez le lieu correspondant.',searchUnavailable:'La recherche de lieu est temporairement indisponible. Vous pouvez toujours naviguer manuellement.',startRecording:'Démarrer l’enregistrement',stopRecording:'Arrêter l’enregistrement',upload:'Téléverser {item}',disabledPreview:'Désactivé en aperçu.',recording:'Enregistrement…',uploading:'Téléversement…',recordingSaved:'Enregistrement sauvegardé.',uploadFailed:'Échec du téléversement.',cameraUnavailable:'Autorisation caméra/micro indisponible.',clearSignature:'Effacer la signature',cancel:'Annuler',save:'Enregistrer',tellMore:'Dites-nous-en plus',thankYou:'Merci'},
+    es:{name:'Español',welcome:'Bienvenido',interactive:'Encuesta interactiva',mapEnabled:'Con mapas',mobileFriendly:'Adaptada a móviles',start:'Comenzar',back:'Atrás',next:'Siguiente',submit:'Enviar',submitResponse:'Enviar respuesta',submitting:'Enviando…',preview:'Vista previa completa',previewMode:'Modo de vista previa',select:'— Seleccionar —',yes:'Sí',no:'No',language:'Idioma',required:'Responde esta pregunta antes de continuar.',requiredShort:'Esta pregunta es obligatoria.',search:'Buscar',searchPlace:'Buscar ciudad o lugar',useLocation:'Usar mi ubicación',undo:'Deshacer',undoVertex:'Deshacer vértice',removeLastSaved:'Eliminar el último guardado',remove:'Eliminar',pointMap:'Mapa de puntos',lineMap:'Mapa de líneas',polygonMap:'Mapa de polígonos',textAnswer:'Respuesta de texto',openResponse:'Respuesta abierta',number:'Número',email:'Correo electrónico',phone:'Teléfono',date:'Fecha',time:'Hora',dateTime:'Fecha y hora',yesNo:'Sí o no',chooseOne:'Elegir una opción',chooseMany:'Elegir varias opciones',dropdown:'Seleccionar una opción',rating:'Valoración',slider:'Escala',matrix:'Matriz',photo:'Foto',photos:'Fotos',voice:'Respuesta de voz',video:'Respuesta de vídeo',file:'Subir archivo',signature:'Firma',ranking:'Clasificación',allocation:'Distribución',information:'Información',section:'Sección',consent:'Consentimiento',tapPoint:'Mueve o amplía el mapa y toca para añadir un punto.',tapDraw:'Toca el mapa para dibujar. Escritorio: clic derecho para terminar. Móvil: doble toque para terminar.',pointsLimit:'Toca el mapa para seleccionar hasta {n} {items}.',featuresLimit:'Toca el mapa para dibujar. Escritorio: clic derecho. Móvil: doble toque. Puedes crear hasta {n} {items}.',selectedCount:'{a} de {b} seleccionados',savedDraftCount:'{a} de {b} {items} guardados · {c} {vertices} de borrador',pointAdded:'Punto añadido. Añade otro o continúa.',locationSelected:'Ubicación seleccionada. Toca otro lugar para moverla.',maxPoints:'Se alcanzó el máximo de {n} puntos.',maxFeatures:'Se alcanzó el máximo de {n} {items}.',maxVertices:'Se alcanzó el máximo de {n} vértices para este elemento.',addMoreVertices:'Añade {n} {vertices} más y termina {item}.',readyFinish:'{item} listo — clic derecho en escritorio o doble toque en móvil.',minVertices:'Añade al menos {n} vértices antes de terminar {item}.',featureSavedMax:'{item} {n} guardado. Máximo alcanzado.',featureSavedNext:'{item} {n} guardado. Dibuja ahora {itemLower} {next}.',lastSavedRemoved:'Último {itemLower} guardado eliminado.',finishDraft:'Termina el {itemLower} actual antes de continuar.',atLeastOne:'Termina al menos un {itemLower} antes de continuar.',locationUnavailable:'La ubicación actual no está disponible en este navegador.',requestingLocation:'Solicitando tu ubicación…',locationCentered:'Mapa centrado en tu ubicación. Toca el mapa para continuar.',locationDenied:'No se pudo usar la ubicación. Busca una ciudad o navega manualmente.',searching:'Buscando el lugar…',noPlace:'No se encontró un lugar coincidente. Prueba con una ciudad cercana más grande.',movedTo:'Mapa desplazado a {place}. Toca el mapa para continuar.',choosePlace:'Elige el lugar correcto.',searchUnavailable:'La búsqueda de lugares no está disponible temporalmente. Puedes navegar manualmente.',startRecording:'Iniciar grabación',stopRecording:'Detener grabación',upload:'Subir {item}',disabledPreview:'Desactivado en vista previa.',recording:'Grabando…',uploading:'Subiendo…',recordingSaved:'Grabación guardada.',uploadFailed:'Error al subir.',cameraUnavailable:'Permiso de cámara/micrófono no disponible.',clearSignature:'Borrar firma',cancel:'Cancelar',save:'Guardar',tellMore:'Cuéntanos más',thankYou:'Gracias'},
+    it:{name:'Italiano',welcome:'Benvenuto',interactive:'Sondaggio interattivo',mapEnabled:'Con mappa',mobileFriendly:'Ottimizzato per mobile',start:'Inizia',back:'Indietro',next:'Avanti',submit:'Invia',submitResponse:'Invia risposta',submitting:'Invio…',preview:'Anteprima completata',previewMode:'Modalità anteprima',select:'— Seleziona —',yes:'Sì',no:'No',language:'Lingua',required:'Rispondi a questa domanda prima di continuare.',requiredShort:'Questa domanda è obbligatoria.',search:'Cerca',searchPlace:'Cerca città o luogo',useLocation:'Usa la mia posizione',undo:'Annulla',undoVertex:'Annulla vertice',removeLastSaved:'Rimuovi ultimo salvato',remove:'Rimuovi',pointMap:'Mappa punti',lineMap:'Mappa linee',polygonMap:'Mappa poligoni',textAnswer:'Risposta testuale',openResponse:'Risposta aperta',number:'Numero',email:'Email',phone:'Telefono',date:'Data',time:'Ora',dateTime:'Data e ora',yesNo:'Sì o no',chooseOne:'Scegli una opzione',chooseMany:'Scegli più opzioni',dropdown:'Seleziona un’opzione',rating:'Valutazione',slider:'Scala',matrix:'Matrice',photo:'Foto',photos:'Foto',voice:'Risposta vocale',video:'Risposta video',file:'Carica file',signature:'Firma',ranking:'Classifica',allocation:'Distribuzione',information:'Informazione',section:'Sezione',consent:'Consenso',tapPoint:'Sposta o ingrandisci la mappa, poi tocca per aggiungere un punto.',tapDraw:'Tocca la mappa per disegnare. Desktop: clic destro per terminare. Mobile: doppio tocco per terminare.',pointsLimit:'Tocca la mappa per selezionare fino a {n} {items}.',featuresLimit:'Tocca la mappa per disegnare. Desktop: clic destro. Mobile: doppio tocco. Puoi creare fino a {n} {items}.',selectedCount:'{a} di {b} selezionati',savedDraftCount:'{a} di {b} {items} salvati · {c} {vertices} della bozza',pointAdded:'Punto aggiunto. Aggiungine un altro o continua.',locationSelected:'Posizione selezionata. Tocca un altro luogo per spostarla.',maxPoints:'Raggiunto il massimo di {n} punti.',maxFeatures:'Raggiunto il massimo di {n} {items}.',maxVertices:'Raggiunto il massimo di {n} vertici per questo elemento.',addMoreVertices:'Aggiungi altri {n} {vertices}, poi termina {item}.',readyFinish:'{item} pronto — clic destro su desktop o doppio tocco su mobile.',minVertices:'Aggiungi almeno {n} vertici prima di terminare {item}.',featureSavedMax:'{item} {n} salvato. Numero massimo raggiunto.',featureSavedNext:'{item} {n} salvato. Disegna ora {itemLower} {next}.',lastSavedRemoved:'Ultimo {itemLower} salvato rimosso.',finishDraft:'Termina il {itemLower} corrente prima di continuare.',atLeastOne:'Termina almeno un {itemLower} prima di continuare.',locationUnavailable:'La posizione corrente non è disponibile in questo browser.',requestingLocation:'Richiesta della posizione…',locationCentered:'Mappa centrata sulla tua posizione. Tocca la mappa per continuare.',locationDenied:'Permesso di localizzazione non disponibile. Cerca una città o naviga manualmente.',searching:'Ricerca del luogo…',noPlace:'Nessun luogo corrispondente trovato. Prova una città vicina più grande.',movedTo:'Mappa spostata su {place}. Tocca la mappa per continuare.',choosePlace:'Scegli il luogo corretto.',searchUnavailable:'La ricerca dei luoghi non è temporaneamente disponibile. Puoi navigare manualmente.',startRecording:'Avvia registrazione',stopRecording:'Ferma registrazione',upload:'Carica {item}',disabledPreview:'Disabilitato in anteprima.',recording:'Registrazione…',uploading:'Caricamento…',recordingSaved:'Registrazione salvata.',uploadFailed:'Caricamento non riuscito.',cameraUnavailable:'Permesso fotocamera/microfono non disponibile.',clearSignature:'Cancella firma',cancel:'Annulla',save:'Salva',tellMore:'Dicci di più',thankYou:'Grazie'},
+    nl:{name:'Nederlands',welcome:'Welkom',interactive:'Interactieve enquête',mapEnabled:'Met kaart',mobileFriendly:'Mobielvriendelijk',start:'Start enquête',back:'Terug',next:'Volgende',submit:'Verzenden',submitResponse:'Antwoord verzenden',submitting:'Verzenden…',preview:'Voorbeeld voltooid',previewMode:'Voorbeeldmodus',select:'— Selecteer —',yes:'Ja',no:'Nee',language:'Taal',required:'Beantwoord deze vraag voordat je doorgaat.',requiredShort:'Deze vraag is verplicht.',search:'Zoeken',searchPlace:'Zoek stad of plaats',useLocation:'Mijn locatie gebruiken',undo:'Ongedaan maken',undoVertex:'Laatste punt ongedaan',removeLastSaved:'Laatste opgeslagen verwijderen',remove:'Verwijderen',pointMap:'Puntenkaart',lineMap:'Lijnenkaart',polygonMap:'Polygoonkaarten',textAnswer:'Tekstantwoord',openResponse:'Open antwoord',number:'Getal',email:'E-mail',phone:'Telefoon',date:'Datum',time:'Tijd',dateTime:'Datum en tijd',yesNo:'Ja of nee',chooseOne:'Kies één',chooseMany:'Kies meerdere',dropdown:'Selecteer een optie',rating:'Beoordeling',slider:'Schaal',matrix:'Matrix',photo:'Foto',photos:'Foto’s',voice:'Spraakantwoord',video:'Videoantwoord',file:'Bestand uploaden',signature:'Handtekening',ranking:'Rangschikking',allocation:'Verdeling',information:'Informatie',section:'Sectie',consent:'Toestemming',tapPoint:'Verplaats of zoom de kaart en tik om een punt toe te voegen.',tapDraw:'Tik op de kaart om te tekenen. Desktop: rechtermuisklik om af te ronden. Mobiel: dubbeltik om af te ronden.',pointsLimit:'Tik op de kaart om maximaal {n} {items} te selecteren.',featuresLimit:'Tik op de kaart om te tekenen. Desktop: rechtermuisklik. Mobiel: dubbeltik. Je kunt maximaal {n} {items} maken.',selectedCount:'{a} van {b} geselecteerd',savedDraftCount:'{a} van {b} {items} opgeslagen · {c} concept-{vertices}',pointAdded:'Punt toegevoegd. Voeg nog een punt toe of ga verder.',locationSelected:'Locatie geselecteerd. Tik ergens anders om deze te verplaatsen.',maxPoints:'Maximum van {n} punten bereikt.',maxFeatures:'Maximum van {n} {items} bereikt.',maxVertices:'Maximum van {n} hoekpunten bereikt voor dit element.',addMoreVertices:'Voeg nog {n} {vertices} toe en rond daarna {item} af.',readyFinish:'{item} klaar — rechtermuisklik op desktop of dubbeltik op mobiel.',minVertices:'Voeg minstens {n} hoekpunten toe voordat je {item} afrondt.',featureSavedMax:'{item} {n} opgeslagen. Maximum bereikt.',featureSavedNext:'{item} {n} opgeslagen. Teken nu {itemLower} {next}.',lastSavedRemoved:'Laatste opgeslagen {itemLower} verwijderd.',finishDraft:'Rond de huidige {itemLower} af voordat je doorgaat.',atLeastOne:'Rond minstens één {itemLower} af voordat je doorgaat.',locationUnavailable:'De huidige locatie is niet beschikbaar in deze browser.',requestingLocation:'Locatie wordt opgevraagd…',locationCentered:'Kaart gecentreerd op je huidige locatie. Tik op de kaart om verder te gaan.',locationDenied:'Locatietoestemming niet beschikbaar. Zoek een stad of navigeer handmatig.',searching:'Plaats zoeken…',noPlace:'Geen overeenkomstige plaats gevonden. Probeer een grotere stad in de buurt.',movedTo:'Kaart verplaatst naar {place}. Tik op de kaart om verder te gaan.',choosePlace:'Kies de juiste plaats.',searchUnavailable:'Plaats zoeken is tijdelijk niet beschikbaar. Je kunt nog steeds handmatig navigeren.',startRecording:'Opname starten',stopRecording:'Opname stoppen',upload:'{item} uploaden',disabledPreview:'Uitgeschakeld in voorbeeld.',recording:'Opnemen…',uploading:'Uploaden…',recordingSaved:'Opname opgeslagen.',uploadFailed:'Upload mislukt.',cameraUnavailable:'Camera-/microfoontoestemming niet beschikbaar.',clearSignature:'Handtekening wissen',cancel:'Annuleren',save:'Opslaan',tellMore:'Vertel ons meer',thankYou:'Bedankt'},
+    pl:{name:'Polski',welcome:'Witamy',interactive:'Interaktywna ankieta',mapEnabled:'Z mapą',mobileFriendly:'Przyjazna mobilnie',start:'Rozpocznij',back:'Wstecz',next:'Dalej',submit:'Wyślij',submitResponse:'Wyślij odpowiedź',submitting:'Wysyłanie…',preview:'Podgląd zakończony',previewMode:'Tryb podglądu',select:'— Wybierz —',yes:'Tak',no:'Nie',language:'Język',required:'Odpowiedz na to pytanie przed przejściem dalej.',requiredShort:'To pytanie jest wymagane.',search:'Szukaj',searchPlace:'Szukaj miasta lub miejsca',useLocation:'Użyj mojej lokalizacji',undo:'Cofnij',undoVertex:'Cofnij wierzchołek',removeLastSaved:'Usuń ostatnio zapisane',remove:'Usuń',pointMap:'Mapa punktów',lineMap:'Mapa linii',polygonMap:'Mapa poligonów',textAnswer:'Odpowiedź tekstowa',openResponse:'Odpowiedź otwarta',number:'Liczba',email:'E-mail',phone:'Telefon',date:'Data',time:'Czas',dateTime:'Data i czas',yesNo:'Tak lub nie',chooseOne:'Wybierz jedną',chooseMany:'Wybierz wiele',dropdown:'Wybierz opcję',rating:'Ocena',slider:'Skala',matrix:'Macierz',photo:'Zdjęcie',photos:'Zdjęcia',voice:'Odpowiedź głosowa',video:'Odpowiedź wideo',file:'Prześlij plik',signature:'Podpis',ranking:'Ranking',allocation:'Podział',information:'Informacja',section:'Sekcja',consent:'Zgoda',tapPoint:'Przesuń lub powiększ mapę, a następnie dotknij, aby dodać punkt.',tapDraw:'Dotknij mapy, aby rysować. Komputer: prawy przycisk, aby zakończyć. Telefon: podwójne dotknięcie.',pointsLimit:'Dotknij mapy, aby wybrać do {n} {items}.',featuresLimit:'Dotknij mapy, aby rysować. Komputer: prawy przycisk. Telefon: podwójne dotknięcie. Możesz utworzyć do {n} {items}.',selectedCount:'Wybrano {a} z {b}',savedDraftCount:'Zapisano {a} z {b} {items} · {c} {vertices} szkicu',pointAdded:'Dodano punkt. Dodaj kolejny lub kontynuuj.',locationSelected:'Wybrano lokalizację. Dotknij innego miejsca, aby ją przenieść.',maxPoints:'Osiągnięto maksymalnie {n} punktów.',maxFeatures:'Osiągnięto maksymalnie {n} {items}.',maxVertices:'Osiągnięto maksymalnie {n} wierzchołków dla tego elementu.',addMoreVertices:'Dodaj jeszcze {n} {vertices}, a potem zakończ {item}.',readyFinish:'{item} gotowy — prawy przycisk na komputerze lub podwójne dotknięcie na telefonie.',minVertices:'Dodaj co najmniej {n} wierzchołków przed zakończeniem {item}.',featureSavedMax:'{item} {n} zapisany. Osiągnięto maksimum.',featureSavedNext:'{item} {n} zapisany. Narysuj teraz {itemLower} {next}.',lastSavedRemoved:'Usunięto ostatni zapisany {itemLower}.',finishDraft:'Zakończ bieżący {itemLower} przed kontynuacją.',atLeastOne:'Zakończ co najmniej jeden {itemLower} przed kontynuacją.',locationUnavailable:'Bieżąca lokalizacja nie jest dostępna w tej przeglądarce.',requestingLocation:'Pobieranie lokalizacji…',locationCentered:'Mapa wyśrodkowana na Twojej lokalizacji. Dotknij mapy, aby kontynuować.',locationDenied:'Brak dostępu do lokalizacji. Wyszukaj miasto lub nawiguj ręcznie.',searching:'Wyszukiwanie miejsca…',noPlace:'Nie znaleziono pasującego miejsca. Spróbuj większego miasta w pobliżu.',movedTo:'Mapa przeniesiona do {place}. Dotknij mapy, aby kontynuować.',choosePlace:'Wybierz pasujące miejsce.',searchUnavailable:'Wyszukiwanie miejsca jest chwilowo niedostępne. Możesz nawigować ręcznie.',startRecording:'Rozpocznij nagrywanie',stopRecording:'Zatrzymaj nagrywanie',upload:'Prześlij {item}',disabledPreview:'Wyłączone w podglądzie.',recording:'Nagrywanie…',uploading:'Przesyłanie…',recordingSaved:'Nagranie zapisane.',uploadFailed:'Przesyłanie nie powiodło się.',cameraUnavailable:'Brak uprawnień kamery/mikrofonu.',clearSignature:'Wyczyść podpis',cancel:'Anuluj',save:'Zapisz',tellMore:'Powiedz nam więcej',thankYou:'Dziękujemy'},
+    pt:{name:'Português',welcome:'Bem-vindo',interactive:'Questionário interativo',mapEnabled:'Com mapa',mobileFriendly:'Compatível com telemóvel',start:'Iniciar',back:'Voltar',next:'Seguinte',submit:'Enviar',submitResponse:'Enviar resposta',submitting:'A enviar…',preview:'Pré-visualização concluída',previewMode:'Modo de pré-visualização',select:'— Selecionar —',yes:'Sim',no:'Não',language:'Idioma',required:'Responda a esta pergunta antes de continuar.',requiredShort:'Esta pergunta é obrigatória.',search:'Pesquisar',searchPlace:'Pesquisar cidade ou local',useLocation:'Usar a minha localização',undo:'Anular',undoVertex:'Anular vértice',removeLastSaved:'Remover último guardado',remove:'Remover',pointMap:'Mapa de pontos',lineMap:'Mapa de linhas',polygonMap:'Mapa de polígonos',textAnswer:'Resposta de texto',openResponse:'Resposta aberta',number:'Número',email:'E-mail',phone:'Telefone',date:'Data',time:'Hora',dateTime:'Data e hora',yesNo:'Sim ou não',chooseOne:'Escolher uma opção',chooseMany:'Escolher várias opções',dropdown:'Selecionar uma opção',rating:'Avaliação',slider:'Escala',matrix:'Matriz',photo:'Foto',photos:'Fotos',voice:'Resposta de voz',video:'Resposta de vídeo',file:'Carregar ficheiro',signature:'Assinatura',ranking:'Ordenação',allocation:'Distribuição',information:'Informação',section:'Secção',consent:'Consentimento',tapPoint:'Mova ou amplie o mapa e toque para adicionar um ponto.',tapDraw:'Toque no mapa para desenhar. Computador: clique direito para terminar. Telemóvel: toque duplo.',pointsLimit:'Toque no mapa para selecionar até {n} {items}.',featuresLimit:'Toque no mapa para desenhar. Computador: clique direito. Telemóvel: toque duplo. Pode criar até {n} {items}.',selectedCount:'{a} de {b} selecionados',savedDraftCount:'{a} de {b} {items} guardados · {c} {vertices} de rascunho',pointAdded:'Ponto adicionado. Adicione outro ou continue.',locationSelected:'Localização selecionada. Toque noutro local para a mover.',maxPoints:'Máximo de {n} pontos atingido.',maxFeatures:'Máximo de {n} {items} atingido.',maxVertices:'Máximo de {n} vértices atingido para este elemento.',addMoreVertices:'Adicione mais {n} {vertices} e depois termine {item}.',readyFinish:'{item} pronto — clique direito no computador ou toque duplo no telemóvel.',minVertices:'Adicione pelo menos {n} vértices antes de terminar {item}.',featureSavedMax:'{item} {n} guardado. Máximo atingido.',featureSavedNext:'{item} {n} guardado. Desenhe agora {itemLower} {next}.',lastSavedRemoved:'Último {itemLower} guardado removido.',finishDraft:'Termine o {itemLower} atual antes de continuar.',atLeastOne:'Termine pelo menos um {itemLower} antes de continuar.',locationUnavailable:'A localização atual não está disponível neste navegador.',requestingLocation:'A pedir a sua localização…',locationCentered:'Mapa centrado na sua localização. Toque no mapa para continuar.',locationDenied:'Permissão de localização indisponível. Pesquise uma cidade ou navegue manualmente.',searching:'A pesquisar o local…',noPlace:'Não foi encontrado um local correspondente. Tente uma cidade maior próxima.',movedTo:'Mapa movido para {place}. Toque no mapa para continuar.',choosePlace:'Escolha o local correspondente.',searchUnavailable:'A pesquisa de locais está temporariamente indisponível. Pode navegar manualmente.',startRecording:'Iniciar gravação',stopRecording:'Parar gravação',upload:'Carregar {item}',disabledPreview:'Desativado na pré-visualização.',recording:'A gravar…',uploading:'A carregar…',recordingSaved:'Gravação guardada.',uploadFailed:'Falha no carregamento.',cameraUnavailable:'Permissão de câmara/microfone indisponível.',clearSignature:'Limpar assinatura',cancel:'Cancelar',save:'Guardar',tellMore:'Conte-nos mais',thankYou:'Obrigado'},
+    tr:{name:'Türkçe',welcome:'Hoş geldiniz',interactive:'Etkileşimli anket',mapEnabled:'Harita destekli',mobileFriendly:'Mobil uyumlu',start:'Anketi başlat',back:'Geri',next:'İleri',submit:'Gönder',submitResponse:'Yanıtı gönder',submitting:'Gönderiliyor…',preview:'Önizleme tamamlandı',previewMode:'Önizleme modu',select:'— Seçin —',yes:'Evet',no:'Hayır',language:'Dil',required:'Devam etmeden önce bu soruyu yanıtlayın.',requiredShort:'Bu soru zorunludur.',search:'Ara',searchPlace:'Şehir veya yer ara',useLocation:'Konumumu kullan',undo:'Geri al',undoVertex:'Son köşeyi geri al',removeLastSaved:'Son kaydedileni kaldır',remove:'Kaldır',pointMap:'Nokta haritası',lineMap:'Çizgi haritası',polygonMap:'Poligon haritası',textAnswer:'Metin yanıtı',openResponse:'Açık yanıt',number:'Sayı',email:'E-posta',phone:'Telefon',date:'Tarih',time:'Saat',dateTime:'Tarih ve saat',yesNo:'Evet veya hayır',chooseOne:'Bir seçenek seçin',chooseMany:'Birden fazla seçin',dropdown:'Seçenek seçin',rating:'Değerlendirme',slider:'Ölçek',matrix:'Matris',photo:'Fotoğraf',photos:'Fotoğraflar',voice:'Sesli yanıt',video:'Video yanıtı',file:'Dosya yükleme',signature:'İmza',ranking:'Sıralama',allocation:'Dağıtım',information:'Bilgi',section:'Bölüm',consent:'Onay',tapPoint:'Haritayı kaydırın veya yakınlaştırın, ardından nokta eklemek için dokunun.',tapDraw:'Çizmek için haritaya dokunun. Masaüstü: bitirmek için sağ tıklayın. Mobil: çift dokunun.',pointsLimit:'En fazla {n} {items} seçmek için haritaya dokunun.',featuresLimit:'Çizmek için haritaya dokunun. Masaüstü: sağ tıklayın. Mobil: çift dokunun. En fazla {n} {items} oluşturabilirsiniz.',selectedCount:'{a} / {b} seçildi',savedDraftCount:'{a} / {b} {items} kaydedildi · taslakta {c} {vertices}',pointAdded:'Nokta eklendi. Başka bir nokta ekleyin veya devam edin.',locationSelected:'Konum seçildi. Taşımak için başka bir yere dokunun.',maxPoints:'En fazla {n} noktaya ulaşıldı.',maxFeatures:'En fazla {n} {items} ulaşıldı.',maxVertices:'Bu öğe için en fazla {n} köşeye ulaşıldı.',addMoreVertices:'{n} {vertices} daha ekleyin, sonra {item} öğesini bitirin.',readyFinish:'{item} hazır — masaüstünde sağ tıklayın veya mobilde çift dokunun.',minVertices:'{item} öğesini bitirmeden önce en az {n} köşe ekleyin.',featureSavedMax:'{item} {n} kaydedildi. Maksimuma ulaşıldı.',featureSavedNext:'{item} {n} kaydedildi. Şimdi {itemLower} {next} çizin.',lastSavedRemoved:'Son kaydedilen {itemLower} kaldırıldı.',finishDraft:'Devam etmeden önce mevcut {itemLower} öğesini bitirin.',atLeastOne:'Devam etmeden önce en az bir {itemLower} bitirin.',locationUnavailable:'Geçerli konum bu tarayıcıda kullanılamıyor.',requestingLocation:'Konumunuz isteniyor…',locationCentered:'Harita konumunuza ortalandı. Devam etmek için haritaya dokunun.',locationDenied:'Konum izni kullanılamadı. Bir şehir arayın veya elle gezinin.',searching:'Yer aranıyor…',noPlace:'Eşleşen yer bulunamadı. Yakındaki daha büyük bir şehri deneyin.',movedTo:'Harita {place} konumuna taşındı. Devam etmek için haritaya dokunun.',choosePlace:'Eşleşen yeri seçin.',searchUnavailable:'Yer araması geçici olarak kullanılamıyor. Haritada elle gezinebilirsiniz.',startRecording:'Kaydı başlat',stopRecording:'Kaydı durdur',upload:'{item} yükle',disabledPreview:'Önizlemede devre dışı.',recording:'Kaydediliyor…',uploading:'Yükleniyor…',recordingSaved:'Kayıt kaydedildi.',uploadFailed:'Yükleme başarısız.',cameraUnavailable:'Kamera/mikrofon izni kullanılamıyor.',clearSignature:'İmzayı temizle',cancel:'İptal',save:'Kaydet',tellMore:'Daha fazlasını anlatın',thankYou:'Teşekkürler'},
+    ar:{name:'العربية',welcome:'مرحباً',interactive:'استبيان تفاعلي',mapEnabled:'يدعم الخرائط',mobileFriendly:'متوافق مع الهاتف',start:'ابدأ الاستبيان',back:'رجوع',next:'التالي',submit:'إرسال',submitResponse:'إرسال الإجابة',submitting:'جارٍ الإرسال…',preview:'اكتملت المعاينة',previewMode:'وضع المعاينة',select:'— اختر —',yes:'نعم',no:'لا',language:'اللغة',required:'يرجى الإجابة عن هذا السؤال قبل المتابعة.',requiredShort:'هذا السؤال مطلوب.',search:'بحث',searchPlace:'ابحث عن مدينة أو مكان',useLocation:'استخدم موقعي',undo:'تراجع',undoVertex:'تراجع عن آخر نقطة',removeLastSaved:'إزالة آخر عنصر محفوظ',remove:'إزالة',pointMap:'خريطة نقاط',lineMap:'خريطة خطوط',polygonMap:'خريطة مضلعات',textAnswer:'إجابة نصية',openResponse:'إجابة مفتوحة',number:'رقم',email:'بريد إلكتروني',phone:'هاتف',date:'تاريخ',time:'وقت',dateTime:'التاريخ والوقت',yesNo:'نعم أو لا',chooseOne:'اختر خياراً واحداً',chooseMany:'اختر عدة خيارات',dropdown:'اختر خياراً',rating:'تقييم',slider:'مقياس',matrix:'مصفوفة',photo:'صورة',photos:'صور',voice:'إجابة صوتية',video:'إجابة فيديو',file:'رفع ملف',signature:'توقيع',ranking:'ترتيب',allocation:'توزيع',information:'معلومات',section:'قسم',consent:'موافقة',tapPoint:'حرّك الخريطة أو كبّرها ثم انقر لإضافة نقطة.',tapDraw:'انقر على الخريطة للرسم. سطح المكتب: زر الفأرة الأيمن للإنهاء. الهاتف: نقرتان للإنهاء.',pointsLimit:'انقر على الخريطة لاختيار ما يصل إلى {n} {items}.',featuresLimit:'انقر على الخريطة للرسم. سطح المكتب: زر أيمن. الهاتف: نقرتان. يمكنك إنشاء ما يصل إلى {n} {items}.',selectedCount:'تم اختيار {a} من {b}',savedDraftCount:'تم حفظ {a} من {b} {items} · {c} {vertices} في المسودة',pointAdded:'تمت إضافة نقطة. أضف نقطة أخرى أو تابع.',locationSelected:'تم اختيار الموقع. انقر على مكان آخر لتحريكه.',maxPoints:'تم الوصول إلى الحد الأقصى {n} من النقاط.',maxFeatures:'تم الوصول إلى الحد الأقصى {n} من {items}.',maxVertices:'تم الوصول إلى الحد الأقصى {n} من الرؤوس لهذا العنصر.',addMoreVertices:'أضف {n} {vertices} أخرى ثم أنهِ {item}.',readyFinish:'{item} جاهز — زر الفأرة الأيمن على سطح المكتب أو نقرتان على الهاتف.',minVertices:'أضف {n} رؤوس على الأقل قبل إنهاء {item}.',featureSavedMax:'تم حفظ {item} {n}. تم الوصول إلى الحد الأقصى.',featureSavedNext:'تم حفظ {item} {n}. ابدأ رسم {itemLower} {next}.',lastSavedRemoved:'تم حذف آخر {itemLower} محفوظ.',finishDraft:'أنهِ {itemLower} الحالي قبل المتابعة.',atLeastOne:'أنهِ {itemLower} واحداً على الأقل قبل المتابعة.',locationUnavailable:'الموقع الحالي غير متاح في هذا المتصفح.',requestingLocation:'جارٍ طلب موقعك…',locationCentered:'تم توسيط الخريطة على موقعك الحالي. انقر على الخريطة للمتابعة.',locationDenied:'تعذر الحصول على إذن الموقع. ابحث عن مدينة أو تنقل يدوياً.',searching:'جارٍ البحث عن المكان…',noPlace:'لم يتم العثور على مكان مطابق. جرّب مدينة أكبر قريبة.',movedTo:'تم نقل الخريطة إلى {place}. انقر على الخريطة للمتابعة.',choosePlace:'اختر المكان المطابق.',searchUnavailable:'البحث عن الأماكن غير متاح مؤقتاً. لا يزال بإمكانك التنقل يدوياً.',startRecording:'بدء التسجيل',stopRecording:'إيقاف التسجيل',upload:'رفع {item}',disabledPreview:'معطل في المعاينة.',recording:'جارٍ التسجيل…',uploading:'جارٍ الرفع…',recordingSaved:'تم حفظ التسجيل.',uploadFailed:'فشل الرفع.',cameraUnavailable:'إذن الكاميرا/الميكروفون غير متاح.',clearSignature:'مسح التوقيع',cancel:'إلغاء',save:'حفظ',tellMore:'أخبرنا بالمزيد',thankYou:'شكراً'},
+    fa:{name:'فارسی',welcome:'خوش آمدید',interactive:'نظرسنجی تعاملی',mapEnabled:'دارای نقشه',mobileFriendly:'مناسب موبایل',start:'شروع نظرسنجی',back:'بازگشت',next:'بعدی',submit:'ارسال',submitResponse:'ارسال پاسخ',submitting:'در حال ارسال…',preview:'پیش‌نمایش کامل شد',previewMode:'حالت پیش‌نمایش',select:'— انتخاب کنید —',yes:'بله',no:'خیر',language:'زبان',required:'پیش از ادامه به این سؤال پاسخ دهید.',requiredShort:'پاسخ به این سؤال الزامی است.',search:'جستجو',searchPlace:'جستجوی شهر یا مکان',useLocation:'استفاده از موقعیت من',undo:'بازگردانی',undoVertex:'بازگردانی رأس',removeLastSaved:'حذف آخرین مورد ذخیره‌شده',remove:'حذف',pointMap:'نقشه نقطه‌ای',lineMap:'نقشه خطی',polygonMap:'نقشه چندضلعی',textAnswer:'پاسخ متنی',openResponse:'پاسخ باز',number:'عدد',email:'ایمیل',phone:'تلفن',date:'تاریخ',time:'زمان',dateTime:'تاریخ و زمان',yesNo:'بله یا خیر',chooseOne:'یک گزینه انتخاب کنید',chooseMany:'چند گزینه انتخاب کنید',dropdown:'یک گزینه انتخاب کنید',rating:'امتیاز',slider:'مقیاس',matrix:'ماتریس',photo:'عکس',photos:'عکس‌ها',voice:'پاسخ صوتی',video:'پاسخ ویدیویی',file:'بارگذاری فایل',signature:'امضا',ranking:'رتبه‌بندی',allocation:'تخصیص',information:'اطلاعات',section:'بخش',consent:'رضایت',tapPoint:'نقشه را جابه‌جا یا بزرگ‌نمایی کنید و برای افزودن نقطه لمس کنید.',tapDraw:'برای رسم روی نقشه لمس کنید. رایانه: کلیک راست برای پایان. موبایل: دو بار لمس.',pointsLimit:'برای انتخاب تا {n} {items} روی نقشه لمس کنید.',featuresLimit:'برای رسم روی نقشه لمس کنید. رایانه: کلیک راست. موبایل: دو بار لمس. می‌توانید تا {n} {items} ایجاد کنید.',selectedCount:'{a} از {b} انتخاب شده',savedDraftCount:'{a} از {b} {items} ذخیره شده · {c} {vertices} پیش‌نویس',pointAdded:'نقطه اضافه شد. نقطه دیگری اضافه کنید یا ادامه دهید.',locationSelected:'مکان انتخاب شد. برای جابه‌جایی جای دیگری را لمس کنید.',maxPoints:'حداکثر {n} نقطه ثبت شده است.',maxFeatures:'حداکثر {n} {items} ثبت شده است.',maxVertices:'حداکثر {n} رأس برای این مورد ثبت شده است.',addMoreVertices:'{n} {vertices} دیگر اضافه کنید و سپس {item} را تمام کنید.',readyFinish:'{item} آماده است — در رایانه کلیک راست یا در موبایل دو بار لمس کنید.',minVertices:'پیش از پایان {item} حداقل {n} رأس اضافه کنید.',featureSavedMax:'{item} {n} ذخیره شد. به حداکثر رسیدید.',featureSavedNext:'{item} {n} ذخیره شد. اکنون {itemLower} {next} را رسم کنید.',lastSavedRemoved:'آخرین {itemLower} ذخیره‌شده حذف شد.',finishDraft:'پیش از ادامه {itemLower} فعلی را تمام کنید.',atLeastOne:'پیش از ادامه حداقل یک {itemLower} را تمام کنید.',locationUnavailable:'موقعیت فعلی در این مرورگر در دسترس نیست.',requestingLocation:'در حال دریافت موقعیت…',locationCentered:'نقشه روی موقعیت فعلی شما متمرکز شد. برای ادامه روی نقشه لمس کنید.',locationDenied:'مجوز موقعیت در دسترس نبود. شهر را جستجو کنید یا دستی حرکت کنید.',searching:'در حال جستجوی مکان…',noPlace:'مکان مطابقی پیدا نشد. شهر بزرگ‌تری در نزدیکی امتحان کنید.',movedTo:'نقشه به {place} منتقل شد. برای ادامه روی نقشه لمس کنید.',choosePlace:'مکان مناسب را انتخاب کنید.',searchUnavailable:'جستجوی مکان موقتاً در دسترس نیست. همچنان می‌توانید دستی در نقشه حرکت کنید.',startRecording:'شروع ضبط',stopRecording:'توقف ضبط',upload:'بارگذاری {item}',disabledPreview:'در پیش‌نمایش غیرفعال است.',recording:'در حال ضبط…',uploading:'در حال بارگذاری…',recordingSaved:'ضبط ذخیره شد.',uploadFailed:'بارگذاری ناموفق بود.',cameraUnavailable:'مجوز دوربین/میکروفون در دسترس نیست.',clearSignature:'پاک کردن امضا',cancel:'لغو',save:'ذخیره',tellMore:'بیشتر توضیح دهید',thankYou:'سپاسگزاریم'},
+    uk:{name:'Українська',welcome:'Ласкаво просимо',interactive:'Інтерактивне опитування',mapEnabled:'З картою',mobileFriendly:'Зручно на мобільному',start:'Почати опитування',back:'Назад',next:'Далі',submit:'Надіслати',submitResponse:'Надіслати відповідь',submitting:'Надсилання…',preview:'Попередній перегляд завершено',previewMode:'Режим перегляду',select:'— Виберіть —',yes:'Так',no:'Ні',language:'Мова',required:'Будь ласка, дайте відповідь перед продовженням.',requiredShort:'Це питання обов’язкове.',search:'Пошук',searchPlace:'Пошук міста або місця',useLocation:'Використати моє місцезнаходження',undo:'Скасувати',undoVertex:'Скасувати вершину',removeLastSaved:'Видалити останнє збережене',remove:'Видалити',pointMap:'Карта точок',lineMap:'Карта ліній',polygonMap:'Карта полігонів',textAnswer:'Текстова відповідь',openResponse:'Відкрита відповідь',number:'Число',email:'Ел. пошта',phone:'Телефон',date:'Дата',time:'Час',dateTime:'Дата й час',yesNo:'Так або ні',chooseOne:'Виберіть одну',chooseMany:'Виберіть кілька',dropdown:'Виберіть варіант',rating:'Оцінка',slider:'Шкала',matrix:'Матриця',photo:'Фото',photos:'Фото',voice:'Голосова відповідь',video:'Відеовідповідь',file:'Завантаження файлу',signature:'Підпис',ranking:'Рейтинг',allocation:'Розподіл',information:'Інформація',section:'Розділ',consent:'Згода',tapPoint:'Перемістіть або збільште карту й торкніться, щоб додати точку.',tapDraw:'Торкніться карти, щоб малювати. Комп’ютер: права кнопка для завершення. Мобільний: подвійний дотик.',pointsLimit:'Торкніться карти, щоб вибрати до {n} {items}.',featuresLimit:'Торкніться карти для малювання. Комп’ютер: права кнопка. Мобільний: подвійний дотик. Можна створити до {n} {items}.',selectedCount:'Вибрано {a} з {b}',savedDraftCount:'Збережено {a} з {b} {items} · {c} {vertices} чернетки',pointAdded:'Точку додано. Додайте ще одну або продовжуйте.',locationSelected:'Місце вибрано. Торкніться іншого місця, щоб перемістити.',maxPoints:'Досягнуто максимум {n} точок.',maxFeatures:'Досягнуто максимум {n} {items}.',maxVertices:'Досягнуто максимум {n} вершин.',addMoreVertices:'Додайте ще {n} {vertices}, потім завершіть {item}.',readyFinish:'{item} готовий — права кнопка на комп’ютері або подвійний дотик на мобільному.',minVertices:'Додайте щонайменше {n} вершин перед завершенням {item}.',featureSavedMax:'{item} {n} збережено. Досягнуто максимум.',featureSavedNext:'{item} {n} збережено. Намалюйте {itemLower} {next}.',lastSavedRemoved:'Останній збережений {itemLower} видалено.',finishDraft:'Завершіть поточний {itemLower} перед продовженням.',atLeastOne:'Завершіть щонайменше один {itemLower} перед продовженням.',locationUnavailable:'Поточне місцезнаходження недоступне в цьому браузері.',requestingLocation:'Отримання місцезнаходження…',locationCentered:'Карту центровано на вашому місцезнаходженні. Торкніться карти для продовження.',locationDenied:'Доступ до місцезнаходження недоступний. Знайдіть місто або переміщуйте карту вручну.',searching:'Пошук місця…',noPlace:'Відповідного місця не знайдено. Спробуйте більше місто поруч.',movedTo:'Карту переміщено до {place}. Торкніться карти для продовження.',choosePlace:'Виберіть відповідне місце.',searchUnavailable:'Пошук місць тимчасово недоступний. Можна пересувати карту вручну.',startRecording:'Почати запис',stopRecording:'Зупинити запис',upload:'Завантажити {item}',disabledPreview:'Вимкнено в перегляді.',recording:'Запис…',uploading:'Завантаження…',recordingSaved:'Запис збережено.',uploadFailed:'Не вдалося завантажити.',cameraUnavailable:'Доступ до камери/мікрофона недоступний.',clearSignature:'Очистити підпис',cancel:'Скасувати',save:'Зберегти',tellMore:'Розкажіть більше',thankYou:'Дякуємо'},
+    ru:{name:'Русский',welcome:'Добро пожаловать',interactive:'Интерактивный опрос',mapEnabled:'С картой',mobileFriendly:'Удобно на мобильном',start:'Начать опрос',back:'Назад',next:'Далее',submit:'Отправить',submitResponse:'Отправить ответ',submitting:'Отправка…',preview:'Предпросмотр завершён',previewMode:'Режим предпросмотра',select:'— Выберите —',yes:'Да',no:'Нет',language:'Язык',required:'Ответьте на этот вопрос перед продолжением.',requiredShort:'Этот вопрос обязателен.',search:'Поиск',searchPlace:'Искать город или место',useLocation:'Использовать моё местоположение',undo:'Отменить',undoVertex:'Отменить вершину',removeLastSaved:'Удалить последнее сохранённое',remove:'Удалить',pointMap:'Карта точек',lineMap:'Карта линий',polygonMap:'Карта полигонов',textAnswer:'Текстовый ответ',openResponse:'Открытый ответ',number:'Число',email:'Эл. почта',phone:'Телефон',date:'Дата',time:'Время',dateTime:'Дата и время',yesNo:'Да или нет',chooseOne:'Выберите один вариант',chooseMany:'Выберите несколько',dropdown:'Выберите вариант',rating:'Оценка',slider:'Шкала',matrix:'Матрица',photo:'Фото',photos:'Фото',voice:'Голосовой ответ',video:'Видеоответ',file:'Загрузка файла',signature:'Подпись',ranking:'Рейтинг',allocation:'Распределение',information:'Информация',section:'Раздел',consent:'Согласие',tapPoint:'Перемещайте или масштабируйте карту, затем нажмите, чтобы добавить точку.',tapDraw:'Нажмите на карту для рисования. Компьютер: правая кнопка для завершения. Мобильный: двойное касание.',pointsLimit:'Нажмите на карту, чтобы выбрать до {n} {items}.',featuresLimit:'Нажмите на карту для рисования. Компьютер: правая кнопка. Мобильный: двойное касание. Можно создать до {n} {items}.',selectedCount:'Выбрано {a} из {b}',savedDraftCount:'Сохранено {a} из {b} {items} · {c} {vertices} черновика',pointAdded:'Точка добавлена. Добавьте ещё одну или продолжайте.',locationSelected:'Место выбрано. Нажмите другое место, чтобы переместить.',maxPoints:'Достигнут максимум {n} точек.',maxFeatures:'Достигнут максимум {n} {items}.',maxVertices:'Достигнут максимум {n} вершин.',addMoreVertices:'Добавьте ещё {n} {vertices}, затем завершите {item}.',readyFinish:'{item} готов — правая кнопка на компьютере или двойное касание на мобильном.',minVertices:'Добавьте минимум {n} вершин перед завершением {item}.',featureSavedMax:'{item} {n} сохранён. Достигнут максимум.',featureSavedNext:'{item} {n} сохранён. Нарисуйте {itemLower} {next}.',lastSavedRemoved:'Последний сохранённый {itemLower} удалён.',finishDraft:'Завершите текущий {itemLower} перед продолжением.',atLeastOne:'Завершите хотя бы один {itemLower} перед продолжением.',locationUnavailable:'Текущее местоположение недоступно в этом браузере.',requestingLocation:'Получение местоположения…',locationCentered:'Карта центрирована на вашем местоположении. Нажмите карту для продолжения.',locationDenied:'Доступ к местоположению недоступен. Найдите город или перемещайте карту вручную.',searching:'Поиск места…',noPlace:'Подходящее место не найдено. Попробуйте ближайший более крупный город.',movedTo:'Карта перемещена к {place}. Нажмите карту для продолжения.',choosePlace:'Выберите подходящее место.',searchUnavailable:'Поиск мест временно недоступен. Можно перемещать карту вручную.',startRecording:'Начать запись',stopRecording:'Остановить запись',upload:'Загрузить {item}',disabledPreview:'Отключено в предпросмотре.',recording:'Запись…',uploading:'Загрузка…',recordingSaved:'Запись сохранена.',uploadFailed:'Ошибка загрузки.',cameraUnavailable:'Доступ к камере/микрофону недоступен.',clearSignature:'Очистить подпись',cancel:'Отмена',save:'Сохранить',tellMore:'Расскажите подробнее',thankYou:'Спасибо'},
+    zh:{name:'中文',welcome:'欢迎',interactive:'互动问卷',mapEnabled:'支持地图',mobileFriendly:'适合手机',start:'开始问卷',back:'返回',next:'下一步',submit:'提交',submitResponse:'提交回答',submitting:'正在提交…',preview:'预览完成',previewMode:'预览模式',select:'— 请选择 —',yes:'是',no:'否',language:'语言',required:'继续之前请回答此问题。',requiredShort:'此问题为必答。',search:'搜索',searchPlace:'搜索城市或地点',useLocation:'使用我的位置',undo:'撤销',undoVertex:'撤销顶点',removeLastSaved:'删除最后保存的对象',remove:'删除',pointMap:'点地图',lineMap:'线地图',polygonMap:'多边形地图',textAnswer:'文本回答',openResponse:'开放回答',number:'数字',email:'电子邮件',phone:'电话',date:'日期',time:'时间',dateTime:'日期和时间',yesNo:'是或否',chooseOne:'选择一项',chooseMany:'选择多项',dropdown:'选择一个选项',rating:'评分',slider:'量表',matrix:'矩阵',photo:'照片',photos:'照片',voice:'语音回答',video:'视频回答',file:'上传文件',signature:'签名',ranking:'排序',allocation:'分配',information:'信息',section:'部分',consent:'同意',tapPoint:'移动或缩放地图，然后点击以添加点。',tapDraw:'点击地图进行绘制。桌面：右键完成。手机：双击完成。',pointsLimit:'点击地图最多选择 {n} 个{items}。',featuresLimit:'点击地图进行绘制。桌面：右键。手机：双击。最多可创建 {n} 个{items}。',selectedCount:'已选择 {a}/{b}',savedDraftCount:'已保存 {a}/{b} 个{items} · 草稿 {c} 个{vertices}',pointAdded:'已添加点。添加另一个点或继续。',locationSelected:'已选择位置。点击其他位置可移动。',maxPoints:'已达到最多 {n} 个点。',maxFeatures:'已达到最多 {n} 个{items}。',maxVertices:'此对象已达到最多 {n} 个顶点。',addMoreVertices:'再添加 {n} 个{vertices}，然后完成{item}。',readyFinish:'{item}已准备好——桌面右键或手机双击完成。',minVertices:'完成{item}前至少添加 {n} 个顶点。',featureSavedMax:'{item} {n} 已保存。已达到上限。',featureSavedNext:'{item} {n} 已保存。现在绘制{itemLower} {next}。',lastSavedRemoved:'已删除最后保存的{itemLower}。',finishDraft:'继续前请完成当前{itemLower}。',atLeastOne:'继续前请至少完成一个{itemLower}。',locationUnavailable:'此浏览器无法使用当前位置。',requestingLocation:'正在获取您的位置…',locationCentered:'地图已定位到您的当前位置。点击地图继续。',locationDenied:'无法获得位置权限。请搜索城市或手动移动地图。',searching:'正在搜索地点…',noPlace:'未找到匹配地点。请尝试附近更大的城市。',movedTo:'地图已移动到 {place}。点击地图继续。',choosePlace:'请选择匹配地点。',searchUnavailable:'地点搜索暂时不可用。您仍可手动移动和缩放地图。',startRecording:'开始录音',stopRecording:'停止录音',upload:'上传{item}',disabledPreview:'预览中已禁用。',recording:'录音中…',uploading:'上传中…',recordingSaved:'录音已保存。',uploadFailed:'上传失败。',cameraUnavailable:'无法获得摄像头/麦克风权限。',clearSignature:'清除签名',cancel:'取消',save:'保存',tellMore:'请告诉我们更多',thankYou:'谢谢'},
+    ja:{name:'日本語',welcome:'ようこそ',interactive:'インタラクティブ調査',mapEnabled:'地図対応',mobileFriendly:'モバイル対応',start:'調査を開始',back:'戻る',next:'次へ',submit:'送信',submitResponse:'回答を送信',submitting:'送信中…',preview:'プレビュー完了',previewMode:'プレビューモード',select:'— 選択 —',yes:'はい',no:'いいえ',language:'言語',required:'続行する前にこの質問に回答してください。',requiredShort:'この質問は必須です。',search:'検索',searchPlace:'都市または場所を検索',useLocation:'現在地を使用',undo:'元に戻す',undoVertex:'頂点を元に戻す',removeLastSaved:'最後に保存したものを削除',remove:'削除',pointMap:'ポイント地図',lineMap:'ライン地図',polygonMap:'ポリゴン地図',textAnswer:'テキスト回答',openResponse:'自由回答',number:'数値',email:'メール',phone:'電話',date:'日付',time:'時刻',dateTime:'日時',yesNo:'はい / いいえ',chooseOne:'1つ選択',chooseMany:'複数選択',dropdown:'選択肢を選ぶ',rating:'評価',slider:'尺度',matrix:'マトリクス',photo:'写真',photos:'写真',voice:'音声回答',video:'動画回答',file:'ファイルアップロード',signature:'署名',ranking:'順位付け',allocation:'配分',information:'情報',section:'セクション',consent:'同意',tapPoint:'地図を移動または拡大し、タップしてポイントを追加してください。',tapDraw:'地図をタップして描画します。PC：右クリックで完了。モバイル：ダブルタップで完了。',pointsLimit:'地図をタップして最大 {n} 個の{items}を選択します。',featuresLimit:'地図をタップして描画します。PC：右クリック。モバイル：ダブルタップ。最大 {n} 個の{items}を作成できます。',selectedCount:'{a}/{b} 選択済み',savedDraftCount:'{a}/{b} {items}保存済み · 下書き {c} {vertices}',pointAdded:'ポイントを追加しました。さらに追加するか続行してください。',locationSelected:'位置を選択しました。別の場所をタップして移動できます。',maxPoints:'最大 {n} ポイントに達しました。',maxFeatures:'最大 {n} {items}に達しました。',maxVertices:'この要素の最大 {n} 頂点に達しました。',addMoreVertices:'さらに {n} {vertices}を追加してから{item}を完了してください。',readyFinish:'{item}の準備完了 — PCは右クリック、モバイルはダブルタップで完了。',minVertices:'{item}を完了する前に少なくとも {n} 頂点を追加してください。',featureSavedMax:'{item} {n} を保存しました。上限に達しました。',featureSavedNext:'{item} {n} を保存しました。次に{itemLower} {next}を描画してください。',lastSavedRemoved:'最後に保存した{itemLower}を削除しました。',finishDraft:'続行する前に現在の{itemLower}を完了してください。',atLeastOne:'続行する前に少なくとも1つの{itemLower}を完了してください。',locationUnavailable:'このブラウザでは現在地を利用できません。',requestingLocation:'現在地を取得中…',locationCentered:'現在地に地図を移動しました。地図をタップして続行してください。',locationDenied:'位置情報を利用できません。都市を検索するか手動で移動してください。',searching:'場所を検索中…',noPlace:'一致する場所が見つかりません。近くの大きな都市を試してください。',movedTo:'地図を {place} に移動しました。地図をタップして続行してください。',choosePlace:'一致する場所を選択してください。',searchUnavailable:'場所検索は一時的に利用できません。手動で地図を操作できます。',startRecording:'録音開始',stopRecording:'録音停止',upload:'{item}をアップロード',disabledPreview:'プレビューでは無効です。',recording:'録音中…',uploading:'アップロード中…',recordingSaved:'録音を保存しました。',uploadFailed:'アップロードに失敗しました。',cameraUnavailable:'カメラ/マイクの権限を利用できません。',clearSignature:'署名を消去',cancel:'キャンセル',save:'保存',tellMore:'詳しく教えてください',thankYou:'ありがとうございます'}
   };
 
   const clone = value => JSON.parse(JSON.stringify(value));
   let sourceDefinition = null;
   let currentLanguage = 'en';
+  let patching = false;
+  let observer = null;
   const finalRender = render;
   const baseChoice = typeof choice === 'function' ? choice : null;
   const baseMatrix = typeof matrix === 'function' ? matrix : null;
   const baseRanking = typeof ranking === 'function' ? ranking : null;
   const baseAllocation = typeof allocation === 'function' ? allocation : null;
 
-  function languagesOf(source) {
-    const base = String(source?.settings?.defaultLanguage || 'en').toLowerCase();
-    let list = source?.settings?.languages;
-    if (!Array.isArray(list) || !list.length) list = [{code:base,name:UI[base]?.name || base.toUpperCase()}];
-    list = list.map(item => typeof item === 'string' ? {code:item.toLowerCase(),name:UI[item.toLowerCase()]?.name || item.toUpperCase()} : {code:String(item.code||'').toLowerCase(),name:item.name || UI[String(item.code||'').toLowerCase()]?.name || String(item.code||'').toUpperCase()}).filter(x=>x.code);
-    if (!list.some(x=>x.code===base)) list.unshift({code:base,name:UI[base]?.name || base.toUpperCase()});
+  const fill = (template,vars={}) => String(template||'').replace(/\{(\w+)\}/g,(_,k)=>vars[k] ?? '');
+  const ui = () => UI[currentLanguage] || UI.en;
+  const t = (key,vars) => fill(ui()[key] ?? UI.en[key] ?? key,vars);
+
+  function languageName(code){ return UI[code]?.name || code.toUpperCase(); }
+  function languagesOf(source){
+    const base=String(source?.settings?.defaultLanguage||'en').toLowerCase();
+    let list=source?.settings?.languages;
+    if(!Array.isArray(list)||!list.length)list=[{code:base,name:languageName(base)}];
+    list=list.map(item=>typeof item==='string'?{code:item.toLowerCase(),name:languageName(item.toLowerCase())}:{code:String(item.code||'').toLowerCase(),name:item.name||languageName(String(item.code||'').toLowerCase())}).filter(x=>x.code);
+    if(!list.some(x=>x.code===base))list.unshift({code:base,name:languageName(base)});
     return [...new Map(list.map(x=>[x.code,x])).values()];
   }
 
-  function ui() { return UI[currentLanguage] || UI.en; }
-
-  function localizedDefinition(source,lang) {
-    const localized = clone(source);
-    const base = String(source?.settings?.defaultLanguage || 'en').toLowerCase();
-    if (lang === base) return localized;
-    const tr = source?.translations?.[lang];
-    if (!tr) return localized;
-    const survey = tr.survey || {};
-    if (survey.title) localized.title = survey.title;
-    if (survey.description) localized.description = survey.description;
-    localized.settings ||= {};
-    if (survey.thankYou) localized.settings.thankYou = survey.thankYou;
-    localized.questions = (localized.questions || []).map(q => {
-      const qt = tr.questions?.[q.id] || {};
-      if (qt.title) q.title = qt.title;
-      if (qt.description) q.description = qt.description;
-      q.__translation = qt;
-      q.config ||= {};
-      if (q.type === 'consent' && qt.checkboxLabel) q.config.checkboxLabel = qt.checkboxLabel;
-      if (q.type?.startsWith('map_') && q.config.popup) {
-        if (qt.popupQuestion) q.config.popup.question = qt.popupQuestion;
-        if (Array.isArray(qt.popupOptions) && qt.popupOptions.length) q.config.popup.options = qt.popupOptions;
-      }
+  function localizedDefinition(source,lang){
+    const localized=clone(source),base=String(source?.settings?.defaultLanguage||'en').toLowerCase();
+    if(lang===base)return localized;
+    const tr=source?.translations?.[lang]; if(!tr)return localized;
+    const survey=tr.survey||{};
+    if(survey.title)localized.title=survey.title;
+    if(survey.description)localized.description=survey.description;
+    localized.settings||={}; if(survey.thankYou)localized.settings.thankYou=survey.thankYou;
+    localized.questions=(localized.questions||[]).map(q=>{
+      const qt=tr.questions?.[q.id]||{};
+      if(qt.title)q.title=qt.title; if(qt.description)q.description=qt.description;
+      q.__translation=qt; q.config||={};
+      if(q.type==='consent'&&qt.checkboxLabel)q.config.checkboxLabel=qt.checkboxLabel;
+      if(q.type?.startsWith('map_')&&q.config.popup){if(qt.popupQuestion)q.config.popup.question=qt.popupQuestion;if(Array.isArray(qt.popupOptions)&&qt.popupOptions.length)q.config.popup.options=qt.popupOptions;}
       return q;
     });
     return localized;
   }
 
-  function displayOptions(q,opts) {
-    if (q.type === 'yes_no') return [ui().yes,ui().no];
-    const translated = q.__translation?.options;
-    return Array.isArray(translated) && translated.length ? opts.map((o,i)=>translated[i] || o) : opts;
+  function displayOptions(q,opts){
+    if(q.type==='yes_no')return [ui().yes,ui().no];
+    const translated=q.__translation?.options;
+    return Array.isArray(translated)&&translated.length?opts.map((o,i)=>translated[i]||o):opts;
   }
 
-  if (baseChoice) choice = function(slot,q,opts,multi) {
-    const labels = displayOptions(q,opts);
-    const list = document.createElement('div');
-    list.className = 'option-list';
-    const cur = multi ? (ans[q.id] || []) : ans[q.id];
-    opts.forEach((value,index) => {
-      const label = document.createElement('label');
-      label.className = 'option-label';
-      const input = document.createElement('input');
-      input.type = multi ? 'checkbox' : 'radio';
-      input.name = q.id;
-      input.checked = multi ? cur.includes(value) : cur === value;
-      input.onchange = () => {
-        if (multi) {
-          const values = new Set(ans[q.id] || []);
-          input.checked ? values.add(value) : values.delete(value);
-          set(q.id,[...values]);
-        } else set(q.id,value);
-      };
-      label.append(input,document.createTextNode(labels[index] || value));
-      list.append(label);
-    });
+  if(baseChoice)choice=function(slot,q,opts,multi){
+    const labels=displayOptions(q,opts),list=document.createElement('div'); list.className='option-list';
+    const cur=multi?(ans[q.id]||[]):ans[q.id];
+    opts.forEach((value,index)=>{const label=document.createElement('label');label.className='option-label';const input=document.createElement('input');input.type=multi?'checkbox':'radio';input.name=q.id;input.checked=multi?cur.includes(value):cur===value;input.onchange=()=>{if(multi){const values=new Set(ans[q.id]||[]);input.checked?values.add(value):values.delete(value);set(q.id,[...values]);}else set(q.id,value);};label.append(input,document.createTextNode(labels[index]||value));list.append(label);});
     slot.append(list);
   };
 
-  if (baseMatrix) matrix = function(slot,q) {
-    const c = q.config || {}, cur = ans[q.id] || {}, table = document.createElement('table');
-    const rows = c.rows || [], cols = c.columns || [];
-    const rowLabels = Array.isArray(q.__translation?.rows) ? q.__translation.rows : [];
-    const colLabels = Array.isArray(q.__translation?.columns) ? q.__translation.columns : [];
-    table.className = 'matrix';
-    table.innerHTML = `<thead><tr><th></th>${cols.map((x,i)=>`<th>${esc(colLabels[i] || x)}</th>`).join('')}</tr></thead><tbody></tbody>`;
-    const body = table.querySelector('tbody');
-    rows.forEach((row,ri) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(rowLabels[ri] || row)}</td>`;
-      cols.forEach(col => {
-        const td = document.createElement('td'), input = document.createElement('input');
-        input.type = 'radio'; input.name = `${q.id}_${ri}`; input.checked = cur[row] === col;
-        input.onchange = () => set(q.id,{...(ans[q.id]||{}),[row]:col});
-        td.append(input); tr.append(td);
-      });
-      body.append(tr);
-    });
-    slot.append(table);
+  if(baseMatrix)matrix=function(slot,q){
+    const c=q.config||{},cur=ans[q.id]||{},table=document.createElement('table'),rows=c.rows||[],cols=c.columns||[],rowLabels=Array.isArray(q.__translation?.rows)?q.__translation.rows:[],colLabels=Array.isArray(q.__translation?.columns)?q.__translation.columns:[];
+    table.className='matrix';table.innerHTML=`<thead><tr><th></th>${cols.map((x,i)=>`<th>${esc(colLabels[i]||x)}</th>`).join('')}</tr></thead><tbody></tbody>`;const body=table.querySelector('tbody');
+    rows.forEach((row,ri)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${esc(rowLabels[ri]||row)}</td>`;cols.forEach(col=>{const td=document.createElement('td'),input=document.createElement('input');input.type='radio';input.name=`${q.id}_${ri}`;input.checked=cur[row]===col;input.onchange=()=>set(q.id,{...(ans[q.id]||{}),[row]:col});td.append(input);tr.append(td);});body.append(tr);});slot.append(table);
   };
 
-  if (baseRanking) ranking = function(slot,q) {
-    const baseOptions = q.config?.options || [];
-    const translated = Array.isArray(q.__translation?.options) ? q.__translation.options : [];
-    const labelFor = value => {
-      const i = baseOptions.indexOf(value);
-      return i >= 0 ? (translated[i] || value) : value;
+  if(baseRanking)ranking=function(slot,q){
+    const baseOptions=q.config?.options||[],translated=Array.isArray(q.__translation?.options)?q.__translation.options:[],labelFor=value=>{const i=baseOptions.indexOf(value);return i>=0?(translated[i]||value):value;},order=Array.isArray(ans[q.id])&&ans[q.id].length?ans[q.id]:[...baseOptions];ans[q.id]=order;const wrapper=document.createElement('div');wrapper.className='rank-list';
+    function draw(){wrapper.innerHTML='';order.forEach((value,i)=>{const row=document.createElement('div');row.className='rank-item';row.innerHTML=`<span class="rank-index">${i+1}</span><span>${esc(labelFor(value))}</span><span class="rank-controls"><button data-u>↑</button><button data-d>↓</button></span>`;row.querySelector('[data-u]').disabled=!i;row.querySelector('[data-d]').disabled=i===order.length-1;row.querySelector('[data-u]').onclick=()=>{[order[i-1],order[i]]=[order[i],order[i-1]];set(q.id,[...order]);draw();};row.querySelector('[data-d]').onclick=()=>{[order[i+1],order[i]]=[order[i],order[i+1]];set(q.id,[...order]);draw();};wrapper.append(row);});}draw();slot.append(wrapper);
+  };
+
+  if(baseAllocation)allocation=function(slot,q){
+    const c=q.config||{},cur=ans[q.id]||{},wrapper=document.createElement('div'),baseOptions=c.options||[],translated=Array.isArray(q.__translation?.options)?q.__translation.options:[];
+    baseOptions.forEach((value,index)=>{const row=document.createElement('div');row.className='allocation-row';row.innerHTML=`<span>${esc(translated[index]||value)}</span><input type="number" min="0" value="${cur[value]||0}">`;row.querySelector('input').oninput=e=>set(q.id,{...(ans[q.id]||{}),[value]:+e.target.value||0});wrapper.append(row);});slot.append(wrapper);
+  };
+
+  const TYPE_KEYS={short_text:'textAnswer',long_text:'openResponse',number:'number',email:'email',phone:'phone',date:'date',time:'time',datetime:'dateTime',yes_no:'yesNo',single_choice:'chooseOne',multiple_choice:'chooseMany',dropdown:'dropdown',rating:'rating',slider:'slider',matrix:'matrix',map_multi:'pointMap',map_line:'lineMap',map_polygon:'polygonMap',photo:'photo',photos:'photos',audio:'voice',video:'video',file:'file',signature:'signature',ranking:'ranking',allocation:'allocation',info:'information',section:'section',consent:'consent'};
+  function featureTerms(q){
+    const isLine=q.type==='map_line';
+    const item=isLine?t('lineMap').replace(/\s*(map|karte|carte|mapa|mappa|kaart|haritası|خريطة|نقشه|карта|地图|地図)$/iu,'').trim():t('polygonMap').replace(/\s*(map|karte|carte|mapa|mappa|kaart|haritası|خريطة|نقشه|карта|地图|地図)$/iu,'').trim();
+    return {item:item|| (isLine?'line':'polygon'),itemLower:(item|| (isLine?'line':'polygon')).toLocaleLowerCase(),items:isLine?t('lineMap'):t('polygonMap'),vertices:currentLanguage==='de'?'Stützpunkte':currentLanguage==='fr'?'sommets':currentLanguage==='es'?'vértices':currentLanguage==='it'?'vertici':currentLanguage==='nl'?'hoekpunten':currentLanguage==='pl'?'wierzchołki':currentLanguage==='pt'?'vértices':currentLanguage==='tr'?'köşe':currentLanguage==='ar'?'رؤوس':currentLanguage==='fa'?'رأس':currentLanguage==='uk'?'вершини':currentLanguage==='ru'?'вершины':currentLanguage==='zh'?'顶点':currentLanguage==='ja'?'頂点':'vertices'};
+  }
+
+  function localizeEnglishText(text,q){
+    const s=String(text||'').trim(); if(!s||currentLanguage==='en')return s;
+    const terms=q?featureTerms(q):{};
+    const exact={
+      'Interactive survey':t('interactive'),'Welcome':t('welcome'),'Start survey →':`${t('start')} →`,'← Back':`← ${t('back')}`,'Next →':`${t('next')} →`,'Submit →':`${t('submit')} →`,'Preview complete':t('preview'),'Preview mode':t('previewMode'),'Submit response':t('submitResponse'),'Submitting…':t('submitting'),'This question is required.':t('requiredShort'),'Please answer this question before continuing.':t('required'),'Search':t('search'),'◎ Use my location':`◎ ${t('useLocation')}`,'Undo':t('undo'),'Undo vertex':t('undoVertex'),'Remove last saved':t('removeLastSaved'),'Remove':t('remove'),'Start recording':t('startRecording'),'Stop recording':t('stopRecording'),'Disabled in preview.':t('disabledPreview'),'Recording…':t('recording'),'Uploading…':t('uploading'),'Recording saved.':t('recordingSaved'),'Upload failed.':t('uploadFailed'),'Camera/microphone permission unavailable.':t('cameraUnavailable'),'Clear signature':t('clearSignature'),'Cancel':t('cancel'),'Save':t('save'),'Tell us more':t('tellMore'),'Thank you':t('thankYou'),'Current location is not available in this browser.':t('locationUnavailable'),'Requesting your location…':t('requestingLocation'),'Map centered on your current location. Tap the map to continue your response.':t('locationCentered'),'Location permission was not available. Search for a city or navigate manually.':t('locationDenied'),'Searching for that place…':t('searching'),'No matching place was found. Try a larger nearby city.':t('noPlace'),'Choose the matching place.':t('choosePlace'),'Place search is temporarily unavailable. You can still pan and zoom the map manually.':t('searchUnavailable'),'Point added. Add another point or continue.':t('pointAdded'),'Location selected. Click another place to move it.':t('locationSelected')
     };
-    const order = Array.isArray(ans[q.id]) && ans[q.id].length ? ans[q.id] : [...baseOptions];
-    ans[q.id] = order;
-    const wrapper = document.createElement('div'); wrapper.className = 'rank-list';
-    function draw() {
-      wrapper.innerHTML = '';
-      order.forEach((value,i) => {
-        const row = document.createElement('div'); row.className = 'rank-item';
-        row.innerHTML = `<span class="rank-index">${i+1}</span><span>${esc(labelFor(value))}</span><span class="rank-controls"><button data-u>↑</button><button data-d>↓</button></span>`;
-        row.querySelector('[data-u]').disabled = !i; row.querySelector('[data-d]').disabled = i===order.length-1;
-        row.querySelector('[data-u]').onclick=()=>{[order[i-1],order[i]]=[order[i],order[i-1]];set(q.id,[...order]);draw()};
-        row.querySelector('[data-d]').onclick=()=>{[order[i+1],order[i]]=[order[i],order[i+1]];set(q.id,[...order]);draw()};
-        wrapper.append(row);
-      });
-    }
-    draw(); slot.append(wrapper);
-  };
+    if(exact[s])return exact[s];
+    let m;
+    if((m=s.match(/^Maximum (\d+) points reached\.$/)))return t('maxPoints',{n:m[1]});
+    if((m=s.match(/^Maximum (\d+) (lines|polygons) reached\.$/)))return t('maxFeatures',{n:m[1],items:terms.items||m[2]});
+    if((m=s.match(/^Maximum (\d+) vertices reached for this (line|polygon)\. Finish it or edit the draft\.$/)))return t('maxVertices',{n:m[1],item:terms.item||m[2]});
+    if((m=s.match(/^Add (\d+) more (vertex|vertices), then finish the (line|polygon)\.$/)))return t('addMoreVertices',{n:m[1],vertices:terms.vertices||m[2],item:terms.item||m[3]});
+    if((m=s.match(/^(Line|Polygon) ready — right-click on desktop or double-tap on mobile to finish\.$/)))return t('readyFinish',{item:terms.item||m[1]});
+    if((m=s.match(/^Add at least (\d+) vertices before finishing this (line|polygon)\.$/)))return t('minVertices',{n:m[1],item:terms.item||m[2]});
+    if((m=s.match(/^(Line|Polygon) (\d+) saved\. Maximum number reached\.$/)))return t('featureSavedMax',{item:terms.item||m[1],n:m[2]});
+    if((m=s.match(/^(Line|Polygon) (\d+) saved\. Start drawing (line|polygon) (\d+)\.$/)))return t('featureSavedNext',{item:terms.item||m[1],n:m[2],itemLower:terms.itemLower||m[3],next:m[4]});
+    if((m=s.match(/^Last saved (line|polygon) removed\.$/)))return t('lastSavedRemoved',{itemLower:terms.itemLower||m[1]});
+    if((m=s.match(/^Finish or clear the current (line|polygon) before continuing\.$/)))return t('finishDraft',{itemLower:terms.itemLower||m[1]});
+    if((m=s.match(/^Please finish at least one (line|polygon) before continuing\.$/)))return t('atLeastOne',{itemLower:terms.itemLower||m[1]});
+    if((m=s.match(/^Map moved to (.+)\. Tap the map to continue your response\.$/)))return t('movedTo',{place:m[1]});
+    return s;
+  }
 
-  if (baseAllocation) allocation = function(slot,q) {
-    const c=q.config||{},cur=ans[q.id]||{},wrapper=document.createElement('div');
-    const baseOptions=c.options||[], translated=Array.isArray(q.__translation?.options)?q.__translation.options:[];
-    baseOptions.forEach((value,index)=>{
-      const row=document.createElement('div');row.className='allocation-row';
-      row.innerHTML=`<span>${esc(translated[index]||value)}</span><input type="number" min="0" value="${cur[value]||0}">`;
-      row.querySelector('input').oninput=e=>set(q.id,{...(ans[q.id]||{}),[value]:+e.target.value||0});
-      wrapper.append(row);
+  function mapDescriptor(q){
+    if(q.type==='map_line')return {max:Math.min(100,Math.max(2,Number(q.config?.maxVertices)||30)),maxFeatures:Math.min(50,Math.max(1,Number(q.config?.maxFeatures)||10)),min:2};
+    if(q.type==='map_polygon')return {max:Math.min(100,Math.max(3,Number(q.config?.maxVertices)||30)),maxFeatures:Math.min(50,Math.max(1,Number(q.config?.maxFeatures)||10)),min:3};
+    const max=Math.min(50,Math.max(1,Number(q.config?.maxPoints)||1));return {max,maxFeatures:max,min:1};
+  }
+  function savedFeatures(q){const v=ans[q.id];return Array.isArray(v?.features)?v.features:[];}
+
+  function patchQuestion(q,card){
+    const kicker=card.querySelector('.step-kicker-modern');if(kicker&&TYPE_KEYS[q.type])kicker.textContent=t(TYPE_KEYS[q.type]);
+    if(q.type==='dropdown'){
+      const select=card.querySelector('select');if(select){if(select.options[0])select.options[0].textContent=t('select');const translated=q.__translation?.options||[];(q.config?.options||[]).forEach((value,i)=>{if(select.options[i+1])select.options[i+1].textContent=translated[i]||value;});}
+    }
+    if(!q.type?.startsWith('map_'))return;
+    const d=mapDescriptor(q),terms=q.type==='map_multi'?{items:d.max===1?(currentLanguage==='de'?'Ort':'location'):(currentLanguage==='de'?'Orte':'locations')} : featureTerms(q);
+    const input=card.querySelector('[data-city-input]');if(input)input.placeholder=t('searchPlace');
+    const search=card.querySelector('[data-city-search]');if(search)search.textContent=t('search');
+    const geo=card.querySelector('[data-use-location]');if(geo)geo.textContent=`◎ ${t('useLocation')}`;
+    const undo=card.querySelector('[data-undo]');if(undo)undo.textContent=q.type==='map_multi'?t('undo'):t('undoVertex');
+    const remove=card.querySelector('[data-remove-saved]');if(remove)remove.textContent=t('removeLastSaved');
+    ['[data-save-feature]','[data-clear-current]','[data-clear]'].forEach(selector=>{const b=card.querySelector(selector);if(b&&q.type!=='map_multi')b.style.display='none';});
+    const limit=card.querySelector('.map-point-limit');
+    if(limit){
+      if(q.type==='map_multi')limit.textContent=t('pointsLimit',{n:d.max,items:terms.items});
+      else limit.textContent=t('featuresLimit',{n:d.maxFeatures,items:terms.items});
+    }
+    const count=card.querySelector('[data-count]');
+    if(count){
+      if(q.type==='map_multi'){const n=ans[q.id]?.points?.length||0;count.textContent=t('selectedCount',{a:n,b:d.max});}
+      else {const f=savedFeatures(q).length,draft=ans[q.id]?.draftPoints?.length||0;count.textContent=t('savedDraftCount',{a:f,b:d.maxFeatures,items:terms.items,c:draft,vertices:terms.vertices});}
+    }
+    const status=card.querySelector('[data-location-status]');if(status)status.textContent=localizeEnglishText(status.textContent,q);
+    const error=card.querySelector('[data-error]');if(error)error.textContent=localizeEnglishText(error.textContent,q);
+  }
+
+  function patchGenericSystemText(){
+    const copy=ui();
+    const sub=document.querySelector('.respondent-brand-sub');if(sub)sub.textContent=copy.interactive;
+    const kicker=document.querySelector('.survey-kicker');if(kicker)kicker.textContent=copy.welcome;
+    const meta=document.querySelectorAll('.survey-intro-meta span');if(meta[0])meta[0].textContent=copy.interactive;if(meta[1])meta[1].textContent=copy.mapEnabled;if(meta[2])meta[2].textContent=copy.mobileFriendly;
+    const step=document.getElementById('respondentStepLabel');if(step&&(!/\d+\s*\/\s*\d+/.test(step.textContent)))step.textContent=copy.welcome;
+    const start=document.querySelector('[data-start-survey]');if(start)start.textContent=`${copy.start} →`;
+    const back=document.querySelector('[data-prev]');if(back)back.textContent=`← ${copy.back}`;
+    const next=document.querySelector('[data-next]');if(next){const text=next.textContent||'';if(next.disabled&&preview)next.textContent=copy.preview;else if(/submit|absenden|envoyer|enviar|invia|verzenden|wyślij|gönder|إرسال|ارسال|надіслати|отправить|提交|送信/i.test(text))next.textContent=`${copy.submit} →`;else next.textContent=`${copy.next} →`;}
+    const submit=document.getElementById('submit');if(submit)submit.textContent=preview?copy.previewMode:copy.submitResponse;
+    const holder=document.querySelector('.respondent-language');if(holder)holder.setAttribute('aria-label',copy.language);
+    document.querySelectorAll('.error-text').forEach(el=>{const qid=el.closest('[data-qid]')?.dataset.qid;const q=def?.questions?.find(x=>x.id===qid);el.textContent=localizeEnglishText(el.textContent,q);});
+    document.querySelectorAll('button').forEach(button=>{const qid=button.closest('[data-qid]')?.dataset.qid;const q=def?.questions?.find(x=>x.id===qid);const translated=localizeEnglishText(button.textContent,q);if(translated!==button.textContent.trim())button.textContent=translated;});
+    document.querySelectorAll('[data-status],.map-location-status').forEach(el=>{const qid=el.closest('[data-qid]')?.dataset.qid;const q=def?.questions?.find(x=>x.id===qid);const translated=localizeEnglishText(el.textContent,q);if(translated!==el.textContent.trim())el.textContent=translated;});
+    document.querySelectorAll('.thanks h1').forEach(h=>h.textContent=copy.thankYou);
+  }
+
+  function patchRenderedLabels(){
+    if(!def)return;
+    patching=true;
+    try{(def.questions||[]).forEach(q=>{const card=document.querySelector(`[data-qid="${q.id}"]`);if(card)patchQuestion(q,card);});patchGenericSystemText();installGestureFallback();}finally{patching=false;}
+  }
+
+  function installGestureFallback(){
+    (def?.questions||[]).filter(q=>q.type==='map_line'||q.type==='map_polygon').forEach(q=>{
+      const card=document.querySelector(`[data-qid="${q.id}"]`),entry=maps.get(q.id),mapEl=document.getElementById(`map_${q.id}`);if(!card||!entry?.m||!mapEl||mapEl.dataset.finishGestureFallback)return;
+      mapEl.dataset.finishGestureFallback='1';
+      const finish=()=>card.querySelector('[data-save-feature]')?.click();
+      entry.m.on('contextmenu',e=>{e.originalEvent?.preventDefault?.();finish();});
+      entry.m.on('dblclick',e=>{e.originalEvent?.preventDefault?.();finish();});
+      mapEl.addEventListener('contextmenu',e=>e.preventDefault());
     });
-    slot.append(wrapper);
+  }
+
+  function languageKey(){return sourceDefinition?.slug?`survey-language:${sourceDefinition.slug}`:'survey-language:preview';}
+  function chooseInitialLanguage(){const langs=languagesOf(sourceDefinition),allowed=new Set(langs.map(x=>x.code)),requested=new URLSearchParams(location.search).get('lang')?.toLowerCase(),remembered=localStorage.getItem(languageKey())?.toLowerCase(),browser=(navigator.language||'').toLowerCase().split('-')[0],fallback=String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();currentLanguage=[requested,remembered,browser,fallback].find(x=>x&&allowed.has(x))||langs[0]?.code||'en';}
+
+  function installSelector(){
+    if(!sourceDefinition)return;const langs=languagesOf(sourceDefinition);if(langs.length<2)return;const topbar=document.getElementById('respondentTopbar');if(!topbar)return;let holder=topbar.querySelector('.respondent-language');
+    if(!holder){holder=document.createElement('label');holder.className='respondent-language';holder.innerHTML='<span aria-hidden="true">◎</span><select id="surveyLanguageSelect"></select>';topbar.insertBefore(holder,topbar.querySelector('.respondent-step-label'));}
+    holder.setAttribute('aria-label',t('language'));const select=holder.querySelector('select');select.innerHTML=langs.map(lang=>`<option value="${esc(lang.code)}">${esc(lang.name)}</option>`).join('');select.value=currentLanguage;select.onchange=()=>switchLanguage(select.value);
+  }
+
+  function switchLanguage(code){
+    const langs=languagesOf(sourceDefinition);if(!langs.some(x=>x.code===code))return;currentLanguage=code;localStorage.setItem(languageKey(),code);ans.__language=code;def=localizedDefinition(sourceDefinition,code);document.documentElement.lang=code;document.documentElement.dir=['ar','fa'].includes(code.split('-')[0])?'rtl':'ltr';document.title=def.title||'Survey';try{maps.forEach(entry=>entry.m?.remove?.());maps.clear();}catch(_){}render();
+  }
+
+  render=function(){
+    if(def&&!sourceDefinition){sourceDefinition=clone(def);chooseInitialLanguage();ans.__language=currentLanguage;}
+    if(sourceDefinition)def=localizedDefinition(sourceDefinition,currentLanguage);
+    finalRender();installSelector();patchRenderedLabels();
+    if(!observer){observer=new MutationObserver(()=>{if(patching)return;requestAnimationFrame(patchRenderedLabels);});observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
   };
 
-  function patchRenderedLabels() {
-    if (!def) return;
-    (def.questions||[]).forEach(q => {
-      const card = document.querySelector(`[data-qid="${q.id}"]`);
-      if (!card) return;
-      if (q.type === 'dropdown') {
-        const select = card.querySelector('select');
-        if (select) {
-          if (select.options[0]) select.options[0].textContent = ui().select;
-          const translated = q.__translation?.options || [];
-          (q.config?.options||[]).forEach((value,i)=>{if(select.options[i+1]) select.options[i+1].textContent = translated[i] || value;});
-        }
-      }
-      if (q.type === 'map_line' || q.type === 'map_polygon') {
-        card.classList.add('map-multi-feature');
-        ['[data-save-feature]','[data-clear-current]','[data-clear]'].forEach(selector => {
-          const button = card.querySelector(selector); if (button) button.style.display = 'none';
-        });
-      }
-    });
-  }
-
-  function languageKey() {
-    return sourceDefinition?.slug ? `survey-language:${sourceDefinition.slug}` : 'survey-language:preview';
-  }
-
-  function chooseInitialLanguage() {
-    const langs = languagesOf(sourceDefinition);
-    const allowed = new Set(langs.map(x=>x.code));
-    const requested = new URLSearchParams(location.search).get('lang')?.toLowerCase();
-    const remembered = localStorage.getItem(languageKey())?.toLowerCase();
-    const browser = (navigator.language || '').toLowerCase().split('-')[0];
-    const fallback = String(sourceDefinition?.settings?.defaultLanguage || 'en').toLowerCase();
-    currentLanguage = [requested,remembered,browser,fallback].find(x=>x&&allowed.has(x)) || langs[0]?.code || 'en';
-  }
-
-  function installSelector() {
-    if (!sourceDefinition) return;
-    const langs = languagesOf(sourceDefinition);
-    if (langs.length < 2) return;
-    const topbar = document.getElementById('respondentTopbar');
-    if (!topbar) return;
-    let holder = topbar.querySelector('.respondent-language');
-    if (!holder) {
-      holder = document.createElement('label'); holder.className='respondent-language'; holder.setAttribute('aria-label','Survey language');
-      holder.innerHTML = '<span aria-hidden="true">◎</span><select id="surveyLanguageSelect"></select>';
-      topbar.insertBefore(holder,topbar.querySelector('.respondent-step-label'));
-    }
-    const select = holder.querySelector('select');
-    select.innerHTML = langs.map(lang=>`<option value="${esc(lang.code)}">${esc(lang.name)}</option>`).join('');
-    select.value = currentLanguage;
-    select.onchange = () => switchLanguage(select.value);
-  }
-
-  function translateChrome() {
-    const copy = ui();
-    const sub = document.querySelector('.respondent-brand-sub'); if (sub) sub.textContent = copy.interactive;
-    const step = document.getElementById('respondentStepLabel'); if (step?.textContent === 'Welcome') step.textContent = copy.welcome;
-    const start = document.querySelector('[data-start-survey]'); if (start) start.textContent = `${copy.start} →`;
-    const back = document.querySelector('[data-prev]'); if (back) back.textContent = `← ${copy.back}`;
-    const next = document.querySelector('[data-next]');
-    if (next) {
-      const text = next.textContent || '';
-      if (/preview complete/i.test(text)) next.textContent = copy.preview;
-      else if (/submit/i.test(text)) next.textContent = `${copy.submit} →`;
-      else next.textContent = `${copy.next} →`;
-    }
-    [start,back,next].forEach(button => button?.addEventListener('click',()=>setTimeout(translateChrome,0),{once:true}));
-  }
-
-  function switchLanguage(code) {
-    const langs = languagesOf(sourceDefinition);
-    if (!langs.some(x=>x.code===code)) return;
-    currentLanguage = code;
-    localStorage.setItem(languageKey(),code);
-    ans.__language = code;
-    def = localizedDefinition(sourceDefinition,code);
-    document.documentElement.lang = code;
-    document.documentElement.dir = ['ar','fa'].includes(code.split('-')[0]) ? 'rtl' : 'ltr';
-    document.title = def.title || 'Survey';
-    try { maps.forEach(entry=>entry.m?.remove?.()); maps.clear(); } catch (_) {}
-    render();
-  }
-
-  render = function () {
-    if (def && !sourceDefinition) {
-      sourceDefinition = clone(def);
-      chooseInitialLanguage();
-      ans.__language = currentLanguage;
-    }
-    if (sourceDefinition) def = localizedDefinition(sourceDefinition,currentLanguage);
-    finalRender();
-    installSelector();
-    patchRenderedLabels();
-    translateChrome();
-  };
-
-  if (def) render();
+  window.SurveyLanguage={get:()=>currentLanguage,t,switchLanguage};
+  if(def)render();
 })();
