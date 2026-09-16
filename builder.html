@@ -5,229 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Survey Builder</title>
   <link rel="stylesheet" href="platform.css?v=1" />
+  <!-- <link rel="stylesheet" href="modern-ui.css?v=4"> -->
   <style>
-    .builder-grid{grid-template-columns:220px minmax(440px,1fr) minmax(360px,440px)}
-    .question-card.editing{gap:14px}
-    .inline-question-editor{display:grid;gap:13px;padding-top:2px}
-    .inline-question-editor .field>span:first-child,.inline-editor-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.045em}
-    .inline-question-editor input[type=text]{font-size:15px}
-    .inline-question-title{font-size:17px!important;font-weight:720}
-    .inline-question-desc{min-height:72px}
-    .inline-choice-editor,.inline-matrix-editor{display:grid;gap:9px;padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}
-    .inline-choice-row{display:grid;grid-template-columns:28px minmax(0,1fr) 34px;gap:7px;align-items:center}
-    .choice-handle{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:var(--surface);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--muted)}
-    .inline-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .inline-two-col textarea{min-height:118px}
-    .inline-edit-footer{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:4px}
-    .edit-question-btn{justify-self:start;border:0;background:var(--accent-soft);color:var(--accent-2);font-weight:750;border-radius:9px;padding:7px 11px}
-    .question-card:not(.editing){cursor:pointer}
-
-    .live-preview-panel{border-left:1px solid var(--border);background:#eef2f4;min-width:0;display:flex;flex-direction:column;height:calc(100vh - 64px);position:sticky;top:64px;overflow:hidden}
-    .preview-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;background:var(--surface);border-bottom:1px solid var(--border)}
-    .preview-panel-title{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
-    .live-dot{width:8px;height:8px;border-radius:50%;background:#2b9a63;box-shadow:0 0 0 3px rgba(43,154,99,.13)}
-    .preview-device-switch{display:flex;gap:4px;padding:3px;background:var(--surface-2);border-radius:9px}
-    .preview-device-switch button{border:0;background:transparent;padding:5px 8px;border-radius:7px;font-size:11px;font-weight:700;color:var(--muted)}
-    .preview-device-switch button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-    .preview-frame-area{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;justify-content:center;align-items:flex-start}
-    .preview-frame-shell{width:100%;height:100%;min-height:520px;background:#fff;border:1px solid #cfd8df;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(23,33,43,.10);transition:width .2s ease}
-    .preview-frame-shell.mobile{width:390px;max-width:100%;height:760px;flex:none}
-    #livePreviewFrame{display:block;width:100%;height:100%;min-height:520px;border:0;background:#fff}
-    .preview-updating{font-size:11px;color:var(--muted);white-space:nowrap}
-    .preview-open-btn{border:1px solid var(--border);background:var(--surface);padding:5px 8px;border-radius:7px;font-size:11px;font-weight:700}
-
-    .inspector{position:fixed!important;right:0;top:64px;bottom:0;width:min(370px,92vw);z-index:80;box-shadow:-12px 0 28px rgba(0,0,0,.12);transform:translateX(100%);transition:transform .2s ease;border-left:1px solid var(--border);overflow:auto}
-    .inspector.open{transform:translateX(0)}
-
-    @media(max-width:1180px){
-      .builder-grid{grid-template-columns:210px minmax(0,1fr)}
-      .live-preview-panel{display:none}
-      body.preview-visible .live-preview-panel{display:flex;position:fixed;top:64px;right:0;bottom:0;width:min(520px,100vw);height:auto;z-index:70;box-shadow:-16px 0 34px rgba(0,0,0,.16)}
-    }
-    @media(max-width:720px){
-      .builder-grid{grid-template-columns:1fr}
-      .inline-two-col{grid-template-columns:1fr}
-      .inline-edit-footer{align-items:flex-start;flex-direction:column}
-      .question-card.editing{scroll-margin-top:74px}
-      body.preview-visible .live-preview-panel{top:0;width:100vw}
-      .preview-frame-area{padding:8px}
-      .preview-panel-head{flex-wrap:wrap}
-    }
+:root{--accent:#2f6f5e;--accent-soft:#eaf3ef;--bg:#f3f6f3;--surface:#fff;--border:#d8e0da;--text:#17231c;--muted:#6a766f;--danger:#a23333;--shadow:0 10px 30px rgba(25,45,34,.08);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Noto Sans",sans-serif;color:var(--text);background:var(--bg)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}button{cursor:pointer}.topbar{position:sticky;top:0;z-index:20;min-height:64px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-bottom:1px solid var(--border)}.brand{display:flex;align-items:center;gap:9px;min-width:0}.brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:white;font-size:12px}.status-pill{padding:4px 8px;border-radius:999px;background:#eef2ef;color:var(--muted);font-size:11px;font-weight:700}.status-pill.published{background:#e5f4ea;color:#24623c}.top-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.top-actions button,.btn{min-height:40px;padding:8px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font-weight:700}.top-actions .primary,.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.builder-layout{display:grid;grid-template-columns:240px minmax(360px,1fr) 340px;min-height:calc(100vh - 64px)}.palette-panel,.inspector-panel{background:#fff}.palette-panel{border-right:1px solid var(--border);padding:16px;overflow:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}.inspector-panel{border-left:1px solid var(--border);padding:18px;overflow:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}.panel-heading{font-weight:800;font-size:16px;margin-bottom:14px}.group-title{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 7px}.question-type-grid{display:grid;gap:7px}.qtype-btn{width:100%;display:flex;align-items:center;gap:9px;text-align:left;min-height:44px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}.qtype-btn:hover,.qtype-btn:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}.qtype-icon{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:900;flex:none}.canvas-panel{min-width:0;padding:22px}.survey-header-card,.question-card,.empty-state{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}.survey-header-card{padding:18px;display:grid;gap:13px;margin-bottom:14px}.survey-header-card label,.field{display:grid;gap:6px;font-size:12px;font-weight:750;color:var(--muted)}input,textarea,select{width:100%;border:1px solid #ccd6cf;border-radius:10px;padding:10px 11px;background:#fff;color:var(--text);font-size:15px}input:focus,textarea:focus,select:focus{outline:2px solid color-mix(in srgb,var(--accent) 22%,transparent);border-color:var(--accent)}textarea{resize:vertical}.question-canvas{display:grid;gap:10px}.empty-state{padding:30px;text-align:center;color:var(--muted)}.question-card{padding:15px;cursor:pointer}.question-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}.question-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.question-type{font-size:11px;font-weight:800;color:var(--accent)}.question-actions{display:flex;gap:5px}.icon-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff}.icon-btn.danger{color:var(--danger)}.question-title{font-size:17px;font-weight:750}.question-preview{color:var(--muted);font-size:13px;margin-top:4px}.inspector-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.inspector-title h2{font-size:17px;margin:0}.section{padding:14px 0;border-top:1px solid var(--border);display:grid;gap:11px}.section:first-of-type{border-top:0;padding-top:0}.section h3{font-size:12px;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.check{display:flex;gap:8px;align-items:flex-start;font-size:14px}.check input{width:auto;margin-top:3px}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.choice-row{display:grid;grid-template-columns:1fr 38px;gap:7px;margin-bottom:7px}.small-help{font-size:12px;line-height:1.45;color:var(--muted)}.language-chip-row{display:flex;flex-wrap:wrap;gap:6px}.language-chip{padding:5px 8px;border-radius:999px;background:var(--accent-soft);font-size:12px}.translation-block{border:1px solid var(--border);border-radius:10px;padding:9px}.translation-block summary{cursor:pointer;font-weight:750}.save-state{font-size:12px;color:var(--muted);min-height:18px}.hidden{display:none!important}
+@media(max-width:1050px){.builder-layout{grid-template-columns:210px minmax(0,1fr)}.inspector-panel{position:fixed;right:0;top:64px;bottom:0;width:min(380px,92vw);max-height:none;z-index:30;box-shadow:-10px 0 30px rgba(20,40,30,.15);transform:translateX(100%);transition:transform .18s ease}.inspector-panel.open{transform:translateX(0)}}
+@media(max-width:720px){.topbar{position:relative;align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}.top-actions button{white-space:nowrap}.builder-layout{display:block}.palette-panel{position:relative;top:auto;max-height:none;border-right:0;border-bottom:1px solid var(--border)}#palette{display:grid;grid-template-columns:1fr 1fr;gap:10px}.group-block{min-width:0}.qtype-btn{min-height:48px}.canvas-panel{padding:12px}.inspector-panel{top:0;width:100vw}.row{grid-template-columns:1fr}.question-card{scroll-margin-top:10px}}
+@media(max-width:430px){#palette{grid-template-columns:1fr}.brand strong{font-size:14px}}
   </style>
 </head>
 <body>
-<div class="builder-shell">
-  <header class="app-topbar">
-    <div class="brand"><div class="brand-mark">SB</div><div>Survey Builder <span id="statusPill" class="status-pill">Draft</span></div></div>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">SB</span><strong>Survey Builder</strong><span id="statusPill" class="status-pill">Draft</span></div>
     <div class="top-actions">
-      <button class="btn btn-ghost" id="settingsBtn" type="button">Survey settings</button>
-      <button class="btn" id="previewBtn" type="button">Preview</button>
-      <button class="btn" id="adminBtn" type="button">Dashboard</button>
-      <button class="btn" id="saveBtn" type="button">Save draft</button>
-      <button class="btn btn-primary" id="publishBtn" type="button">Publish</button>
+      <button id="settingsBtn" type="button">Survey settings</button>
+      <button id="previewBtn" type="button">Preview</button>
+      <button id="adminBtn" type="button">Dashboard</button>
+      <button id="saveBtn" type="button">Save draft</button>
+      <button id="publishBtn" class="primary" type="button">Publish</button>
     </div>
   </header>
-  <div class="builder-grid">
-    <aside class="builder-panel palette" id="palette"></aside>
-    <main class="canvas">
-      <section class="card builder-hero">
-        <input id="surveyTitle" class="title-input" type="text" value="Untitled survey" aria-label="Survey title" />
-        <textarea id="surveyDescription" rows="2" placeholder="Add a short introduction for respondents"></textarea>
-      </section>
-      <section id="questionCanvas" class="question-canvas"></section>
-    </main>
-    <aside class="live-preview-panel" id="livePreviewPanel" aria-label="Live survey preview">
-      <div class="preview-panel-head">
-        <div>
-          <div class="preview-panel-title"><span class="live-dot"></span> Live preview</div>
-          <div class="preview-updating" id="previewStatus">Shows the respondent view</div>
-        </div>
-        <div class="row">
-          <div class="preview-device-switch" aria-label="Preview device">
-            <button type="button" class="active" data-device="desktop" title="Desktop preview">Desktop</button>
-            <button type="button" data-device="mobile" title="Mobile preview">Mobile</button>
-          </div>
-          <button type="button" class="preview-open-btn" id="openPreviewBtn">↗</button>
-          <button type="button" class="preview-open-btn" id="closePreviewBtn" style="display:none">×</button>
-        </div>
-      </div>
-      <div class="preview-frame-area">
-        <div class="preview-frame-shell" id="previewFrameShell">
-          <iframe id="livePreviewFrame" title="Live survey preview" src="survey.html?preview=local&embed=1"></iframe>
-        </div>
-      </div>
+
+  <main class="builder-layout">
+    <aside class="palette-panel">
+      <div class="panel-heading">Add questions</div>
+      <div id="palette"></div>
     </aside>
-    <aside class="builder-panel inspector" id="inspector"></aside>
-  </div>
-</div>
-<script src="builder.js?v=1"></script>
-<script>
-(function enhanceInlineEditing(){
-  function choiceEditor(q){
-    return `<div class="inline-choice-editor"><div class="inline-editor-label">Answer choices</div>${(q.config.options||[]).map((o,i)=>`<div class="inline-choice-row"><span class="choice-handle">${i+1}</span><input type="text" data-inline-opt="${i}" value="${esc(o)}" aria-label="Answer choice ${i+1}"><button class="icon-btn" data-inline-rm="${i}" type="button" title="Remove choice">×</button></div>`).join('')}<button class="btn btn-sm" data-inline-add type="button">+ Add answer choice</button></div>`;
-  }
 
-  function matrixEditor(q){
-    return `<div class="inline-matrix-editor"><div class="inline-editor-label">Matrix setup</div><div class="inline-two-col"><label class="field"><span>Rows</span><textarea data-inline-rows>${esc((q.config.rows||[]).join('\n'))}</textarea></label><label class="field"><span>Answer columns</span><textarea data-inline-cols>${esc((q.config.columns||[]).join('\n'))}</textarea></label></div></div>`;
-  }
+    <section class="canvas-panel">
+      <div class="survey-header-card">
+        <label>Survey title<input id="surveyTitle" type="text" value="Untitled survey" /></label>
+        <label>Introduction<textarea id="surveyDescription" rows="3" placeholder="Add a short introduction for respondents"></textarea></label>
+      </div>
+      <div id="questionCanvas" class="question-canvas"></div>
+    </section>
 
-  function wireInline(article,q){
-    const title=article.querySelector('.inline-question-title');
-    const desc=article.querySelector('.inline-question-desc');
-    title?.addEventListener('input',e=>{q.title=e.target.value;const other=$('#title');if(other)other.value=q.title});
-    desc?.addEventListener('input',e=>{q.description=e.target.value;const other=$('#desc');if(other)other.value=q.description});
-    article.querySelector('[data-inline-required]')?.addEventListener('change',e=>{q.required=e.target.checked;const other=$('#req');if(other)other.checked=q.required;const badge=article.querySelector('.question-type');if(badge)badge.textContent=`${state.questions.indexOf(q)+1}. ${LABEL[q.type]}${q.required?' · required':''}`});
-    article.querySelectorAll('[data-inline-opt]').forEach(input=>input.addEventListener('input',()=>{q.config.options[+input.dataset.inlineOpt]=input.value;const other=document.querySelector(`#inspector [data-opt="${input.dataset.inlineOpt}"]`);if(other)other.value=input.value}));
-    article.querySelectorAll('[data-inline-rm]').forEach(button=>button.onclick=e=>{e.stopPropagation();if((q.config.options||[]).length<=1)return alert('A choice question needs at least one answer choice.');q.config.options.splice(+button.dataset.inlineRm,1);render()});
-    article.querySelector('[data-inline-add]')?.addEventListener('click',e=>{e.stopPropagation();q.config.options.push(`Option ${q.config.options.length+1}`);render();requestAnimationFrame(()=>{const items=document.querySelectorAll(`[data-qid="${q.id}"] [data-inline-opt]`);items[items.length-1]?.focus();items[items.length-1]?.select()})});
-    article.querySelector('[data-inline-rows]')?.addEventListener('input',e=>{q.config.rows=e.target.value.split('\n').filter(v=>v.trim());const other=$('#rows');if(other)other.value=e.target.value});
-    article.querySelector('[data-inline-cols]')?.addEventListener('input',e=>{q.config.columns=e.target.value.split('\n').filter(v=>v.trim());const other=$('#cols');if(other)other.value=e.target.value});
-    article.querySelector('[data-advanced]')?.addEventListener('click',e=>{e.stopPropagation();renderInspector();$('#inspector').classList.add('open')});
-  }
+    <aside id="inspector" class="inspector-panel" aria-live="polite"></aside>
+  </main>
 
-  const baseInspector=renderInspector;
-  renderInspector=function(){baseInspector();$('#inspector').classList.remove('open')};
-
-  renderCanvas=function(){
-    const canvas=$('#questionCanvas');
-    $('#surveyTitle').value=state.title;
-    $('#surveyDescription').value=state.description;
-    canvas.innerHTML=state.questions.length?'':'<div class="empty-canvas"><strong>Your survey is empty.</strong><br>Choose a question type on the left. It will open immediately for editing, and the live preview will update on the right.</div>';
-    state.questions.forEach((q,i)=>{
-      const selected=q.id===state.selected;
-      const article=document.createElement('article');
-      article.className='question-card'+(selected?' selected editing':'');
-      article.dataset.qid=q.id;
-      article.draggable=!selected;
-      const body=selected?`<div class="inline-question-editor"><label class="field"><span>Question text</span><input class="inline-question-title" type="text" value="${esc(q.title)}" placeholder="Write your question here"></label><label class="field"><span>${q.type==='info'||q.type==='section'?'Text':'Description / help text'}</span><textarea class="inline-question-desc" placeholder="Optional description or guidance">${esc(q.description||'')}</textarea></label>${OPTS.has(q.type)?choiceEditor(q):''}${q.type==='matrix'?matrixEditor(q):''}<div class="inline-edit-footer"><div class="row-wrap">${!['info','section'].includes(q.type)?`<label class="check-row"><input data-inline-required type="checkbox" ${q.required?'checked':''}> Required question</label>`:''}<button class="btn btn-sm" data-advanced type="button">Advanced settings</button></div><span class="field-help">Changes appear automatically in the live preview.</span></div></div>`:`<div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(preview(q))}</div><button class="edit-question-btn" data-a="edit" type="button">Edit question & answers</button>`;
-      article.innerHTML=`<div class="question-meta"><span class="question-type">${i+1}. ${LABEL[q.type]}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" data-a="up" type="button">↑</button><button class="icon-btn" data-a="down" type="button">↓</button><button class="icon-btn" data-a="copy" type="button">⧉</button><button class="icon-btn" data-a="del" type="button">×</button></div></div>${body}`;
-      article.onclick=e=>{if(e.target.closest('button,input,textarea,select,label'))return;if(state.selected!==q.id){state.selected=q.id;render()}};
-      article.ondragstart=()=>window.dragQ=q.id;
-      article.ondragover=e=>e.preventDefault();
-      article.ondrop=e=>{e.preventDefault();const from=state.questions.findIndex(x=>x.id===window.dragQ),to=state.questions.findIndex(x=>x.id===q.id);if(from>=0&&to>=0&&from!==to){const [x]=state.questions.splice(from,1);state.questions.splice(to,0,x);render()}};
-      article.querySelector('[data-a=up]').onclick=()=>move(q.id,-1);
-      article.querySelector('[data-a=down]').onclick=()=>move(q.id,1);
-      article.querySelector('[data-a=copy]').onclick=()=>{const x=structuredClone(q);x.id=uid();x.title+=' (copy)';state.questions.splice(i+1,0,x);state.selected=x.id;render()};
-      article.querySelector('[data-a=del]').onclick=()=>{if(confirm(`Delete “${q.title}”?`)){state.questions.splice(i,1);state.selected=null;render()}};
-      article.querySelector('[data-a=edit]')?.addEventListener('click',()=>{state.selected=q.id;render();requestAnimationFrame(()=>document.querySelector(`[data-qid="${q.id}"] .inline-question-title`)?.focus())});
-      if(selected)wireInline(article,q);
-      canvas.appendChild(article);
-    });
-  };
-
-  const originalRenderPalette=renderPalette;
-  renderPalette=function(){
-    originalRenderPalette();
-    document.querySelectorAll('#palette [data-type]').forEach(button=>{
-      const old=button.onclick;
-      button.onclick=()=>{old();requestAnimationFrame(()=>{const input=document.querySelector(`[data-qid="${state.selected}"] .inline-question-title`);input?.focus();input?.select()})};
-    });
-  };
-
-  renderPalette();
-  render();
-})();
-
-(function liveSurveyPreview(){
-  const frame=document.getElementById('livePreviewFrame');
-  const shell=document.getElementById('previewFrameShell');
-  const status=document.getElementById('previewStatus');
-  const close=document.getElementById('closePreviewBtn');
-  let timer=null;
-  let seq=0;
-
-  function snapshot(){
-    const title=document.getElementById('surveyTitle');
-    const description=document.getElementById('surveyDescription');
-    if(title)state.title=title.value;
-    if(description)state.description=description.value;
-    return {...state,title:state.title||'Untitled survey',description:state.description||'',settings:{...state.settings}};
-  }
-
-  function refreshNow(){
-    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
-    status.textContent='Updating…';
-    frame.src=`survey.html?preview=local&embed=1&v=${++seq}`;
-  }
-
-  function schedulePreview(){
-    clearTimeout(timer);
-    status.textContent='Updating…';
-    timer=setTimeout(refreshNow,280);
-  }
-
-  frame.addEventListener('load',()=>{status.textContent='Live · respondent view'});
-  document.addEventListener('input',e=>{if(e.target.closest('#inspector,#questionCanvas,.builder-hero'))schedulePreview()},true);
-  document.addEventListener('change',e=>{if(e.target.closest('#inspector,#questionCanvas,.builder-hero'))schedulePreview()},true);
-
-  const baseRender=render;
-  render=function(){baseRender();schedulePreview()};
-
-  document.querySelectorAll('[data-device]').forEach(button=>button.onclick=()=>{
-    document.querySelectorAll('[data-device]').forEach(x=>x.classList.toggle('active',x===button));
-    shell.classList.toggle('mobile',button.dataset.device==='mobile');
-  });
-
-  document.getElementById('openPreviewBtn').onclick=()=>{
-    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
-    window.open('survey.html?preview=local','_blank');
-  };
-
-  document.getElementById('previewBtn').onclick=()=>{
-    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
-    if(matchMedia('(max-width:1180px)').matches){
-      document.body.classList.toggle('preview-visible');
-      close.style.display=document.body.classList.contains('preview-visible')?'inline-block':'none';
-      if(document.body.classList.contains('preview-visible'))refreshNow();
-    }else{
-      document.getElementById('livePreviewPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
-      refreshNow();
-    }
-  };
-
-  close.onclick=()=>{document.body.classList.remove('preview-visible');close.style.display='none'};
-  refreshNow();
-})();
-</script>
+  <script src="builder.js?v=1"></script>
 </body>
 </html>
