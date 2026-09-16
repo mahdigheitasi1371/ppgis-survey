@@ -2,3 +2,5 @@ data.db
 server.log
 __pycache__/
 *.pyc
+audio_uploads/
+survey_uploads/
