@@ -25,7 +25,9 @@
       ['datetime', 'Date & time']
     ],
     'Map & location': [
-      ['map_multi', 'Map question']
+      ['map_multi', 'Point map'],
+      ['map_line', 'Line map'],
+      ['map_polygon', 'Polygon map']
     ],
     'Photos, media & files': [
       ['photo', 'Photo'],
@@ -48,7 +50,9 @@
 
   Object.keys(GROUPS).forEach(key => delete GROUPS[key]);
   Object.assign(GROUPS, orderedGroups);
-  LABEL.map_multi = 'Map question';
+  LABEL.map_multi = 'Point map';
+  LABEL.map_line = 'Line map';
+  LABEL.map_polygon = 'Polygon map';
 
   state.settings = state.settings || {};
   if (!state.settings.backgroundColor) state.settings.backgroundColor = '#f5f7f4';
