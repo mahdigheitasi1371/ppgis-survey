@@ -1,16 +1,16 @@
-// Builder UX enhancements: ordered question library and survey appearance controls.
+// Builder UX enhancements: ordered question library, appearance controls, and explicit settings actions.
 (function () {
   if (typeof GROUPS === 'undefined' || typeof state === 'undefined') return;
 
   const orderedGroups = {
-    'Text & written answers': [
+    'Write & enter information': [
       ['short_text', 'Short text'],
       ['long_text', 'Long text'],
       ['number', 'Number'],
       ['email', 'Email'],
       ['phone', 'Phone']
     ],
-    'Choices & scales': [
+    'Choose & rate': [
       ['yes_no', 'Yes / No'],
       ['single_choice', 'Single choice'],
       ['multiple_choice', 'Multiple choice'],
@@ -24,10 +24,10 @@
       ['time', 'Time'],
       ['datetime', 'Date & time']
     ],
-    'Location & map': [
+    'Map & location': [
       ['map_multi', 'Map question']
     ],
-    'Media & uploads': [
+    'Photos, media & files': [
       ['photo', 'Photo'],
       ['photos', 'Multiple photos'],
       ['audio', 'Voice recording'],
@@ -35,11 +35,11 @@
       ['file', 'File upload'],
       ['signature', 'Signature']
     ],
-    'Ranking & allocation': [
+    'Priorities & trade-offs': [
       ['ranking', 'Rank order'],
       ['allocation', 'Resource allocation']
     ],
-    'Survey structure': [
+    'Content & consent': [
       ['info', 'Information text'],
       ['section', 'Section heading'],
       ['consent', 'Consent checkbox']
@@ -51,9 +51,9 @@
   LABEL.map_multi = 'Map question';
 
   state.settings = state.settings || {};
-  if (!state.settings.backgroundColor) state.settings.backgroundColor = '#f3efe7';
+  if (!state.settings.backgroundColor) state.settings.backgroundColor = '#f5f7f4';
   if (state.settings.backgroundImage === undefined) state.settings.backgroundImage = '';
-  if (state.settings.backgroundOverlay === undefined) state.settings.backgroundOverlay = 0.22;
+  if (state.settings.backgroundOverlay === undefined) state.settings.backgroundOverlay = 0.18;
 
   function refreshLivePreview() {
     try {
@@ -67,6 +67,11 @@
     } catch (_) {}
   }
 
+  function closeInspector() {
+    const inspector = document.getElementById('inspector');
+    inspector?.classList.remove('open');
+  }
+
   const baseRenderSettings = renderSettings;
   renderSettings = function () {
     const s = state.settings || (state.settings = {});
@@ -77,11 +82,15 @@
     return `${base}
       <div class="inspector-section appearance-settings">
         <div class="panel-title">Survey appearance</div>
-        ${f('Background color', `<input id="backgroundColor" type="color" value="${s.backgroundColor || '#f3efe7'}">`, 'Used behind the survey cards and as a fallback when no image is set.')}
+        ${f('Background color', `<input id="backgroundColor" type="color" value="${s.backgroundColor || '#f5f7f4'}">`, 'Used behind the respondent experience when no image is set.')}
         ${imagePreview}
         ${f('Background image', '<input id="backgroundImage" type="file" accept="image/*">', 'Optional. Recommended under 1.5 MB for the preview version.')}
-        ${f('Image overlay', `<input id="backgroundOverlay" type="range" min="0" max="0.7" step="0.05" value="${Number(s.backgroundOverlay ?? 0.22)}">`, 'Controls how strongly the background image is softened behind the survey.')}
+        ${f('Image overlay', `<input id="backgroundOverlay" type="range" min="0" max="0.7" step="0.05" value="${Number(s.backgroundOverlay ?? 0.18)}">`, 'Controls how strongly the image is softened so questions remain readable.')}
         <button class="btn btn-sm" id="removeBackground" type="button" ${s.backgroundImage ? '' : 'disabled'}>Remove background image</button>
+      </div>
+      <div class="settings-actions">
+        <button class="btn" id="closeSettings" type="button">Close</button>
+        <button class="btn btn-primary" id="saveCloseSettings" type="button">Save & close</button>
       </div>`;
   };
 
@@ -124,6 +133,21 @@
       renderInspector();
       document.getElementById('inspector')?.classList.add('open');
       refreshLivePreview();
+    });
+
+    document.getElementById('closeSettings')?.addEventListener('click', closeInspector);
+    document.getElementById('saveCloseSettings')?.addEventListener('click', async () => {
+      const button = document.getElementById('saveCloseSettings');
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Saving…';
+      }
+      const ok = await save(true);
+      if (ok) closeInspector();
+      else if (button) {
+        button.disabled = false;
+        button.textContent = 'Save & close';
+      }
     });
   };
 
