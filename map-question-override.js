@@ -1,43 +1,74 @@
-// Unified configurable point-map question. New surveys expose one map type only.
+// Three consistent map question types: points, line, and polygon.
 (function () {
   if (typeof GROUPS === 'undefined' || typeof LABEL === 'undefined') return;
 
-  GROUPS.Maps = [['map_multi', 'Map question']];
-  LABEL.map_multi = 'Map question';
+  const MAP_TYPES = new Set(['map_multi', 'map_line', 'map_polygon']);
+  GROUPS.Maps = [
+    ['map_multi', 'Point map'],
+    ['map_line', 'Line map'],
+    ['map_polygon', 'Polygon map']
+  ];
+  LABEL.map_multi = 'Point map';
+  LABEL.map_line = 'Line map';
+  LABEL.map_polygon = 'Polygon map';
 
   const originalQNew = qNew;
   qNew = function (type) {
     const q = originalQNew(type);
-    if (type === 'map_multi') {
-      q.title = 'Map question';
-      q.config.maxPoints = 1;
-      q.config.allowGeo = true;
-      q.config.allowCitySearch = true;
-      q.config.fullScreenMap = true;
-      q.config.popup = q.config.popup || {};
-      q.config.popup.enabled = false;
-      q.config.popup.type = q.config.popup.type || 'single_choice';
-      q.config.popup.question = q.config.popup.question || 'Tell us more about this place';
-      q.config.popup.options = q.config.popup.options || ['Positive', 'Neutral', 'Negative'];
-    }
+    if (!MAP_TYPES.has(type)) return q;
+
+    const names = {
+      map_multi: 'Point map question',
+      map_line: 'Line map question',
+      map_polygon: 'Polygon map question'
+    };
+    q.title = names[type];
+    q.config = q.config || {};
+    q.config.lat = Number(q.config.lat ?? 51.5136);
+    q.config.lng = Number(q.config.lng ?? 7.4653);
+    q.config.zoom = Number(q.config.zoom ?? 12);
+    q.config.allowGeo = q.config.allowGeo !== false;
+    q.config.allowCitySearch = q.config.allowCitySearch !== false;
+    q.config.mapPage = true;
+    if (type === 'map_multi') q.config.maxPoints = Math.min(50, Math.max(1, Number(q.config.maxPoints) || 1));
+    if (type === 'map_line') q.config.maxVertices = Math.min(100, Math.max(2, Number(q.config.maxVertices) || 30));
+    if (type === 'map_polygon') q.config.maxVertices = Math.min(100, Math.max(3, Number(q.config.maxVertices) || 30));
+    q.config.popup = q.config.popup || {};
+    q.config.popup.enabled = false;
+    q.config.popup.type = q.config.popup.type || 'single_choice';
+    q.config.popup.question = q.config.popup.question || (type === 'map_multi' ? 'Tell us more about this place' : 'Tell us more about this vertex');
+    q.config.popup.options = q.config.popup.options || ['Positive', 'Neutral', 'Negative'];
     return q;
   };
 
-  function clampPointLimit(value) {
-    return Math.min(50, Math.max(1, Number(value) || 1));
+  function clampLimit(q, value) {
+    if (q.type === 'map_multi') return Math.min(50, Math.max(1, Number(value) || 1));
+    const minimum = q.type === 'map_polygon' ? 3 : 2;
+    return Math.min(100, Math.max(minimum, Number(value) || 30));
   }
 
   mapConfig = function (q) {
     const c = q.config || (q.config = {});
     const p = c.popup || (c.popup = {});
-    c.maxPoints = clampPointLimit(c.maxPoints);
     if (c.allowGeo === undefined) c.allowGeo = true;
     if (c.allowCitySearch === undefined) c.allowCitySearch = true;
-    if (c.fullScreenMap === undefined) c.fullScreenMap = true;
+    c.mapPage = true;
+
+    const isPoint = q.type === 'map_multi';
+    const limitKey = isPoint ? 'maxPoints' : 'maxVertices';
+    const min = isPoint ? 1 : (q.type === 'map_polygon' ? 3 : 2);
+    const max = isPoint ? 50 : 100;
+    c[limitKey] = clampLimit(q, c[limitKey]);
+    const limitLabel = isPoint ? 'Maximum points' : 'Maximum vertices';
+    const limitHelp = isPoint
+      ? 'Choose how many locations respondents may select, from 1 to 50.'
+      : `${q.type === 'map_polygon' ? 'Polygons need at least 3 vertices.' : 'Lines need at least 2 vertices.'} Choose up to 100 vertices.`;
+    const followupLabel = isPoint ? 'Point follow-up' : 'Vertex follow-up';
+    const followupText = isPoint ? 'Ask after each mapped point' : 'Ask after each added vertex';
+
     return `<div class="inspector-section">
       <div class="panel-title">Map experience</div>
-      ${f('Maximum points', `<input id="maxPoints" type="number" min="1" max="50" step="1" value="${c.maxPoints}">`, 'Choose how many locations respondents may select, from 1 to 50.')}
-      <label class="check-row"><input id="fullScreenMap" type="checkbox" ${c.fullScreenMap !== false ? 'checked' : ''}> Offer full-screen map</label>
+      ${f(limitLabel, `<input id="${limitKey}" type="number" min="${min}" max="${max}" step="1" value="${c[limitKey]}">`, limitHelp)}
       <label class="check-row"><input id="allowGeo" type="checkbox" ${c.allowGeo !== false ? 'checked' : ''}> Offer “Use my location”</label>
       <label class="check-row"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch !== false ? 'checked' : ''}> Offer city/place search</label>
     </div>
@@ -50,11 +81,11 @@
       ${f('Zoom', `<input id="zoom" type="number" min="3" max="19" value="${c.zoom || 12}">`)}
     </div>
     <div class="inspector-section">
-      <div class="panel-title">Point follow-up</div>
-      <label class="check-row"><input id="popOn" type="checkbox" ${p.enabled ? 'checked' : ''}> Ask a follow-up after each mapped point</label>
-      ${f('Popup question', inp(p.question || '', 'popQ'))}
-      ${f('Popup type', '<select id="popType"><option value="short_text">Open text</option><option value="single_choice">Single choice</option><option value="rating">1–5 rating</option></select>')}
-      ${listEditor('popOptions', 'Popup choices', p.options || [])}
+      <div class="panel-title">${followupLabel}</div>
+      <label class="check-row"><input id="popOn" type="checkbox" ${p.enabled ? 'checked' : ''}> ${followupText}</label>
+      ${f('Follow-up question', inp(p.question || '', 'popQ'))}
+      ${f('Follow-up type', '<select id="popType"><option value="short_text">Open text</option><option value="single_choice">Single choice</option><option value="rating">1–5 rating</option></select>')}
+      ${listEditor('popOptions', 'Follow-up choices', p.options || [])}
     </div>`;
   };
 
@@ -69,31 +100,27 @@
   const originalWireQ = wireQ;
   wireQ = function (q) {
     originalWireQ(q);
-    if (q.type !== 'map_multi') return;
+    if (!MAP_TYPES.has(q.type)) return;
 
-    const pointInput = document.getElementById('maxPoints');
-    if (pointInput) {
-      pointInput.min = '1';
-      pointInput.max = '50';
-      pointInput.step = '1';
+    const limitId = q.type === 'map_multi' ? 'maxPoints' : 'maxVertices';
+    const limitInput = document.getElementById(limitId);
+    if (limitInput) {
+      limitInput.min = q.type === 'map_multi' ? '1' : (q.type === 'map_polygon' ? '3' : '2');
+      limitInput.max = q.type === 'map_multi' ? '50' : '100';
+      limitInput.step = '1';
       const normalize = () => {
-        const value = clampPointLimit(pointInput.value);
-        pointInput.value = value;
-        q.config.maxPoints = value;
+        const value = clampLimit(q, limitInput.value);
+        limitInput.value = value;
+        q.config[limitId] = value;
         renderCanvas();
         refreshPreview();
       };
-      pointInput.addEventListener('change', normalize);
-      pointInput.addEventListener('blur', normalize);
+      limitInput.addEventListener('change', normalize);
+      limitInput.addEventListener('blur', normalize);
     }
 
-    const toggles = {
-      fullScreenMap: 'fullScreenMap',
-      allowGeo: 'allowGeo',
-      allowCitySearch: 'allowCitySearch'
-    };
-    Object.entries(toggles).forEach(([id, key]) => {
-      document.getElementById(id)?.addEventListener('change', e => {
+    ['allowGeo', 'allowCitySearch'].forEach(key => {
+      document.getElementById(key)?.addEventListener('change', e => {
         q.config[key] = e.target.checked;
         refreshPreview();
       });
