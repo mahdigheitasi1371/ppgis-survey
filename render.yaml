@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ppgis-survey-builder-preview
+    runtime: python
+    branch: feature/survey-builder-v1
+    buildCommand: pip install -r requirements.txt
+    startCommand: python platform_server.py
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ADMIN_KEY
+        generateValue: true
