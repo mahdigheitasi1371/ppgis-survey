@@ -51,7 +51,7 @@ def survey_html() -> HTMLResponse:
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=3">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=5"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=1"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=2"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
