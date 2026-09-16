@@ -36,14 +36,21 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 
 def builder_html() -> HTMLResponse:
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    html = html.replace("builder.js?v=1", "builder.js?v=6")
+    # The builder.html file contains an older experimental inline editing/live-preview
+    # layer. It repeatedly wraps render()/renderPalette() and refreshes the iframe,
+    # which can make controls appear unresponsive. Serve the stable core builder
+    # instead and keep enhancements isolated in small external modules.
+    html = re.sub(
+        r'<script>\s*\(function enhanceInlineEditing\(\)\{.*?</script>',
+        '',
+        html,
+        flags=re.S,
+    )
+    html = html.replace("builder.js?v=1", "builder.js?v=7")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="builder-mobile.css?v=1">')
-    html = inject_before(html, "</body>", '<script src="map-question-override.js?v=3"></script>')
-    html = inject_before(html, "</body>", '<script src="builder-experience.js?v=3"></script>')
-    html = inject_before(html, "</body>", '<script src="builder-languages.js?v=1"></script>')
-    html = inject_before(html, "</body>", '<script src="builder-mobile.js?v=1"></script>')
+    html = inject_before(html, "</body>", '<script src="map-question-override.js?v=4"></script>')
+    html = inject_before(html, "</body>", '<script src="builder-languages.js?v=2"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
