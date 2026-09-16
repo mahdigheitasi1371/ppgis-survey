@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from fastapi import Query
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from api_server import app
 from survey_platform import router as survey_platform_router
@@ -35,30 +35,9 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 
 
 def builder_html() -> HTMLResponse:
+    """Serve the rebuilt builder exactly as committed, without runtime rewriting."""
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    # Safe-mode builder: keep only the core editor. The experimental inline
-    # editing/live-preview block and later builder wrappers had accumulated
-    # multiple render hooks and iframe reloads, which made the editor slow and
-    # could leave palette controls unresponsive on desktop and mobile.
-    html = re.sub(
-        r'<script>\s*\(function enhanceInlineEditing\(\)\{.*?</script>',
-        '',
-        html,
-        flags=re.S,
-    )
-    html = html.replace("builder.js?v=1", "builder.js?v=8")
-    # Do not load the embedded respondent iframe while editing. Preview remains
-    # available through the Preview button in the core builder.
-    html = html.replace('src="survey.html?preview=local&embed=1"', 'src="about:blank"')
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
-    html = inject_before(
-        html,
-        "</head>",
-        '<style id="builder-safe-mode">.live-preview-panel{display:none!important}.builder-grid{grid-template-columns:220px minmax(0,1fr)!important}.palette,.qtype-btn{pointer-events:auto!important}.qtype-btn{cursor:pointer!important}@media(max-width:760px){.builder-grid{display:block!important}.palette{position:relative!important;width:auto!important;height:auto!important;transform:none!important;overflow:visible!important}.canvas{padding:12px!important}}</style>',
-    )
-    # Intentionally no builder post-processing scripts in safe mode. The core
-    # builder.js already exposes every traditional/media/priority question and
-    # the server transformation below exposes the three map geometry types.
+    html = html.replace("builder.js?v=1", "builder.js?v=9")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
@@ -79,20 +58,6 @@ def styled_html(name: str) -> HTMLResponse:
     html = (BASE_DIR / name).read_text(encoding="utf-8")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
-
-
-def builder_javascript() -> str:
-    """Serve a single stable builder script with the three map geometry types."""
-    js = (BASE_DIR / "builder.js").read_text(encoding="utf-8")
-    js = js.replace(
-        "Maps:[['map_point','Map point'],['map_multi','Multi-point map'],['map_line','Map line / route'],['map_polygon','Map area']]",
-        "Maps:[['map_multi','Point map'],['map_line','Line map'],['map_polygon','Polygon map']]",
-    )
-    js = js.replace(
-        "if(type.startsWith('map_'))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_point'?1:10,maxVertices:50,popup:{enabled:type==='map_multi',type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});",
-        "if(['map_multi','map_line','map_polygon'].includes(type))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_multi'?1:10,maxVertices:type==='map_polygon'?30:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:type==='map_multi'?'Tell us more about this place':'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});",
-    )
-    return js
 
 
 def _remote_json(url: str) -> dict:
@@ -178,7 +143,11 @@ def builder_html_page():
 
 @app.get("/builder.js", include_in_schema=False)
 def builder_script():
-    return Response(builder_javascript(), media_type="application/javascript", headers={"Cache-Control": "no-store, max-age=0"})
+    return FileResponse(
+        BASE_DIR / "builder.js",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 
 @app.get("/admin", include_in_schema=False)
