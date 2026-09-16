@@ -12,7 +12,7 @@ Surfaces:
 import os
 from pathlib import Path
 
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from api_server import app
 from survey_platform import router as survey_platform_router
@@ -25,14 +25,27 @@ def local_file(name: str) -> FileResponse:
     return FileResponse(BASE_DIR / name)
 
 
+def builder_html() -> HTMLResponse:
+    html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
+    injection = '<script src="map-question-override.js?v=1"></script>'
+    if injection not in html:
+        html = html.replace("</body>", f"{injection}\n</body>")
+    return HTMLResponse(html)
+
+
 @app.get("/", include_in_schema=False)
 def platform_home():
-    return local_file("builder.html")
+    return builder_html()
 
 
 @app.get("/builder", include_in_schema=False)
 def builder_page():
-    return local_file("builder.html")
+    return builder_html()
+
+
+@app.get("/builder.html", include_in_schema=False)
+def builder_html_page():
+    return builder_html()
 
 
 @app.get("/admin", include_in_schema=False)
@@ -51,11 +64,11 @@ def lifres_page():
 
 
 for filename, media_type in {
-    "builder.html": "text/html",
     "admin.html": "text/html",
     "survey.html": "text/html",
     "platform.css": "text/css",
     "builder.js": "application/javascript",
+    "map-question-override.js": "application/javascript",
     "admin.js": "application/javascript",
     "survey.js": "application/javascript",
     "style.css": "text/css",
