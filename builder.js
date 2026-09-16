@@ -1,24 +1,257 @@
-const API=location.protocol==='file:'?'http://localhost:8000':location.origin,$=s=>document.querySelector(s),uid=()=>`q_${crypto.randomUUID().replaceAll('-','').slice(0,10)}`;
-const GROUPS={Traditional:[['short_text','Short text'],['long_text','Open text'],['number','Number'],['email','Email'],['phone','Phone'],['date','Date'],['time','Time'],['datetime','Date & time'],['yes_no','Yes / No'],['single_choice','Single choice'],['multiple_choice','Multiple choice'],['dropdown','Dropdown'],['rating','Rating scale'],['slider','Slider'],['matrix','Matrix / Likert']],Maps:[['map_point','Map point'],['map_multi','Multi-point map'],['map_line','Map line / route'],['map_polygon','Map area']],Media:[['photo','Photo'],['photos','Multiple photos'],['audio','Voice recording'],['video','Video recording'],['file','File upload'],['signature','Signature']],Priority:[['ranking','Rank order'],['allocation','Resource allocation']],Structure:[['info','Information text'],['section','Section heading'],['consent','Consent checkbox']]};
-const LABEL=Object.fromEntries(Object.values(GROUPS).flat().map(x=>x)),OPTS=new Set(['single_choice','multiple_choice','dropdown','ranking','allocation']);
-let state={id:null,slug:null,status:'draft',title:'Untitled survey',description:'',questions:[],settings:{logo:'',customDomain:'',primaryColor:'#2f6f5e',defaultLanguage:'en',thankYou:'Thank you for your response.',showProgress:true,allowDrafts:true}},selected=null;
-function qNew(type){let q={id:uid(),type,title:LABEL[type],description:'',required:false,config:{},logic:null};if(OPTS.has(type))q.config.options=['Option 1','Option 2','Option 3'];if(type==='rating')Object.assign(q.config,{min:1,max:5,minLabel:'Low',maxLabel:'High'});if(type==='slider')Object.assign(q.config,{min:0,max:100,step:1});if(type==='matrix')Object.assign(q.config,{rows:['Statement 1','Statement 2'],columns:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree']});if(type.startsWith('map_'))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_point'?1:10,maxVertices:50,popup:{enabled:type==='map_multi',type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});if(type==='photo')q.config.maxFiles=1;if(type==='photos')q.config.maxFiles=8;if(type==='file')q.config.maxFiles=3;if(type==='audio'||type==='video')Object.assign(q.config,{allowRecord:true,allowUpload:true,maxDuration:type==='audio'?300:180});if(type==='allocation')Object.assign(q.config,{total:100,unit:'points'});if(type==='consent')q.config.checkboxLabel='I agree';return q}
-function key(){let k=localStorage.getItem('survey-admin-key')||'';if(!k){k=prompt('Enter ADMIN_KEY:')||'';if(k)localStorage.setItem('survey-admin-key',k)}return k}function hdr(json=true){let h={'X-Admin-Key':key()};if(json)h['Content-Type']='application/json';return h}function esc(v=''){let d=document.createElement('div');d.textContent=String(v);return d.innerHTML}function f(label,html,help=''){return `<label class="field"><span>${label}</span>${html}${help?`<span class="field-help">${help}</span>`:''}</label>`}function inp(v='',id=''){return `<input type="text" id="${id}" value="${esc(v)}">`}
-function renderPalette(){let p=$('#palette');p.innerHTML='<div class="panel-title">Add questions</div>';for(const[g,items]of Object.entries(GROUPS)){p.insertAdjacentHTML('beforeend',`<div class="panel-title">${g}</div><div class="palette-group">${items.map(([t,l])=>`<button class="qtype-btn" data-type="${t}"><span class="qtype-icon">＋</span><span>${l}</span></button>`).join('')}</div>`)}p.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{let q=qNew(b.dataset.type),i=state.questions.findIndex(x=>x.id===state.selected);i<0?state.questions.push(q):state.questions.splice(i+1,0,q);state.selected=q.id;render()})}
-function preview(q){let c=q.config||{};if(OPTS.has(q.type))return(c.options||[]).join(' · ');if(q.type==='matrix')return`${(c.rows||[]).length} rows × ${(c.columns||[]).length} choices`;if(q.type.startsWith('map_'))return`Interactive map${c.popup?.enabled?' + popup follow-up':''}`;if(['photo','photos','audio','video','file','signature'].includes(q.type))return'Media response';if(q.type==='rating')return`${c.min||1}–${c.max||5} scale`;if(q.type==='allocation')return`Allocate ${c.total||100} ${c.unit||'points'}`;return q.description||'Answer field'}
-function renderCanvas(){let c=$('#questionCanvas');$('#surveyTitle').value=state.title;$('#surveyDescription').value=state.description;c.innerHTML=state.questions.length?'':'<div class="empty-canvas"><strong>Your survey is empty.</strong><br>Choose a question type on the left.</div>';state.questions.forEach((q,i)=>{let a=document.createElement('article');a.className='question-card'+(q.id===state.selected?' selected':'');a.dataset.qid=q.id;a.draggable=true;a.innerHTML=`<div class="question-meta"><span class="question-type">${i+1}. ${LABEL[q.type]}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" data-a="up">↑</button><button class="icon-btn" data-a="down">↓</button><button class="icon-btn" data-a="copy">⧉</button><button class="icon-btn" data-a="del">×</button></div></div><div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(preview(q))}</div>`;a.onclick=e=>{if(!e.target.closest('button')){state.selected=q.id;render()}};a.ondragstart=()=>window.dragQ=q.id;a.ondragover=e=>e.preventDefault();a.ondrop=e=>{e.preventDefault();let from=state.questions.findIndex(x=>x.id===window.dragQ),to=state.questions.findIndex(x=>x.id===q.id);if(from>=0&&to>=0){let[x]=state.questions.splice(from,1);state.questions.splice(to,0,x);render()}};a.querySelector('[data-a=up]').onclick=()=>move(q.id,-1);a.querySelector('[data-a=down]').onclick=()=>move(q.id,1);a.querySelector('[data-a=copy]').onclick=()=>{let x=structuredClone(q);x.id=uid();x.title+=' (copy)';state.questions.splice(i+1,0,x);state.selected=x.id;render()};a.querySelector('[data-a=del]').onclick=()=>{if(confirm(`Delete “${q.title}”?`)){state.questions.splice(i,1);state.selected=null;render()}};c.appendChild(a)})}
-function move(id,d){let i=state.questions.findIndex(x=>x.id===id),j=i+d;if(i<0||j<0||j>=state.questions.length)return;[state.questions[i],state.questions[j]]=[state.questions[j],state.questions[i]];render()}
-function listEditor(id,label,arr){return f(label,`<textarea id="${id}">${esc((arr||[]).join('\n'))}</textarea>`)}
-function options(q){return `<div class="choice-editor">${(q.config.options||[]).map((o,i)=>`<div class="choice-row"><input data-opt="${i}" value="${esc(o)}"><button class="btn btn-sm" data-rm="${i}">×</button></div>`).join('')}</div><button class="btn btn-sm" id="addOpt">+ Add option</button>`}
-function mapConfig(q){let c=q.config,p=c.popup||{};return `<div class="inspector-section"><div class="panel-title">Map configuration</div><div class="row">${f('Latitude',`<input id="lat" type="number" step=".0001" value="${c.lat}">`)}${f('Longitude',`<input id="lng" type="number" step=".0001" value="${c.lng}">`)}</div>${f('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${c.zoom||12}">`)}${q.type.includes('point')?f('Max points',`<input id="maxPoints" type="number" value="${c.maxPoints||10}" ${q.type==='map_point'?'disabled':''}>`):f('Max vertices',`<input id="maxVertices" type="number" value="${c.maxVertices||50}">`)}</div><div class="inspector-section"><div class="panel-title">Popup follow-up</div><label class="check-row"><input id="popOn" type="checkbox" ${p.enabled?'checked':''}> Ask after each mapped point</label>${f('Popup question',inp(p.question||'','popQ'))}${f('Popup type','<select id="popType"><option value="short_text">Open text</option><option value="single_choice">Single choice</option><option value="rating">1–5 rating</option></select>')}${listEditor('popOptions','Popup choices',p.options||[])}</div>`}
-function logic(q){let i=state.questions.findIndex(x=>x.id===q.id),prev=state.questions.slice(0,i).filter(x=>!['info','section'].includes(x.type));if(!prev.length)return'';let l=q.logic||{};return `<div class="inspector-section"><div class="panel-title">Branching</div><label class="check-row"><input id="logicOn" type="checkbox" ${q.logic?'checked':''}> Show only when…</label>${f('Previous question',`<select id="logicQ"><option value=""></option>${prev.map(x=>`<option value="${x.id}" ${l.questionId===x.id?'selected':''}>${esc(x.title)}</option>`).join('')}</select>`)}${f('Condition','<select id="logicOp"><option value="equals">equals</option><option value="not_equals">does not equal</option><option value="contains">contains</option><option value="answered">is answered</option><option value="not_answered">is not answered</option></select>')}${f('Value',inp(l.value||'','logicVal'))}</div>`}
-function renderSettings(){let s=state.settings;return `<div class="inspector-section"><div class="panel-title">Survey settings</div>${f('Public slug',inp(state.slug||'','slug'),'Used in the public URL')}${f('Primary color',`<input id="color" type="color" value="${s.primaryColor||'#2f6f5e'}">`)}<label class="check-row"><input id="progress" type="checkbox" ${s.showProgress!==false?'checked':''}> Show progress</label><label class="check-row"><input id="drafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}> Save respondent draft locally</label></div><div class="inspector-section"><div class="panel-title">Branding & domain</div>${s.logo?`<img class="logo-preview" src="${s.logo}">`:''}${f('Logo','<input id="logo" type="file" accept="image/*">','Max 500 KB')}${f('Custom domain',inp(s.customDomain||'','domain'),'DNS/TLS must be configured at deployment')}</div><div class="inspector-section">${f('Thank-you message',`<textarea id="thanks">${esc(s.thankYou||'')}</textarea>`)}</div>`}
-function renderInspector(){let el=$('#inspector'),q=state.questions.find(x=>x.id===state.selected);if(!q){el.innerHTML=renderSettings();wireSettings();return}let c=q.config||{},h=`<div class="row" style="justify-content:space-between"><div class="panel-title">Question settings</div><button class="btn btn-sm" id="close">×</button></div><div class="inspector-section">${f('Question',inp(q.title,'title'))}${f('Description',`<textarea id="desc">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check-row"><input id="req" type="checkbox" ${q.required?'checked':''}> Required</label>`:''}</div>`;if(OPTS.has(q.type))h+=`<div class="inspector-section"><div class="panel-title">Choices</div>${options(q)}</div>`;if(q.type==='matrix')h+=`<div class="inspector-section">${listEditor('rows','Rows',c.rows)}${listEditor('cols','Columns',c.columns)}</div>`;if(q.type==='rating'||q.type==='slider'||q.type==='number')h+=`<div class="inspector-section">${f('Minimum',`<input id="min" type="number" value="${c.min??''}">`)}${f('Maximum',`<input id="max" type="number" value="${c.max??''}">`)}${f('Step',`<input id="step" type="number" value="${c.step??1}">`)}</div>`;if(q.type.startsWith('map_'))h+=mapConfig(q);if(['photo','photos','file'].includes(q.type))h+=`<div class="inspector-section">${f('Maximum files',`<input id="maxFiles" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</div>`;if(['audio','video'].includes(q.type))h+=`<div class="inspector-section">${f('Maximum duration (seconds)',`<input id="duration" type="number" value="${c.maxDuration||180}">`)}<label class="check-row"><input id="record" type="checkbox" ${c.allowRecord!==false?'checked':''}> Live recording</label><label class="check-row"><input id="upload" type="checkbox" ${c.allowUpload!==false?'checked':''}> File upload</label></div>`;if(q.type==='allocation')h+=`<div class="inspector-section">${f('Total',`<input id="total" type="number" value="${c.total||100}">`)}${f('Unit',inp(c.unit||'points','unit'))}</div>`;if(q.type==='consent')h+=`<div class="inspector-section">${f('Checkbox label',inp(c.checkboxLabel||'I agree','consent'))}</div>`;h+=logic(q);el.innerHTML=h;el.classList.add('open');wireQ(q)}
-function bind(id,fn,event='input'){let e=$('#'+id);if(e)e.addEventListener(event,x=>{fn(x.target.type==='number'?(x.target.value===''?'':Number(x.target.value)):x.target.value);renderCanvas()})}
-function wireSettings(){bind('slug',v=>state.slug=v);bind('color',v=>state.settings.primaryColor=v);bind('domain',v=>state.settings.customDomain=v);bind('thanks',v=>state.settings.thankYou=v);$('#progress')?.addEventListener('change',e=>state.settings.showProgress=e.target.checked);$('#drafts')?.addEventListener('change',e=>state.settings.allowDrafts=e.target.checked);$('#logo')?.addEventListener('change',e=>{let f=e.target.files[0];if(!f||f.size>500000)return alert('Logo must be under 500 KB.');let r=new FileReader();r.onload=()=>{state.settings.logo=r.result;renderInspector()};r.readAsDataURL(f)})}
-function wireQ(q){$('#close').onclick=()=>{state.selected=null;render()};bind('title',v=>q.title=v);bind('desc',v=>q.description=v);$('#req')?.addEventListener('change',e=>{q.required=e.target.checked;renderCanvas()});if(OPTS.has(q.type)){document.querySelectorAll('[data-opt]').forEach(e=>e.oninput=()=>{q.config.options[+e.dataset.opt]=e.value;renderCanvas()});document.querySelectorAll('[data-rm]').forEach(e=>e.onclick=()=>{q.config.options.splice(+e.dataset.rm,1);render()});$('#addOpt').onclick=()=>{q.config.options.push(`Option ${q.config.options.length+1}`);render()}}bind('rows',v=>q.config.rows=v.split('\n').filter(Boolean));bind('cols',v=>q.config.columns=v.split('\n').filter(Boolean));['min','max','step','lat','lng','zoom','maxPoints','maxVertices','maxFiles','duration','total'].forEach(id=>bind(id,v=>q.config[id==='duration'?'maxDuration':id]=v));bind('unit',v=>q.config.unit=v);bind('consent',v=>q.config.checkboxLabel=v);$('#record')?.addEventListener('change',e=>q.config.allowRecord=e.target.checked);$('#upload')?.addEventListener('change',e=>q.config.allowUpload=e.target.checked);if(q.type.startsWith('map_')){q.config.popup||={enabled:false,type:'short_text',question:'',options:[]};let p=q.config.popup;$('#popOn').onchange=e=>p.enabled=e.target.checked;bind('popQ',v=>p.question=v);$('#popType').value=p.type||'short_text';$('#popType').onchange=e=>p.type=e.target.value;bind('popOptions',v=>p.options=v.split('\n').filter(Boolean))}if($('#logicOn')){if(q.logic)$('#logicOp').value=q.logic.operator||'equals';let sync=()=>q.logic=$('#logicOn').checked?{questionId:$('#logicQ').value,operator:$('#logicOp').value,value:$('#logicVal').value}:null;['logicOn','logicQ','logicOp'].forEach(id=>$('#'+id).onchange=sync);$('#logicVal').oninput=sync}}
-function render(){let p=$('#statusPill');p.textContent=state.status==='published'?'Published':'Draft';p.className='status-pill'+(state.status==='published'?' published':'');renderCanvas();renderInspector()}
-function payload(){return{title:state.title.trim()||'Untitled survey',description:state.description,slug:state.slug,questions:state.questions,settings:state.settings}}
-async function save(quiet=false){state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;if(!key())return false;let url=state.id?`${API}/api/builder/surveys/${state.id}`:`${API}/api/builder/surveys`,r=await fetch(url,{method:state.id?'PUT':'POST',headers:hdr(),body:JSON.stringify(payload())});if(!r.ok){alert('Could not save survey.');return false}let j=await r.json();state={...state,...j,settings:{...state.settings,...j.settings}};history.replaceState(null,'',`builder.html?id=${state.id}`);render();if(!quiet)alert('Draft saved.');return true}
-async function load(){let id=new URLSearchParams(location.search).get('id');if(!id)return;if(!key())return;let r=await fetch(`${API}/api/builder/surveys/${id}`,{headers:hdr(false)});if(r.ok){let j=await r.json();state={...state,...j,settings:{...state.settings,...j.settings}};render()}}
-$('#surveyTitle').oninput=e=>state.title=e.target.value;$('#surveyDescription').oninput=e=>state.description=e.target.value;$('#settingsBtn').onclick=()=>{state.selected=null;render();$('#inspector').classList.add('open')};$('#previewBtn').onclick=()=>{state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;localStorage.setItem('survey-builder-preview',JSON.stringify(state));open('survey.html?preview=local','_blank')};$('#adminBtn').onclick=()=>location.href=state.id?`admin.html?survey=${state.id}`:'admin.html';$('#saveBtn').onclick=()=>save();$('#publishBtn').onclick=async()=>{if(!state.questions.length)return alert('Add at least one question.');if(await save(true)){let r=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:hdr(false)});if(r.ok){let j=await r.json();state.status='published';state.slug=j.slug;render();alert('Survey published.')}}};renderPalette();render();load();
+'use strict';
+
+const API = location.protocol === 'file:' ? 'http://localhost:8000' : location.origin;
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const uid = () => `q_${(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)).replaceAll('-', '').slice(0, 10)}`;
+
+const GROUPS = {
+  'Write & enter information': [
+    ['short_text','Short text'],['long_text','Open text'],['number','Number'],['email','Email'],['phone','Phone']
+  ],
+  'Choose & rate': [
+    ['yes_no','Yes / No'],['single_choice','Single choice'],['multiple_choice','Multiple choice'],['dropdown','Dropdown'],['rating','Rating scale'],['slider','Slider'],['matrix','Matrix / Likert']
+  ],
+  'Date & time': [['date','Date'],['time','Time'],['datetime','Date & time']],
+  'Map & location': [['map_multi','Point map'],['map_line','Line map'],['map_polygon','Polygon map']],
+  'Photos, media & files': [['photo','Photo'],['photos','Multiple photos'],['audio','Voice recording'],['video','Video recording'],['file','File upload'],['signature','Signature']],
+  'Priorities & trade-offs': [['ranking','Rank order'],['allocation','Resource allocation']],
+  'Content & consent': [['info','Information text'],['section','Section heading'],['consent','Consent checkbox']]
+};
+const LABEL = Object.fromEntries(Object.values(GROUPS).flat());
+const OPTS = new Set(['single_choice','multiple_choice','dropdown','ranking','allocation']);
+const LANGUAGE_CATALOG = [
+  ['en','English'],['de','Deutsch'],['fr','Français'],['es','Español'],['it','Italiano'],['nl','Nederlands'],['pl','Polski'],['pt','Português'],['tr','Türkçe'],['ar','العربية'],['uk','Українська'],['ru','Русский'],['fa','فارسی'],['zh','中文'],['ja','日本語']
+];
+
+let state = {
+  id:null, slug:null, status:'draft', title:'Untitled survey', description:'', questions:[],
+  settings:{logo:'',customDomain:'',primaryColor:'#2f6f5e',defaultLanguage:'en',languages:[{code:'en',name:'English'}],thankYou:'Thank you for your response.',showProgress:true,allowDrafts:true},
+  translations:{}
+};
+let selectedId = null;
+let adminKey = localStorage.getItem('survey-admin-key') || '';
+let saveStatusTimer = null;
+
+function esc(value='') { const div=document.createElement('div'); div.textContent=String(value); return div.innerHTML; }
+function escAttr(value='') { return esc(value).replaceAll('`','&#96;'); }
+function languageName(code){ return LANGUAGE_CATALOG.find(([c])=>c===code)?.[1] || code.toUpperCase(); }
+function normalizeState(){
+  state.settings ||= {};
+  state.settings.defaultLanguage ||= 'en';
+  if(!Array.isArray(state.settings.languages) || !state.settings.languages.length){
+    state.settings.languages=[{code:state.settings.defaultLanguage,name:languageName(state.settings.defaultLanguage)}];
+  }
+  state.settings.languages=state.settings.languages.map(item=>typeof item==='string'?{code:item,name:languageName(item)}:item).filter(x=>x?.code);
+  if(!state.settings.languages.some(x=>x.code===state.settings.defaultLanguage)) state.settings.languages.unshift({code:state.settings.defaultLanguage,name:languageName(state.settings.defaultLanguage)});
+  state.translations ||= {};
+}
+function ensureTranslation(code){
+  state.translations[code] ||= {survey:{},questions:{}};
+  state.translations[code].survey ||= {};
+  state.translations[code].questions ||= {};
+  return state.translations[code];
+}
+function ensureQuestionTranslation(code,qid){
+  const root=ensureTranslation(code);
+  root.questions[qid] ||= {};
+  return root.questions[qid];
+}
+function requireAdminKey(){
+  if(adminKey) return adminKey;
+  adminKey=(prompt('Enter ADMIN_KEY:')||'').trim();
+  if(adminKey) localStorage.setItem('survey-admin-key',adminKey);
+  return adminKey;
+}
+function headers(json=true){ const key=requireAdminKey(); const h={'X-Admin-Key':key}; if(json) h['Content-Type']='application/json'; return h; }
+function setSaveState(text){
+  const el=$('#saveState'); if(el) el.textContent=text;
+  clearTimeout(saveStatusTimer); if(text) saveStatusTimer=setTimeout(()=>{if(el)el.textContent='';},3000);
+}
+
+function newQuestion(type){
+  const q={id:uid(),type,title:LABEL[type]||'Question',description:'',required:false,config:{},logic:null};
+  if(OPTS.has(type)) q.config.options=['Option 1','Option 2','Option 3'];
+  if(type==='rating') Object.assign(q.config,{min:1,max:5,minLabel:'Low',maxLabel:'High'});
+  if(type==='slider') Object.assign(q.config,{min:0,max:100,step:1});
+  if(type==='matrix') Object.assign(q.config,{rows:['Statement 1','Statement 2'],columns:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree']});
+  if(type==='map_multi') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:1,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});
+  if(type==='map_line') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxFeatures:10,maxVertices:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});
+  if(type==='map_polygon') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxFeatures:10,maxVertices:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});
+  if(type==='photo') q.config.maxFiles=1;
+  if(type==='photos') q.config.maxFiles=8;
+  if(type==='file') q.config.maxFiles=3;
+  if(type==='audio'||type==='video') Object.assign(q.config,{allowRecord:true,allowUpload:true,maxDuration:type==='audio'?300:180});
+  if(type==='allocation') Object.assign(q.config,{total:100,unit:'points'});
+  if(type==='consent') q.config.checkboxLabel='I agree';
+  return q;
+}
+
+function renderPalette(){
+  const palette=$('#palette');
+  palette.innerHTML=Object.entries(GROUPS).map(([group,items])=>`<section class="group-block"><div class="group-title">${esc(group)}</div><div class="question-type-grid">${items.map(([type,label])=>`<button type="button" class="qtype-btn" data-add-type="${type}"><span class="qtype-icon">＋</span><span>${esc(label)}</span></button>`).join('')}</div></section>`).join('');
+}
+
+function questionPreview(q){
+  const c=q.config||{};
+  if(OPTS.has(q.type)) return (c.options||[]).join(' · ');
+  if(q.type==='matrix') return `${(c.rows||[]).length} rows × ${(c.columns||[]).length} choices`;
+  if(q.type==='map_multi') return `Point map · max ${c.maxPoints||1}`;
+  if(q.type==='map_line') return `Line map · ${c.maxFeatures||10} lines · ${c.maxVertices||30} vertices each`;
+  if(q.type==='map_polygon') return `Polygon map · ${c.maxFeatures||10} polygons · ${c.maxVertices||30} vertices each`;
+  if(['photo','photos','audio','video','file','signature'].includes(q.type)) return 'Media response';
+  if(q.type==='rating') return `${c.min||1}–${c.max||5} scale`;
+  if(q.type==='allocation') return `Allocate ${c.total||100} ${c.unit||'points'}`;
+  return q.description||'Answer field';
+}
+
+function renderCanvas(){
+  $('#surveyTitle').value=state.title||'';
+  $('#surveyDescription').value=state.description||'';
+  const canvas=$('#questionCanvas');
+  if(!state.questions.length){ canvas.innerHTML='<div class="empty-state"><strong>Your survey is empty.</strong><br>Choose a question type from the left.</div>'; return; }
+  canvas.innerHTML=state.questions.map((q,index)=>`<article class="question-card ${q.id===selectedId?'selected':''}" data-qid="${q.id}" tabindex="0"><div class="question-meta"><span class="question-type">${index+1}. ${esc(LABEL[q.type]||q.type)}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" type="button" data-action="up" data-qid="${q.id}" title="Move up">↑</button><button class="icon-btn" type="button" data-action="down" data-qid="${q.id}" title="Move down">↓</button><button class="icon-btn" type="button" data-action="copy" data-qid="${q.id}" title="Duplicate">⧉</button><button class="icon-btn danger" type="button" data-action="delete" data-qid="${q.id}" title="Delete">×</button></div></div><div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(questionPreview(q))}</div></article>`).join('');
+}
+
+function field(label,html,help=''){ return `<label class="field"><span>${esc(label)}</span>${html}${help?`<small class="small-help">${esc(help)}</small>`:''}</label>`; }
+function textInput(id,value=''){ return `<input id="${id}" type="text" value="${escAttr(value)}">`; }
+function choiceEditor(q){ return `<div id="choiceEditor">${(q.config.options||[]).map((opt,i)=>`<div class="choice-row"><input data-choice-index="${i}" value="${escAttr(opt)}"><button class="btn" type="button" data-remove-choice="${i}">×</button></div>`).join('')}</div><button class="btn" type="button" id="addChoice">+ Add option</button>`; }
+function mapSettings(q){
+  const c=q.config||{}; const isPoint=q.type==='map_multi'; const isPolygon=q.type==='map_polygon';
+  return `<section class="section"><h3>Map configuration</h3>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer “Use my location”</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></section>`;
+}
+function translationFields(q){
+  normalizeState(); const extras=state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); if(!extras.length) return '';
+  return `<section class="section"><h3>Translations</h3>${extras.map(lang=>{const t=ensureQuestionTranslation(lang.code,q.id);return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Question text',`<input data-tr-lang="${lang.code}" data-tr-key="title" value="${escAttr(t.title||'')}">`)}${field('Description',`<textarea data-tr-lang="${lang.code}" data-tr-key="description">${esc(t.description||'')}</textarea>`)}${OPTS.has(q.type)?field('Choices',`<textarea data-tr-lang="${lang.code}" data-tr-key="options">${esc((t.options||[]).join('\n'))}</textarea>`,'One translated choice per line.'):''}</details>`}).join('')}</section>`;
+}
+
+function renderInspector(){
+  normalizeState();
+  const panel=$('#inspector'); const q=state.questions.find(x=>x.id===selectedId);
+  if(!q){ renderSettings(); return; }
+  const c=q.config||{};
+  let html=`<div class="inspector-title"><h2>Question settings</h2><button class="btn" id="closeInspector" type="button">Close</button></div><section class="section">${field('Question',textInput('qTitle',q.title))}${field('Description / help text',`<textarea id="qDescription" rows="4">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</section>`;
+  if(OPTS.has(q.type)) html+=`<section class="section"><h3>Choices</h3>${choiceEditor(q)}</section>`;
+  if(q.type==='matrix') html+=`<section class="section"><h3>Matrix</h3>${field('Rows',`<textarea id="matrixRows">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols">${esc((c.columns||[]).join('\n'))}</textarea>`)}</section>`;
+  if(['rating','slider','number'].includes(q.type)) html+=`<section class="section"><h3>Range</h3><div class="row">${field('Minimum',`<input id="qMin" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep" type="number" value="${c.step??1}">`)}</section>`;
+  if(q.type.startsWith('map_')) html+=mapSettings(q);
+  if(['photo','photos','file'].includes(q.type)) html+=`<section class="section"><h3>Files</h3>${field('Maximum files',`<input id="maxFiles" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</section>`;
+  if(['audio','video'].includes(q.type)) html+=`<section class="section"><h3>Recording</h3>${field('Maximum duration (seconds)',`<input id="maxDuration" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></section>`;
+  if(q.type==='allocation') html+=`<section class="section"><h3>Allocation</h3>${field('Total',`<input id="allocationTotal" type="number" value="${c.total||100}">`)}${field('Unit',textInput('allocationUnit',c.unit||'points'))}</section>`;
+  if(q.type==='consent') html+=`<section class="section"><h3>Consent</h3>${field('Checkbox label',textInput('consentLabel',c.checkboxLabel||'I agree'))}</section>`;
+  html+=translationFields(q);
+  panel.innerHTML=html; panel.classList.add('open');
+}
+
+function renderSettings(){
+  normalizeState(); const s=state.settings; const enabled=new Set(s.languages.map(x=>x.code));
+  const extraTranslations=s.languages.filter(x=>x.code!==s.defaultLanguage);
+  $('#inspector').innerHTML=`<div class="inspector-title"><h2>Survey settings</h2><span id="saveState" class="save-state"></span></div><section class="section"><h3>Publishing</h3>${field('Public slug',textInput('surveySlug',state.slug||''),'Used in the public URL.')}${field('Primary color',`<input id="primaryColor" type="color" value="${escAttr(s.primaryColor||'#2f6f5e')}">`)}<label class="check"><input id="showProgress" type="checkbox" ${s.showProgress!==false?'checked':''}><span>Show progress</span></label><label class="check"><input id="allowDrafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}><span>Save respondent draft locally</span></label></section><section class="section"><h3>Branding</h3>${field('Custom domain',textInput('customDomain',s.customDomain||''))}${field('Thank-you message',`<textarea id="thankYou" rows="4">${esc(s.thankYou||'')}</textarea>`)}</section><section class="section"><h3>Survey languages</h3>${field('Main language',`<select id="defaultLanguage">${LANGUAGE_CATALOG.map(([code,name])=>`<option value="${code}" ${code===s.defaultLanguage?'selected':''}>${esc(name)}</option>`).join('')}</select>`)}<div class="small-help">Choose additional participant languages:</div>${LANGUAGE_CATALOG.map(([code,name])=>`<label class="check"><input type="checkbox" data-language="${code}" ${enabled.has(code)?'checked':''} ${code===s.defaultLanguage?'disabled':''}><span>${esc(name)}</span></label>`).join('')}</section>${extraTranslations.length?`<section class="section"><h3>Survey translations</h3>${extraTranslations.map(lang=>{const tr=ensureTranslation(lang.code).survey;return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Survey title',`<input data-survey-tr-lang="${lang.code}" data-survey-tr-key="title" value="${escAttr(tr.title||'')}">`)}${field('Introduction',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="description">${esc(tr.description||'')}</textarea>`)}${field('Thank-you message',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="thankYou">${esc(tr.thankYou||'')}</textarea>`)}</details>`}).join('')}</section>`:''}`;
+}
+
+function render(){
+  normalizeState();
+  const pill=$('#statusPill'); pill.textContent=state.status==='published'?'Published':'Draft'; pill.classList.toggle('published',state.status==='published');
+  renderCanvas(); renderInspector();
+}
+
+function addQuestion(type){
+  if(!LABEL[type]) return;
+  const q=newQuestion(type); const index=state.questions.findIndex(x=>x.id===selectedId);
+  if(index<0) state.questions.push(q); else state.questions.splice(index+1,0,q);
+  selectedId=q.id; render();
+  requestAnimationFrame(()=>document.querySelector(`[data-qid="${q.id}"]`)?.scrollIntoView({block:'center'}));
+}
+function moveQuestion(id,delta){ const i=state.questions.findIndex(q=>q.id===id),j=i+delta; if(i<0||j<0||j>=state.questions.length)return; [state.questions[i],state.questions[j]]=[state.questions[j],state.questions[i]]; renderCanvas(); }
+function copyQuestion(id){ const i=state.questions.findIndex(q=>q.id===id); if(i<0)return; const copy=structuredClone(state.questions[i]); copy.id=uid(); copy.title+= ' (copy)'; state.questions.splice(i+1,0,copy); selectedId=copy.id; render(); }
+function deleteQuestion(id){ const i=state.questions.findIndex(q=>q.id===id); if(i<0)return; if(!confirm(`Delete “${state.questions[i].title}”?`))return; state.questions.splice(i,1); if(selectedId===id)selectedId=null; render(); }
+
+function syncSimpleInspector(target){
+  const q=state.questions.find(x=>x.id===selectedId); if(!q)return;
+  const id=target.id;
+  if(id==='qTitle'){q.title=target.value;renderCanvas();return}
+  if(id==='qDescription'){q.description=target.value;renderCanvas();return}
+  if(id==='qRequired'){q.required=target.checked;renderCanvas();return}
+  if(target.matches('[data-choice-index]')){q.config.options[Number(target.dataset.choiceIndex)]=target.value;renderCanvas();return}
+  if(id==='matrixRows'){q.config.rows=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
+  if(id==='matrixCols'){q.config.columns=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
+  const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total'};
+  if(numberMap[id]){q.config[numberMap[id]]=target.value===''?'':Number(target.value);renderCanvas();return}
+  const checkMap={allowGeo:'allowGeo',allowCitySearch:'allowCitySearch',allowRecord:'allowRecord',allowUpload:'allowUpload'};
+  if(checkMap[id]){q.config[checkMap[id]]=target.checked;return}
+  if(id==='allocationUnit'){q.config.unit=target.value;renderCanvas();return}
+  if(id==='consentLabel'){q.config.checkboxLabel=target.value;return}
+  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=key==='options'?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
+}
+function syncSettings(target){
+  const s=state.settings;
+  if(target.id==='surveySlug') state.slug=target.value;
+  else if(target.id==='primaryColor') s.primaryColor=target.value;
+  else if(target.id==='showProgress') s.showProgress=target.checked;
+  else if(target.id==='allowDrafts') s.allowDrafts=target.checked;
+  else if(target.id==='customDomain') s.customDomain=target.value;
+  else if(target.id==='thankYou') s.thankYou=target.value;
+  else if(target.id==='defaultLanguage'){
+    s.defaultLanguage=target.value;
+    if(!s.languages.some(x=>x.code===target.value))s.languages.unshift({code:target.value,name:languageName(target.value)});
+    renderSettings();
+  } else if(target.matches('[data-language]')){
+    const code=target.dataset.language;
+    if(target.checked && !s.languages.some(x=>x.code===code))s.languages.push({code,name:languageName(code)});
+    if(!target.checked)s.languages=s.languages.filter(x=>x.code!==code);
+    renderSettings();
+  } else if(target.matches('[data-survey-tr-lang]')){
+    ensureTranslation(target.dataset.surveyTrLang).survey[target.dataset.surveyTrKey]=target.value;
+  }
+}
+
+function payload(){
+  state.title=$('#surveyTitle').value.trim()||'Untitled survey'; state.description=$('#surveyDescription').value;
+  return {title:state.title,description:state.description,slug:state.slug||null,questions:state.questions,settings:{...state.settings,translations:state.translations}};
+}
+async function save(quiet=false){
+  if(!requireAdminKey()) return false;
+  setSaveState('Saving…');
+  try{
+    const url=state.id?`${API}/api/builder/surveys/${state.id}`:`${API}/api/builder/surveys`;
+    const response=await fetch(url,{method:state.id?'PUT':'POST',headers:headers(),body:JSON.stringify(payload())});
+    if(!response.ok) throw new Error(await response.text());
+    const data=await response.json();
+    state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||state.translations};
+    history.replaceState(null,'',`/builder?id=${state.id}`);
+    render(); setSaveState('Saved'); if(!quiet) alert('Draft saved.'); return true;
+  }catch(error){console.error(error);setSaveState('Save failed');alert('Could not save survey.');return false;}
+}
+async function load(){
+  const id=new URLSearchParams(location.search).get('id'); if(!id)return;
+  if(!requireAdminKey())return;
+  try{const response=await fetch(`${API}/api/builder/surveys/${id}`,{headers:headers(false)});if(!response.ok)throw new Error(await response.text());const data=await response.json();state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||{}};selectedId=null;render();}catch(error){console.error(error);alert('Could not load survey.');}
+}
+function previewSurvey(){state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;localStorage.setItem('survey-builder-preview',JSON.stringify(state));window.open('/survey?preview=local','_blank');}
+async function publish(){if(!state.questions.length){alert('Add at least one question first.');return}if(!await save(true))return;const response=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:headers(false)});if(!response.ok){alert('Could not publish survey.');return}const data=await response.json();state.status='published';state.slug=data.slug;render();alert('Survey published.');}
+
+$('#palette').addEventListener('click',event=>{const button=event.target.closest('[data-add-type]');if(button)addQuestion(button.dataset.addType);});
+$('#questionCanvas').addEventListener('click',event=>{
+  const action=event.target.closest('[data-action]'); if(action){event.stopPropagation(); const id=action.dataset.qid; if(action.dataset.action==='up')moveQuestion(id,-1); if(action.dataset.action==='down')moveQuestion(id,1); if(action.dataset.action==='copy')copyQuestion(id); if(action.dataset.action==='delete')deleteQuestion(id); return;}
+  const card=event.target.closest('[data-qid]'); if(card){selectedId=card.dataset.qid;render();}
+});
+$('#questionCanvas').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-qid]')){event.preventDefault();selectedId=event.target.dataset.qid;render();}});
+$('#inspector').addEventListener('input',event=>{if(selectedId)syncSimpleInspector(event.target);else syncSettings(event.target);});
+$('#inspector').addEventListener('change',event=>{if(selectedId)syncSimpleInspector(event.target);else syncSettings(event.target);});
+$('#inspector').addEventListener('click',event=>{
+  if(event.target.id==='closeInspector'){selectedId=null;render();return}
+  const q=state.questions.find(x=>x.id===selectedId); if(!q)return;
+  if(event.target.id==='addChoice'){q.config.options.push(`Option ${q.config.options.length+1}`);renderInspector();return}
+  const remove=event.target.closest('[data-remove-choice]'); if(remove && q.config.options.length>1){q.config.options.splice(Number(remove.dataset.removeChoice),1);renderInspector();renderCanvas();}
+});
+$('#surveyTitle').addEventListener('input',event=>{state.title=event.target.value;});
+$('#surveyDescription').addEventListener('input',event=>{state.description=event.target.value;});
+$('#settingsBtn').addEventListener('click',()=>{selectedId=null;renderInspector();$('#inspector').classList.add('open');});
+$('#previewBtn').addEventListener('click',previewSurvey);
+$('#adminBtn').addEventListener('click',()=>{location.href=state.id?`/admin?survey=${state.id}`:'/admin';});
+$('#saveBtn').addEventListener('click',()=>save(false));
+$('#publishBtn').addEventListener('click',publish);
+
+renderPalette();
+render();
+load();
