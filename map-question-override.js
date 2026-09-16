@@ -1,4 +1,4 @@
-// Three consistent map question types: points, line, and polygon.
+// Three consistent map question types: points, multiple lines, and multiple polygons.
 (function () {
   if (typeof GROUPS === 'undefined' || typeof LABEL === 'undefined') return;
 
@@ -30,9 +30,14 @@
     q.config.allowGeo = q.config.allowGeo !== false;
     q.config.allowCitySearch = q.config.allowCitySearch !== false;
     q.config.mapPage = true;
-    if (type === 'map_multi') q.config.maxPoints = Math.min(50, Math.max(1, Number(q.config.maxPoints) || 1));
-    if (type === 'map_line') q.config.maxVertices = Math.min(100, Math.max(2, Number(q.config.maxVertices) || 30));
-    if (type === 'map_polygon') q.config.maxVertices = Math.min(100, Math.max(3, Number(q.config.maxVertices) || 30));
+    if (type === 'map_multi') {
+      q.config.maxPoints = Math.min(50, Math.max(1, Number(q.config.maxPoints) || 1));
+    } else {
+      q.config.maxFeatures = Math.min(50, Math.max(1, Number(q.config.maxFeatures) || 10));
+      q.config.maxVertices = type === 'map_polygon'
+        ? Math.min(100, Math.max(3, Number(q.config.maxVertices) || 30))
+        : Math.min(100, Math.max(2, Number(q.config.maxVertices) || 30));
+    }
     q.config.popup = q.config.popup || {};
     q.config.popup.enabled = false;
     q.config.popup.type = q.config.popup.type || 'single_choice';
@@ -41,8 +46,15 @@
     return q;
   };
 
-  function clampLimit(q, value) {
-    if (q.type === 'map_multi') return Math.min(50, Math.max(1, Number(value) || 1));
+  function clampPointLimit(value) {
+    return Math.min(50, Math.max(1, Number(value) || 1));
+  }
+
+  function clampFeatureLimit(value) {
+    return Math.min(50, Math.max(1, Number(value) || 10));
+  }
+
+  function clampVertexLimit(q, value) {
     const minimum = q.type === 'map_polygon' ? 3 : 2;
     return Math.min(100, Math.max(minimum, Number(value) || 30));
   }
@@ -55,20 +67,22 @@
     c.mapPage = true;
 
     const isPoint = q.type === 'map_multi';
-    const limitKey = isPoint ? 'maxPoints' : 'maxVertices';
-    const min = isPoint ? 1 : (q.type === 'map_polygon' ? 3 : 2);
-    const max = isPoint ? 50 : 100;
-    c[limitKey] = clampLimit(q, c[limitKey]);
-    const limitLabel = isPoint ? 'Maximum points' : 'Maximum vertices';
-    const limitHelp = isPoint
-      ? 'Choose how many locations respondents may select, from 1 to 50.'
-      : `${q.type === 'map_polygon' ? 'Polygons need at least 3 vertices.' : 'Lines need at least 2 vertices.'} Choose up to 100 vertices.`;
+    if (isPoint) c.maxPoints = clampPointLimit(c.maxPoints);
+    else {
+      c.maxFeatures = clampFeatureLimit(c.maxFeatures);
+      c.maxVertices = clampVertexLimit(q, c.maxVertices);
+    }
+
+    const geometryName = q.type === 'map_polygon' ? 'polygons' : 'lines';
+    const minimumVertices = q.type === 'map_polygon' ? 3 : 2;
     const followupLabel = isPoint ? 'Point follow-up' : 'Vertex follow-up';
     const followupText = isPoint ? 'Ask after each mapped point' : 'Ask after each added vertex';
 
     return `<div class="inspector-section">
       <div class="panel-title">Map experience</div>
-      ${f(limitLabel, `<input id="${limitKey}" type="number" min="${min}" max="${max}" step="1" value="${c[limitKey]}">`, limitHelp)}
+      ${isPoint
+        ? f('Maximum points', `<input id="maxPoints" type="number" min="1" max="50" step="1" value="${c.maxPoints}">`, 'Choose how many locations respondents may select, from 1 to 50.')
+        : `${f(`Maximum ${geometryName}`, `<input id="maxFeatures" type="number" min="1" max="50" step="1" value="${c.maxFeatures}">`, `Respondents can save one ${geometryName.slice(0,-1)} and then draw another, up to 50 separate ${geometryName}.`)}${f('Maximum vertices per feature', `<input id="maxVertices" type="number" min="${minimumVertices}" max="100" step="1" value="${c.maxVertices}">`, `${q.type === 'map_polygon' ? 'A polygon needs at least 3 vertices.' : 'A line needs at least 2 vertices.'} Choose up to 100 vertices per saved feature.`)}`}
       <label class="check-row"><input id="allowGeo" type="checkbox" ${c.allowGeo !== false ? 'checked' : ''}> Offer “Use my location”</label>
       <label class="check-row"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch !== false ? 'checked' : ''}> Offer city/place search</label>
     </div>
@@ -102,22 +116,27 @@
     originalWireQ(q);
     if (!MAP_TYPES.has(q.type)) return;
 
-    const limitId = q.type === 'map_multi' ? 'maxPoints' : 'maxVertices';
-    const limitInput = document.getElementById(limitId);
-    if (limitInput) {
-      limitInput.min = q.type === 'map_multi' ? '1' : (q.type === 'map_polygon' ? '3' : '2');
-      limitInput.max = q.type === 'map_multi' ? '50' : '100';
-      limitInput.step = '1';
+    const numericInputs = [];
+    if (q.type === 'map_multi') {
+      numericInputs.push(['maxPoints', clampPointLimit]);
+    } else {
+      numericInputs.push(['maxFeatures', clampFeatureLimit]);
+      numericInputs.push(['maxVertices', value => clampVertexLimit(q, value)]);
+    }
+
+    numericInputs.forEach(([id, clamp]) => {
+      const input = document.getElementById(id);
+      if (!input) return;
       const normalize = () => {
-        const value = clampLimit(q, limitInput.value);
-        limitInput.value = value;
-        q.config[limitId] = value;
+        const value = clamp(input.value);
+        input.value = value;
+        q.config[id] = value;
         renderCanvas();
         refreshPreview();
       };
-      limitInput.addEventListener('change', normalize);
-      limitInput.addEventListener('blur', normalize);
-    }
+      input.addEventListener('change', normalize);
+      input.addEventListener('blur', normalize);
+    });
 
     ['allowGeo', 'allowCitySearch'].forEach(key => {
       document.getElementById(key)?.addEventListener('change', e => {
