@@ -61,7 +61,6 @@ def builder_javascript() -> str:
     breaking surveys created with earlier preview builds.
     """
     js = (BASE_DIR / "builder.js").read_text(encoding="utf-8")
-
     js = js.replace(
         "Maps:[['map_point','Map point'],['map_multi','Multi-point map'],['map_line','Map line / route'],['map_polygon','Map area']]",
         "Maps:[['map_multi','Map question']]",
@@ -70,15 +69,8 @@ def builder_javascript() -> str:
         "if(type.startsWith('map_'))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_point'?1:10,maxVertices:50,popup:{enabled:type==='map_multi',type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});",
         "if(type==='map_multi')Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:1,allowGeo:true,allowCitySearch:true,fullScreenMap:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});",
     )
-
     unified_map_config = r'''function mapConfig(q){let c=q.config,p=c.popup||{};c.maxPoints=Math.min(50,Math.max(1,Number(c.maxPoints)||1));if(c.allowGeo===undefined)c.allowGeo=true;if(c.allowCitySearch===undefined)c.allowCitySearch=true;if(c.fullScreenMap===undefined)c.fullScreenMap=true;return `<div class="inspector-section"><div class="panel-title">Map experience</div>${f('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" step="1" value="${c.maxPoints}">`,'Choose any value from 1 to 50. Use 1 for a single-point map.')}<label class="check-row"><input id="fullScreenMap" type="checkbox" ${c.fullScreenMap!==false?'checked':''}> Offer full-screen map</label><label class="check-row"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}> Offer “Use my location”</label><label class="check-row"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}> Offer city/place search</label></div><div class="inspector-section"><div class="panel-title">Starting map view</div><div class="row">${f('Latitude',`<input id="lat" type="number" step=".0001" value="${c.lat??51.5136}">`)}${f('Longitude',`<input id="lng" type="number" step=".0001" value="${c.lng??7.4653}">`)}</div>${f('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${c.zoom||12}">`)}</div><div class="inspector-section"><div class="panel-title">Point follow-up</div><label class="check-row"><input id="popOn" type="checkbox" ${p.enabled?'checked':''}> Ask after each mapped point</label>${f('Popup question',inp(p.question||'','popQ'))}${f('Popup type','<select id="popType"><option value="short_text">Open text</option><option value="single_choice">Single choice</option><option value="rating">1–5 rating</option></select>')}${listEditor('popOptions','Popup choices',p.options||[])}</div>`}'''
-    js = re.sub(
-        r"function mapConfig\(q\)\{.*?\}(?=\nfunction logic\(q\))",
-        unified_map_config,
-        js,
-        flags=re.S,
-    )
-
+    js = re.sub(r"function mapConfig\(q\)\{.*?\}(?=\nfunction logic\(q\))", unified_map_config, js, flags=re.S)
     js = js.replace(
         "function bind(id,fn,event='input'){let e=$('#'+id);if(e)e.addEventListener(event,x=>{fn(x.target.type==='number'?(x.target.value===''?'':Number(x.target.value)):x.target.value);renderCanvas()})}",
         "function bind(id,fn,event='input'){let e=$('#'+id);if(e)e.addEventListener(event,x=>{let v=x.target.type==='number'?(x.target.value===''?'':Number(x.target.value)):x.target.value;if(id==='maxPoints'&&v!=='')v=Math.min(50,Math.max(1,Number(v)||1));fn(v);renderCanvas()})}",
@@ -111,6 +103,11 @@ def admin_page():
     return styled_html("admin.html")
 
 
+@app.get("/admin.html", include_in_schema=False)
+def admin_html_page():
+    return styled_html("admin.html")
+
+
 @app.get("/survey", include_in_schema=False)
 def survey_page():
     return survey_html()
@@ -127,7 +124,6 @@ def lifres_page():
 
 
 for filename, media_type in {
-    "admin.html": "text/html",
     "platform.css": "text/css",
     "modern-ui.css": "text/css",
     "map-question-override.js": "application/javascript",
