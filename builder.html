@@ -6,6 +6,7 @@
   <title>Survey Builder</title>
   <link rel="stylesheet" href="platform.css?v=1" />
   <style>
+    .builder-grid{grid-template-columns:220px minmax(440px,1fr) minmax(360px,440px)}
     .question-card.editing{gap:14px}
     .inline-question-editor{display:grid;gap:13px;padding-top:2px}
     .inline-question-editor .field>span:first-child,.inline-editor-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.045em}
@@ -20,7 +21,38 @@
     .inline-edit-footer{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:4px}
     .edit-question-btn{justify-self:start;border:0;background:var(--accent-soft);color:var(--accent-2);font-weight:750;border-radius:9px;padding:7px 11px}
     .question-card:not(.editing){cursor:pointer}
-    @media(max-width:720px){.inline-two-col{grid-template-columns:1fr}.inline-edit-footer{align-items:flex-start;flex-direction:column}.question-card.editing{scroll-margin-top:74px}}
+
+    .live-preview-panel{border-left:1px solid var(--border);background:#eef2f4;min-width:0;display:flex;flex-direction:column;height:calc(100vh - 64px);position:sticky;top:64px;overflow:hidden}
+    .preview-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;background:var(--surface);border-bottom:1px solid var(--border)}
+    .preview-panel-title{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#2b9a63;box-shadow:0 0 0 3px rgba(43,154,99,.13)}
+    .preview-device-switch{display:flex;gap:4px;padding:3px;background:var(--surface-2);border-radius:9px}
+    .preview-device-switch button{border:0;background:transparent;padding:5px 8px;border-radius:7px;font-size:11px;font-weight:700;color:var(--muted)}
+    .preview-device-switch button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .preview-frame-area{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;justify-content:center;align-items:flex-start}
+    .preview-frame-shell{width:100%;height:100%;min-height:520px;background:#fff;border:1px solid #cfd8df;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(23,33,43,.10);transition:width .2s ease}
+    .preview-frame-shell.mobile{width:390px;max-width:100%;height:760px;flex:none}
+    #livePreviewFrame{display:block;width:100%;height:100%;min-height:520px;border:0;background:#fff}
+    .preview-updating{font-size:11px;color:var(--muted);white-space:nowrap}
+    .preview-open-btn{border:1px solid var(--border);background:var(--surface);padding:5px 8px;border-radius:7px;font-size:11px;font-weight:700}
+
+    .inspector{position:fixed!important;right:0;top:64px;bottom:0;width:min(370px,92vw);z-index:80;box-shadow:-12px 0 28px rgba(0,0,0,.12);transform:translateX(100%);transition:transform .2s ease;border-left:1px solid var(--border);overflow:auto}
+    .inspector.open{transform:translateX(0)}
+
+    @media(max-width:1180px){
+      .builder-grid{grid-template-columns:210px minmax(0,1fr)}
+      .live-preview-panel{display:none}
+      body.preview-visible .live-preview-panel{display:flex;position:fixed;top:64px;right:0;bottom:0;width:min(520px,100vw);height:auto;z-index:70;box-shadow:-16px 0 34px rgba(0,0,0,.16)}
+    }
+    @media(max-width:720px){
+      .builder-grid{grid-template-columns:1fr}
+      .inline-two-col{grid-template-columns:1fr}
+      .inline-edit-footer{align-items:flex-start;flex-direction:column}
+      .question-card.editing{scroll-margin-top:74px}
+      body.preview-visible .live-preview-panel{top:0;width:100vw}
+      .preview-frame-area{padding:8px}
+      .preview-panel-head{flex-wrap:wrap}
+    }
   </style>
 </head>
 <body>
@@ -44,6 +76,27 @@
       </section>
       <section id="questionCanvas" class="question-canvas"></section>
     </main>
+    <aside class="live-preview-panel" id="livePreviewPanel" aria-label="Live survey preview">
+      <div class="preview-panel-head">
+        <div>
+          <div class="preview-panel-title"><span class="live-dot"></span> Live preview</div>
+          <div class="preview-updating" id="previewStatus">Shows the respondent view</div>
+        </div>
+        <div class="row">
+          <div class="preview-device-switch" aria-label="Preview device">
+            <button type="button" class="active" data-device="desktop" title="Desktop preview">Desktop</button>
+            <button type="button" data-device="mobile" title="Mobile preview">Mobile</button>
+          </div>
+          <button type="button" class="preview-open-btn" id="openPreviewBtn">↗</button>
+          <button type="button" class="preview-open-btn" id="closePreviewBtn" style="display:none">×</button>
+        </div>
+      </div>
+      <div class="preview-frame-area">
+        <div class="preview-frame-shell" id="previewFrameShell">
+          <iframe id="livePreviewFrame" title="Live survey preview" src="survey.html?preview=local&embed=1"></iframe>
+        </div>
+      </div>
+    </aside>
     <aside class="builder-panel inspector" id="inspector"></aside>
   </div>
 </div>
@@ -69,20 +122,24 @@
     article.querySelector('[data-inline-add]')?.addEventListener('click',e=>{e.stopPropagation();q.config.options.push(`Option ${q.config.options.length+1}`);render();requestAnimationFrame(()=>{const items=document.querySelectorAll(`[data-qid="${q.id}"] [data-inline-opt]`);items[items.length-1]?.focus();items[items.length-1]?.select()})});
     article.querySelector('[data-inline-rows]')?.addEventListener('input',e=>{q.config.rows=e.target.value.split('\n').filter(v=>v.trim());const other=$('#rows');if(other)other.value=e.target.value});
     article.querySelector('[data-inline-cols]')?.addEventListener('input',e=>{q.config.columns=e.target.value.split('\n').filter(v=>v.trim());const other=$('#cols');if(other)other.value=e.target.value});
+    article.querySelector('[data-advanced]')?.addEventListener('click',e=>{e.stopPropagation();renderInspector();$('#inspector').classList.add('open')});
   }
+
+  const baseInspector=renderInspector;
+  renderInspector=function(){baseInspector();$('#inspector').classList.remove('open')};
 
   renderCanvas=function(){
     const canvas=$('#questionCanvas');
     $('#surveyTitle').value=state.title;
     $('#surveyDescription').value=state.description;
-    canvas.innerHTML=state.questions.length?'':'<div class="empty-canvas"><strong>Your survey is empty.</strong><br>Choose a question type on the left. It will open immediately for editing.</div>';
+    canvas.innerHTML=state.questions.length?'':'<div class="empty-canvas"><strong>Your survey is empty.</strong><br>Choose a question type on the left. It will open immediately for editing, and the live preview will update on the right.</div>';
     state.questions.forEach((q,i)=>{
       const selected=q.id===state.selected;
       const article=document.createElement('article');
       article.className='question-card'+(selected?' selected editing':'');
       article.dataset.qid=q.id;
       article.draggable=!selected;
-      const body=selected?`<div class="inline-question-editor"><label class="field"><span>Question text</span><input class="inline-question-title" type="text" value="${esc(q.title)}" placeholder="Write your question here"></label><label class="field"><span>${q.type==='info'||q.type==='section'?'Text':'Description / help text'}</span><textarea class="inline-question-desc" placeholder="Optional description or guidance">${esc(q.description||'')}</textarea></label>${OPTS.has(q.type)?choiceEditor(q):''}${q.type==='matrix'?matrixEditor(q):''}<div class="inline-edit-footer">${!['info','section'].includes(q.type)?`<label class="check-row"><input data-inline-required type="checkbox" ${q.required?'checked':''}> Required question</label>`:'<span></span>'}<span class="field-help">Advanced settings are in the right panel.</span></div></div>`:`<div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(preview(q))}</div><button class="edit-question-btn" data-a="edit" type="button">Edit question & answers</button>`;
+      const body=selected?`<div class="inline-question-editor"><label class="field"><span>Question text</span><input class="inline-question-title" type="text" value="${esc(q.title)}" placeholder="Write your question here"></label><label class="field"><span>${q.type==='info'||q.type==='section'?'Text':'Description / help text'}</span><textarea class="inline-question-desc" placeholder="Optional description or guidance">${esc(q.description||'')}</textarea></label>${OPTS.has(q.type)?choiceEditor(q):''}${q.type==='matrix'?matrixEditor(q):''}<div class="inline-edit-footer"><div class="row-wrap">${!['info','section'].includes(q.type)?`<label class="check-row"><input data-inline-required type="checkbox" ${q.required?'checked':''}> Required question</label>`:''}<button class="btn btn-sm" data-advanced type="button">Advanced settings</button></div><span class="field-help">Changes appear automatically in the live preview.</span></div></div>`:`<div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(preview(q))}</div><button class="edit-question-btn" data-a="edit" type="button">Edit question & answers</button>`;
       article.innerHTML=`<div class="question-meta"><span class="question-type">${i+1}. ${LABEL[q.type]}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" data-a="up" type="button">↑</button><button class="icon-btn" data-a="down" type="button">↓</button><button class="icon-btn" data-a="copy" type="button">⧉</button><button class="icon-btn" data-a="del" type="button">×</button></div></div>${body}`;
       article.onclick=e=>{if(e.target.closest('button,input,textarea,select,label'))return;if(state.selected!==q.id){state.selected=q.id;render()}};
       article.ondragstart=()=>window.dragQ=q.id;
@@ -109,6 +166,67 @@
 
   renderPalette();
   render();
+})();
+
+(function liveSurveyPreview(){
+  const frame=document.getElementById('livePreviewFrame');
+  const shell=document.getElementById('previewFrameShell');
+  const status=document.getElementById('previewStatus');
+  const close=document.getElementById('closePreviewBtn');
+  let timer=null;
+  let seq=0;
+
+  function snapshot(){
+    const title=document.getElementById('surveyTitle');
+    const description=document.getElementById('surveyDescription');
+    if(title)state.title=title.value;
+    if(description)state.description=description.value;
+    return {...state,title:state.title||'Untitled survey',description:state.description||'',settings:{...state.settings}};
+  }
+
+  function refreshNow(){
+    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
+    status.textContent='Updating…';
+    frame.src=`survey.html?preview=local&embed=1&v=${++seq}`;
+  }
+
+  function schedulePreview(){
+    clearTimeout(timer);
+    status.textContent='Updating…';
+    timer=setTimeout(refreshNow,280);
+  }
+
+  frame.addEventListener('load',()=>{status.textContent='Live · respondent view'});
+  document.addEventListener('input',e=>{if(e.target.closest('#inspector,#questionCanvas,.builder-hero'))schedulePreview()},true);
+  document.addEventListener('change',e=>{if(e.target.closest('#inspector,#questionCanvas,.builder-hero'))schedulePreview()},true);
+
+  const baseRender=render;
+  render=function(){baseRender();schedulePreview()};
+
+  document.querySelectorAll('[data-device]').forEach(button=>button.onclick=()=>{
+    document.querySelectorAll('[data-device]').forEach(x=>x.classList.toggle('active',x===button));
+    shell.classList.toggle('mobile',button.dataset.device==='mobile');
+  });
+
+  document.getElementById('openPreviewBtn').onclick=()=>{
+    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
+    window.open('survey.html?preview=local','_blank');
+  };
+
+  document.getElementById('previewBtn').onclick=()=>{
+    localStorage.setItem('survey-builder-preview',JSON.stringify(snapshot()));
+    if(matchMedia('(max-width:1180px)').matches){
+      document.body.classList.toggle('preview-visible');
+      close.style.display=document.body.classList.contains('preview-visible')?'inline-block':'none';
+      if(document.body.classList.contains('preview-visible'))refreshNow();
+    }else{
+      document.getElementById('livePreviewPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+      refreshNow();
+    }
+  };
+
+  close.onclick=()=>{document.body.classList.remove('preview-visible');close.style.display='none'};
+  refreshNow();
 })();
 </script>
 </body>
