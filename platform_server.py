@@ -39,9 +39,11 @@ def builder_html() -> HTMLResponse:
     html = html.replace("builder.js?v=1", "builder.js?v=6")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="builder-mobile.css?v=1">')
     html = inject_before(html, "</body>", '<script src="map-question-override.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="builder-experience.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="builder-languages.js?v=1"></script>')
+    html = inject_before(html, "</body>", '<script src="builder-mobile.js?v=1"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
@@ -199,10 +201,12 @@ for filename, media_type in {
     "platform.css": "text/css",
     "modern-ui.css": "text/css",
     "languages.css": "text/css",
+    "builder-mobile.css": "text/css",
     "survey-mobile-v2.css": "text/css",
     "map-question-override.js": "application/javascript",
     "builder-experience.js": "application/javascript",
     "builder-languages.js": "application/javascript",
+    "builder-mobile.js": "application/javascript",
     "survey-experience.js": "application/javascript",
     "survey-languages.js": "application/javascript",
     "survey-runtime-fixes.js": "application/javascript",
