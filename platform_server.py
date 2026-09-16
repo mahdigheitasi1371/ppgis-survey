@@ -36,22 +36,30 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 
 def builder_html() -> HTMLResponse:
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    # The builder.html file contains an older experimental inline editing/live-preview
-    # layer. It repeatedly wraps render()/renderPalette() and refreshes the iframe,
-    # which can make controls appear unresponsive. Serve the stable core builder
-    # instead and keep enhancements isolated in small external modules.
+    # Safe-mode builder: keep only the core editor. The experimental inline
+    # editing/live-preview block and later builder wrappers had accumulated
+    # multiple render hooks and iframe reloads, which made the editor slow and
+    # could leave palette controls unresponsive on desktop and mobile.
     html = re.sub(
         r'<script>\s*\(function enhanceInlineEditing\(\)\{.*?</script>',
         '',
         html,
         flags=re.S,
     )
-    html = html.replace("builder.js?v=1", "builder.js?v=7")
+    html = html.replace("builder.js?v=1", "builder.js?v=8")
+    # Do not load the embedded respondent iframe while editing. Preview remains
+    # available through the Preview button in the core builder.
+    html = html.replace('src="survey.html?preview=local&embed=1"', 'src="about:blank"')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
-    html = inject_before(html, "</body>", '<script src="map-question-override.js?v=4"></script>')
-    html = inject_before(html, "</body>", '<script src="builder-languages.js?v=2"></script>')
-    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
+    html = inject_before(
+        html,
+        "</head>",
+        '<style id="builder-safe-mode">.live-preview-panel{display:none!important}.builder-grid{grid-template-columns:220px minmax(0,1fr)!important}.palette,.qtype-btn{pointer-events:auto!important}.qtype-btn{cursor:pointer!important}@media(max-width:760px){.builder-grid{display:block!important}.palette{position:relative!important;width:auto!important;height:auto!important;transform:none!important;overflow:visible!important}.canvas{padding:12px!important}}</style>',
+    )
+    # Intentionally no builder post-processing scripts in safe mode. The core
+    # builder.js already exposes every traditional/media/priority question and
+    # the server transformation below exposes the three map geometry types.
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
 def survey_html() -> HTMLResponse:
@@ -74,7 +82,7 @@ def styled_html(name: str) -> HTMLResponse:
 
 
 def builder_javascript() -> str:
-    """Serve the builder with point, line, and polygon map questions."""
+    """Serve a single stable builder script with the three map geometry types."""
     js = (BASE_DIR / "builder.js").read_text(encoding="utf-8")
     js = js.replace(
         "Maps:[['map_point','Map point'],['map_multi','Multi-point map'],['map_line','Map line / route'],['map_polygon','Map area']]",
@@ -83,12 +91,6 @@ def builder_javascript() -> str:
     js = js.replace(
         "if(type.startsWith('map_'))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_point'?1:10,maxVertices:50,popup:{enabled:type==='map_multi',type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});",
         "if(['map_multi','map_line','map_polygon'].includes(type))Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:type==='map_multi'?1:10,maxVertices:type==='map_polygon'?30:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:type==='map_multi'?'Tell us more about this place':'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});",
-    )
-    unified_map_config = r'''function mapConfig(q){let c=q.config,p=c.popup||{};let point=q.type==='map_multi',polygon=q.type==='map_polygon',key=point?'maxPoints':'maxVertices',min=point?1:(polygon?3:2),max=point?50:100;c[key]=Math.min(max,Math.max(min,Number(c[key])||(point?1:30)));if(c.allowGeo===undefined)c.allowGeo=true;if(c.allowCitySearch===undefined)c.allowCitySearch=true;c.mapPage=true;return `<div class="inspector-section"><div class="panel-title">Map experience</div>${f(point?'Maximum points':'Maximum vertices',`<input id="${key}" type="number" min="${min}" max="${max}" step="1" value="${c[key]}">`,point?'Choose from 1 to 50 locations.':`${polygon?'Polygons need at least 3 vertices.':'Lines need at least 2 vertices.'} Choose up to 100 vertices.`)}<label class="check-row"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}> Offer “Use my location”</label><label class="check-row"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}> Offer city/place search</label></div><div class="inspector-section"><div class="panel-title">Starting map view</div><div class="row">${f('Latitude',`<input id="lat" type="number" step=".0001" value="${c.lat??51.5136}">`)}${f('Longitude',`<input id="lng" type="number" step=".0001" value="${c.lng??7.4653}">`)}</div>${f('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${c.zoom||12}">`)}</div><div class="inspector-section"><div class="panel-title">${point?'Point':'Vertex'} follow-up</div><label class="check-row"><input id="popOn" type="checkbox" ${p.enabled?'checked':''}> Ask after each mapped ${point?'point':'vertex'}</label>${f('Follow-up question',inp(p.question||'','popQ'))}${f('Follow-up type','<select id="popType"><option value="short_text">Open text</option><option value="single_choice">Single choice</option><option value="rating">1–5 rating</option></select>')}${listEditor('popOptions','Follow-up choices',p.options||[])}</div>`}'''
-    js = re.sub(r"function mapConfig\(q\)\{.*?\}(?=\nfunction logic\(q\))", unified_map_config, js, flags=re.S)
-    js = js.replace(
-        "function bind(id,fn,event='input'){let e=$('#'+id);if(e)e.addEventListener(event,x=>{fn(x.target.type==='number'?(x.target.value===''?'':Number(x.target.value)):x.target.value);renderCanvas()})}",
-        "function bind(id,fn,event='input'){let e=$('#'+id);if(e)e.addEventListener(event,x=>{let v=x.target.type==='number'?(x.target.value===''?'':Number(x.target.value)):x.target.value;if(id==='maxPoints'&&v!=='')v=Math.min(50,Math.max(1,Number(v)||1));if(id==='maxVertices'&&v!=='')v=Math.min(100,Math.max(2,Number(v)||2));fn(v);renderCanvas()})}",
     )
     return js
 
@@ -176,7 +178,7 @@ def builder_html_page():
 
 @app.get("/builder.js", include_in_schema=False)
 def builder_script():
-    return Response(builder_javascript(), media_type="application/javascript", headers={"Cache-Control": "no-store"})
+    return Response(builder_javascript(), media_type="application/javascript", headers={"Cache-Control": "no-store, max-age=0"})
 
 
 @app.get("/admin", include_in_schema=False)
