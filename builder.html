@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Survey Builder</title>
+  <link rel="stylesheet" href="platform.css?v=1" />
+</head>
+<body>
+<div class="builder-shell">
+  <header class="app-topbar">
+    <div class="brand"><div class="brand-mark">SB</div><div>Survey Builder <span id="statusPill" class="status-pill">Draft</span></div></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost" id="settingsBtn" type="button">Survey settings</button>
+      <button class="btn" id="previewBtn" type="button">Preview</button>
+      <button class="btn" id="adminBtn" type="button">Dashboard</button>
+      <button class="btn" id="saveBtn" type="button">Save draft</button>
+      <button class="btn btn-primary" id="publishBtn" type="button">Publish</button>
+    </div>
+  </header>
+  <div class="builder-grid">
+    <aside class="builder-panel palette" id="palette"></aside>
+    <main class="canvas">
+      <section class="card builder-hero">
+        <input id="surveyTitle" class="title-input" type="text" value="Untitled survey" aria-label="Survey title" />
+        <textarea id="surveyDescription" rows="2" placeholder="Add a short introduction for respondents"></textarea>
+      </section>
+      <section id="questionCanvas" class="question-canvas"></section>
+    </main>
+    <aside class="builder-panel inspector" id="inspector"></aside>
+  </div>
+</div>
+<script src="builder.js?v=1"></script>
+</body>
+</html>
