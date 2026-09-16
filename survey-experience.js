@@ -54,24 +54,26 @@
         </div>
         <div class="map-city-results" data-city-results></div>`
       : `<div class="row-wrap">${locationButton}</div>`;
+    const fullScreenButton = c.fullScreenMap !== false
+      ? '<button class="btn map-open-full" type="button" data-open-full>⛶ Open full-screen map</button><button class="btn map-close-full" type="button" data-close-full>← Back to survey</button>'
+      : '';
 
     slot.innerHTML = `<div class="map-experience">
       <div class="map-intro">
         <div><strong>Select locations on the map</strong><div class="small muted">You can add up to ${max} ${max === 1 ? 'point' : 'points'}.</div></div>
-        <span class="map-location-status" data-location-status>Search for a city, use your location, or navigate the map.</span>
+        <span class="map-location-status" data-location-status>${c.allowCitySearch !== false || c.allowGeo !== false ? 'Search for a city, use your location, or navigate the map.' : 'Navigate the map and tap to select your response.'}</span>
       </div>
       ${citySearch}
       <div class="map-stage" data-map-stage>
         <div class="map-stage-toolbar">
-          <button class="btn map-open-full" type="button" data-open-full>⛶ Open full-screen map</button>
-          <button class="btn map-close-full" type="button" data-close-full>← Back to survey</button>
+          ${fullScreenButton}
           <button class="btn" type="button" data-undo>Undo</button>
           <button class="btn" type="button" data-clear>Clear</button>
           <span data-count>Click the map to add a response.</span>
         </div>
         <div class="map-box" id="map_${q.id}"></div>
       </div>
-      <div class="small muted">Map data © OpenStreetMap contributors. Place search powered by Photon.</div>
+      <div class="small muted">Map data © OpenStreetMap contributors. ${c.allowCitySearch !== false ? 'Place search powered by Photon.' : ''}</div>
     </div>`;
     return element;
   };
@@ -144,7 +146,7 @@
     });
 
     const openFull = () => {
-      if (!stage) return;
+      if (!stage || c.fullScreenMap === false) return;
       stage.classList.add('map-fullscreen');
       document.body.classList.add('map-overlay-open');
       setTimeout(() => {
@@ -185,7 +187,7 @@
           if (status) status.textContent = 'Map centered on your current location. Tap the map to select your response.';
         },
         () => {
-          if (status) status.textContent = 'Location permission was not available. You can search for a city instead.';
+          if (status) status.textContent = c.allowCitySearch !== false ? 'Location permission was not available. You can search for a city instead.' : 'Location permission was not available. You can navigate the map manually.';
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
@@ -244,8 +246,6 @@
     applySurveyTheme();
   };
 
-  // Preview mode renders synchronously before this enhancement script loads.
-  // Re-render once so it receives the enhanced components too.
   if (def) {
     try {
       maps.forEach(entry => entry.m?.remove?.());
