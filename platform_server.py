@@ -47,7 +47,7 @@ def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
     html = html.replace("survey.js?v=1", "survey.js?v=4")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=3">')
-    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=3"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=4"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
