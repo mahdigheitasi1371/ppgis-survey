@@ -1,4 +1,4 @@
-// Modern respondent experience with dedicated map-page questions for points, lines, and polygons.
+// Modern respondent experience with dedicated map-page questions for points, multiple lines, and multiple polygons.
 (function () {
   if (typeof question === 'undefined' || typeof render === 'undefined') return;
 
@@ -118,27 +118,58 @@
     return qs[currentStep - 1];
   }
 
+  function mapDescriptor(q) {
+    if (q.type === 'map_line') return {
+      label:'Line map', feature:'line', featurePlural:'lines', noun:'vertices', min:2,
+      max:Math.min(100,Math.max(2,Number(q.config?.maxVertices)||30)),
+      maxFeatures:Math.min(50,Math.max(1,Number(q.config?.maxFeatures)||10)), geometry:'map_line'
+    };
+    if (q.type === 'map_polygon') return {
+      label:'Polygon map', feature:'polygon', featurePlural:'polygons', noun:'vertices', min:3,
+      max:Math.min(100,Math.max(3,Number(q.config?.maxVertices)||30)),
+      maxFeatures:Math.min(50,Math.max(1,Number(q.config?.maxFeatures)||10)), geometry:'map_polygon'
+    };
+    const max = Math.min(50,Math.max(1,Number(q.config?.maxPoints)||1));
+    return {label:'Point map', feature:'point', featurePlural:'points', noun:max===1?'location':'locations', min:1, max, maxFeatures:max, geometry:'map_multi'};
+  }
+
+  function savedFeatures(q, value) {
+    if (!value || q.type === 'map_multi') return [];
+    if (Array.isArray(value.features)) return value.features.filter(feature => Array.isArray(feature?.points));
+    const d = mapDescriptor(q);
+    if (Array.isArray(value.points) && value.points.length >= d.min) return [{points:value.points}];
+    return [];
+  }
+
   function validateCurrent(q) {
-    if (!q || ['info','section'].includes(q.type) || !q.required) return true;
+    if (!q || ['info','section'].includes(q.type)) return true;
     const value = ans[q.id];
-    let invalid = missing(value);
-    if (MAP_TYPES.has(q.type)) {
-      const count = value?.points?.length || 0;
-      if (q.type === 'map_multi') invalid = count < 1;
-      if (q.type === 'map_line') invalid = count < 2;
-      if (q.type === 'map_polygon') invalid = count < 3;
+    const card = document.querySelector(`[data-qid="${q.id}"]`);
+    const error = card?.querySelector('[data-error]');
+
+    if ((q.type === 'map_line' || q.type === 'map_polygon') && (value?.draftPoints?.length || 0) > 0) {
+      if (error) error.textContent = `Save or clear the current ${q.type === 'map_line' ? 'line' : 'polygon'} before continuing.`;
+      return false;
     }
+
+    if (!q.required) {
+      if (error) error.textContent = '';
+      return true;
+    }
+
+    let invalid = missing(value);
+    if (q.type === 'map_multi') invalid = !(value?.points?.length >= 1);
+    if (q.type === 'map_line' || q.type === 'map_polygon') invalid = savedFeatures(q, value).length < 1;
     if (q.type === 'matrix') invalid = (q.config?.rows || []).some(row => !value?.[row]);
     if (q.type === 'allocation') {
       const total = Object.values(value || {}).reduce((sum,n) => sum + Number(n || 0), 0);
       invalid = total !== Number(q.config?.total || 100);
     }
-    const card = document.querySelector(`[data-qid="${q.id}"]`);
-    const error = card?.querySelector('[data-error]');
+
     if (invalid) {
       if (error) {
-        if (q.type === 'map_line') error.textContent = 'Please add at least 2 vertices to create a line.';
-        else if (q.type === 'map_polygon') error.textContent = 'Please add at least 3 vertices to create a polygon.';
+        if (q.type === 'map_line') error.textContent = 'Please save at least one line before continuing.';
+        else if (q.type === 'map_polygon') error.textContent = 'Please save at least one polygon before continuing.';
         else if (q.type === 'allocation') error.textContent = `Please allocate exactly ${q.config?.total || 100} ${q.config?.unit || 'points'}.`;
         else error.textContent = 'Please answer this question before continuing.';
       }
@@ -204,9 +235,7 @@
         });
       }
     }
-    if (scrollTop && !document.body.classList.contains('map-page-active')) {
-      window.scrollTo({top:0,behavior:'smooth'});
-    }
+    if (scrollTop && !document.body.classList.contains('map-page-active')) window.scrollTo({top:0,behavior:'smooth'});
   }
 
   function setupWizard() {
@@ -220,13 +249,6 @@
     showCurrentStep(false);
   }
 
-  function mapDescriptor(q) {
-    if (q.type === 'map_line') return {label:'Line map', noun:'vertices', min:2, max:Math.min(100,Math.max(2,Number(q.config?.maxVertices)||30)), geometry:'map_line'};
-    if (q.type === 'map_polygon') return {label:'Polygon map', noun:'vertices', min:3, max:Math.min(100,Math.max(3,Number(q.config?.maxVertices)||30)), geometry:'map_polygon'};
-    const max = Math.min(50,Math.max(1,Number(q.config?.maxPoints)||1));
-    return {label:'Point map', noun:max===1?'location':'locations', min:1, max, geometry:'map_multi'};
-  }
-
   question = function (q) {
     const element = baseQuestion(q);
     if (!MAP_TYPES.has(q.type)) return element;
@@ -236,18 +258,20 @@
     const title = esc(q.title || `${d.label} question`);
     const desc = q.description ? `<p class="qdesc">${esc(q.description)}</p>` : '';
     const required = q.required ? '<span class="required-mark">*</span>' : '';
-    const locationButton = c.allowGeo !== false
-      ? '<button class="map-action" type="button" data-use-location>◎ Use my location</button>'
-      : '';
+    const locationButton = c.allowGeo !== false ? '<button class="map-action" type="button" data-use-location>◎ Use my location</button>' : '';
     const search = c.allowCitySearch !== false
       ? `<div class="map-search-row"><input type="search" data-city-input placeholder="Search city or place"><button class="map-search-button" type="button" data-city-search>Search</button></div><div class="map-city-results" data-city-results></div>`
       : '';
 
-    const instruction = q.type === 'map_multi'
-      ? `Select up to <strong>${d.max}</strong> ${d.noun} on the map.`
-      : q.type === 'map_line'
-        ? `Tap the map to draw a line. Add at least <strong>2</strong> vertices and up to <strong>${d.max}</strong>.`
-        : `Tap the map to draw a polygon. Add at least <strong>3</strong> vertices and up to <strong>${d.max}</strong>.`;
+    let instruction;
+    let actions;
+    if (q.type === 'map_multi') {
+      instruction = `Select up to <strong>${d.max}</strong> ${d.noun} on the map.`;
+      actions = `${locationButton}<button class="map-action" type="button" data-undo>Undo</button><button class="map-action" type="button" data-clear>Clear</button>`;
+    } else {
+      instruction = `Draw and save up to <strong>${d.maxFeatures}</strong> ${d.featurePlural}. Each ${d.feature} needs at least <strong>${d.min}</strong> vertices and can have up to <strong>${d.max}</strong>.`;
+      actions = `${locationButton}<button class="map-action map-save-feature" type="button" data-save-feature>Save ${d.feature}</button><button class="map-action" type="button" data-undo>Undo vertex</button><button class="map-action" type="button" data-clear-current>Clear current</button><button class="map-action" type="button" data-remove-saved>Remove last saved</button><button class="map-action" type="button" data-clear>Clear all</button>`;
+    }
 
     element.classList.add('map-page-card');
     element.innerHTML = `<div class="map-page-canvas"><div class="map-box" id="map_${q.id}"></div></div>
@@ -258,8 +282,8 @@
         ${desc}
         <div class="map-point-limit">${instruction}</div>
         ${search}
-        <div class="map-actions-row">${locationButton}<button class="map-action" type="button" data-undo>Undo</button><button class="map-action" type="button" data-clear>Clear</button></div>
-        <div class="map-location-status" data-location-status>${q.type === 'map_multi' ? 'Pan or zoom the map, then tap to add a point.' : 'Pan or zoom the map, then tap to add vertices.'}</div>
+        <div class="map-actions-row">${actions}</div>
+        <div class="map-location-status" data-location-status>${q.type === 'map_multi' ? 'Pan or zoom the map, then tap to add a point.' : `Tap the map to draw your first ${d.feature}, then save it.`}</div>
         <div class="map-count" data-count>0 selected</div>
         <div class="error-text" data-error></div>
       </aside>`;
@@ -277,45 +301,108 @@
     const results = card?.querySelector('[data-city-results]');
     const cityInput = card?.querySelector('[data-city-input]');
 
-    const m = L.map(`map_${q.id}`, {zoomControl:true}).setView(
-      [Number(c.lat || 51.5136), Number(c.lng || 7.4653)],
-      Number(c.zoom || 12)
-    );
+    const m = L.map(`map_${q.id}`, {zoomControl:true}).setView([Number(c.lat || 51.5136), Number(c.lng || 7.4653)], Number(c.zoom || 12));
     const layer = L.layerGroup().addTo(m);
     const helper = L.layerGroup().addTo(m);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom:19,
-      attribution:'&copy; OpenStreetMap contributors'
-    }).addTo(m);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(m);
     maps.set(q.id, {m,layer,helper});
 
-    const points = () => ans[q.id]?.points || [];
+    const value = () => ans[q.id] || {};
+    const pointValues = () => value().points || [];
+    const featureValues = () => savedFeatures(q, value());
+    const draftValues = () => Array.isArray(value().draftPoints) ? value().draftPoints : [];
+
+    function writeFeatures(features, draftPoints) {
+      if (!features.length && !draftPoints.length) {
+        set(q.id, null);
+        return;
+      }
+      set(q.id, {geometry:d.geometry,features, draftPoints});
+    }
+
+    function drawFeatureLabel(latlng, text) {
+      L.tooltip({permanent:true,direction:'center',className:'map-feature-label',opacity:.92})
+        .setLatLng(latlng).setContent(text).addTo(layer);
+    }
+
     const draw = () => {
       layer.clearLayers();
-      const current = points();
-      current.forEach((point,index) => {
+      if (q.type === 'map_multi') {
+        const current = pointValues();
+        current.forEach((point,index) => {
+          const marker = L.circleMarker([point.lat,point.lng], {radius:6,weight:2,fillOpacity:.95}).addTo(layer);
+          marker.bindTooltip(String(index + 1), {permanent:true,direction:'top',offset:[0,-7]});
+        });
+        const count = card?.querySelector('[data-count]');
+        if (count) count.textContent = `${current.length} of ${d.max} selected`;
+        return;
+      }
+
+      const features = featureValues();
+      const draft = draftValues();
+      features.forEach((feature,index) => {
+        const pts = feature.points || [];
+        if (q.type === 'map_line') {
+          if (pts.length >= 2) {
+            const shape = L.polyline(pts.map(p => [p.lat,p.lng]), {weight:5,opacity:.82}).addTo(layer);
+            const bounds = shape.getBounds();
+            if (bounds.isValid()) drawFeatureLabel(bounds.getCenter(), `Line ${index + 1}`);
+          }
+        } else if (pts.length >= 3) {
+          const shape = L.polygon(pts.map(p => [p.lat,p.lng]), {weight:3,fillOpacity:.18}).addTo(layer);
+          const bounds = shape.getBounds();
+          if (bounds.isValid()) drawFeatureLabel(bounds.getCenter(), `Polygon ${index + 1}`);
+        }
+      });
+
+      draft.forEach((point,index) => {
         const marker = L.circleMarker([point.lat,point.lng], {radius:6,weight:2,fillOpacity:.95}).addTo(layer);
         marker.bindTooltip(String(index + 1), {permanent:true,direction:'top',offset:[0,-7]});
       });
-      if (q.type === 'map_line' && current.length >= 2) {
-        L.polyline(current.map(p => [p.lat,p.lng]), {weight:4}).addTo(layer);
+      if (draft.length >= 2) {
+        if (q.type === 'map_polygon' && draft.length >= 3) {
+          L.polygon(draft.map(p => [p.lat,p.lng]), {weight:3,dashArray:'7 6',fillOpacity:.07}).addTo(layer);
+        } else {
+          L.polyline(draft.map(p => [p.lat,p.lng]), {weight:4,dashArray:'7 6',opacity:.8}).addTo(layer);
+        }
       }
-      if (q.type === 'map_polygon' && current.length >= 2) {
-        if (current.length >= 3) L.polygon(current.map(p => [p.lat,p.lng]), {weight:3,fillOpacity:.16}).addTo(layer);
-        else L.polyline(current.map(p => [p.lat,p.lng]), {weight:3,dashArray:'6 6'}).addTo(layer);
-      }
+
       const count = card?.querySelector('[data-count]');
-      if (count) {
-        if (q.type === 'map_multi') count.textContent = `${current.length} of ${d.max} selected`;
-        else count.textContent = `${current.length} ${current.length === 1 ? 'vertex' : 'vertices'} added`;
-      }
+      if (count) count.textContent = `${features.length} of ${d.maxFeatures} ${d.featurePlural} saved · ${draft.length} draft ${draft.length === 1 ? 'vertex' : 'vertices'}`;
+      const saveButton = card?.querySelector('[data-save-feature]');
+      if (saveButton) saveButton.disabled = draft.length < d.min || features.length >= d.maxFeatures;
+      const removeButton = card?.querySelector('[data-remove-saved]');
+      if (removeButton) removeButton.disabled = features.length === 0;
     };
 
     async function addVertex(latlng) {
-      let current = [...points()];
-      if (q.type === 'map_multi' && d.max === 1 && current.length) current = [];
-      if (current.length >= d.max) {
-        if (status) status.textContent = `Maximum ${d.max} ${q.type === 'map_multi' ? 'points' : 'vertices'} reached.`;
+      if (q.type === 'map_multi') {
+        let current = [...pointValues()];
+        if (d.max === 1 && current.length) current = [];
+        if (current.length >= d.max) {
+          if (status) status.textContent = `Maximum ${d.max} points reached.`;
+          return;
+        }
+        const point = {lat:latlng.lat,lng:latlng.lng};
+        if (c.popup?.enabled) {
+          point.popupAnswer = await popup(c.popup);
+          if (point.popupAnswer === undefined) return;
+        }
+        current.push(point);
+        set(q.id, {geometry:d.geometry,points:current});
+        if (status) status.textContent = d.max === 1 ? 'Location selected. Click another place to move it.' : 'Point added. Add another point or continue.';
+        draw();
+        return;
+      }
+
+      const features = featureValues();
+      let draft = [...draftValues()];
+      if (features.length >= d.maxFeatures) {
+        if (status) status.textContent = `Maximum ${d.maxFeatures} ${d.featurePlural} reached.`;
+        return;
+      }
+      if (draft.length >= d.max) {
+        if (status) status.textContent = `Maximum ${d.max} vertices reached for this ${d.feature}. Save it or edit the draft.`;
         return;
       }
       const point = {lat:latlng.lat,lng:latlng.lng};
@@ -323,27 +410,70 @@
         point.popupAnswer = await popup(c.popup);
         if (point.popupAnswer === undefined) return;
       }
-      current.push(point);
-      set(q.id, {geometry:d.geometry,points:current});
+      draft.push(point);
+      writeFeatures(features, draft);
       if (status) {
-        if (q.type === 'map_multi') status.textContent = d.max === 1 ? 'Location selected. Click another place to move it.' : 'Point added. Add another point or continue.';
-        else if (q.type === 'map_line') status.textContent = current.length < 2 ? 'Add at least one more vertex to complete the line.' : 'Line updated. Add more vertices or continue.';
-        else status.textContent = current.length < 3 ? `Add ${3-current.length} more ${3-current.length===1?'vertex':'vertices'} to complete the polygon.` : 'Polygon updated. Add more vertices or continue.';
+        const remaining = Math.max(0, d.min - draft.length);
+        status.textContent = remaining
+          ? `Add ${remaining} more ${remaining === 1 ? 'vertex' : 'vertices'} before you can save this ${d.feature}.`
+          : `Draft ${d.feature} is ready. Save it, or add more vertices.`;
       }
       draw();
     }
 
     m.on('click', e => addVertex(e.latlng));
-    card?.querySelector('[data-undo]')?.addEventListener('click', () => {
-      const current = [...points()];
-      current.pop();
-      set(q.id, current.length ? {geometry:d.geometry,points:current} : null);
+
+    card?.querySelector('[data-save-feature]')?.addEventListener('click', () => {
+      const features = featureValues();
+      const draft = [...draftValues()];
+      if (draft.length < d.min) {
+        if (status) status.textContent = `Add at least ${d.min} vertices before saving this ${d.feature}.`;
+        return;
+      }
+      if (features.length >= d.maxFeatures) {
+        if (status) status.textContent = `Maximum ${d.maxFeatures} ${d.featurePlural} reached.`;
+        return;
+      }
+      const next = [...features, {points:draft}];
+      writeFeatures(next, []);
+      if (status) status.textContent = next.length >= d.maxFeatures
+        ? `${d.label.replace(' map','')} ${next.length} saved. Maximum number reached.`
+        : `${d.label.replace(' map','')} ${next.length} saved. Start drawing ${d.feature} ${next.length + 1}.`;
       draw();
     });
+
+    card?.querySelector('[data-undo]')?.addEventListener('click', () => {
+      if (q.type === 'map_multi') {
+        const current = [...pointValues()];
+        current.pop();
+        set(q.id, current.length ? {geometry:d.geometry,points:current} : null);
+      } else {
+        const draft = [...draftValues()];
+        draft.pop();
+        writeFeatures(featureValues(), draft);
+      }
+      draw();
+    });
+
+    card?.querySelector('[data-clear-current]')?.addEventListener('click', () => {
+      writeFeatures(featureValues(), []);
+      if (status) status.textContent = `Current ${d.feature} draft cleared. Start again on the map.`;
+      draw();
+    });
+
+    card?.querySelector('[data-remove-saved]')?.addEventListener('click', () => {
+      const features = [...featureValues()];
+      if (!features.length) return;
+      features.pop();
+      writeFeatures(features, draftValues());
+      if (status) status.textContent = `Last saved ${d.feature} removed.`;
+      draw();
+    });
+
     card?.querySelector('[data-clear]')?.addEventListener('click', () => {
       set(q.id, null);
+      if (status) status.textContent = q.type === 'map_multi' ? 'Selection cleared. Tap the map to add a point.' : `All saved ${d.featurePlural} and the current draft were cleared.`;
       draw();
-      if (status) status.textContent = q.type === 'map_multi' ? 'Selection cleared. Tap the map to add a point.' : 'Drawing cleared. Tap the map to add vertices.';
     });
 
     card?.querySelector('[data-use-location]')?.addEventListener('click', () => {
@@ -356,12 +486,7 @@
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         helper.clearLayers();
-        L.circle([lat,lng], {
-          radius:Math.max(20,position.coords.accuracy || 50),
-          weight:2,
-          fillOpacity:.08,
-          interactive:false
-        }).addTo(helper);
+        L.circle([lat,lng], {radius:Math.max(20,position.coords.accuracy || 50),weight:2,fillOpacity:.08,interactive:false}).addTo(helper);
         m.setView([lat,lng],15);
         if (status) status.textContent = 'Map centered on your current location. Tap the map to continue your response.';
       }, () => {
