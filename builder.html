@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Survey Builder</title>
   <link rel="stylesheet" href="platform.css?v=1" />
+  <style>
+    .question-card.editing{gap:14px}
+    .inline-question-editor{display:grid;gap:13px;padding-top:2px}
+    .inline-question-editor .field>span:first-child,.inline-editor-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.045em}
+    .inline-question-editor input[type=text]{font-size:15px}
+    .inline-question-title{font-size:17px!important;font-weight:720}
+    .inline-question-desc{min-height:72px}
+    .inline-choice-editor,.inline-matrix-editor{display:grid;gap:9px;padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}
+    .inline-choice-row{display:grid;grid-template-columns:28px minmax(0,1fr) 34px;gap:7px;align-items:center}
+    .choice-handle{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:var(--surface);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--muted)}
+    .inline-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .inline-two-col textarea{min-height:118px}
+    .inline-edit-footer{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:4px}
+    .edit-question-btn{justify-self:start;border:0;background:var(--accent-soft);color:var(--accent-2);font-weight:750;border-radius:9px;padding:7px 11px}
+    .question-card:not(.editing){cursor:pointer}
+    @media(max-width:720px){.inline-two-col{grid-template-columns:1fr}.inline-edit-footer{align-items:flex-start;flex-direction:column}.question-card.editing{scroll-margin-top:74px}}
+  </style>
 </head>
 <body>
 <div class="builder-shell">
@@ -31,5 +48,68 @@
   </div>
 </div>
 <script src="builder.js?v=1"></script>
+<script>
+(function enhanceInlineEditing(){
+  function choiceEditor(q){
+    return `<div class="inline-choice-editor"><div class="inline-editor-label">Answer choices</div>${(q.config.options||[]).map((o,i)=>`<div class="inline-choice-row"><span class="choice-handle">${i+1}</span><input type="text" data-inline-opt="${i}" value="${esc(o)}" aria-label="Answer choice ${i+1}"><button class="icon-btn" data-inline-rm="${i}" type="button" title="Remove choice">×</button></div>`).join('')}<button class="btn btn-sm" data-inline-add type="button">+ Add answer choice</button></div>`;
+  }
+
+  function matrixEditor(q){
+    return `<div class="inline-matrix-editor"><div class="inline-editor-label">Matrix setup</div><div class="inline-two-col"><label class="field"><span>Rows</span><textarea data-inline-rows>${esc((q.config.rows||[]).join('\n'))}</textarea></label><label class="field"><span>Answer columns</span><textarea data-inline-cols>${esc((q.config.columns||[]).join('\n'))}</textarea></label></div></div>`;
+  }
+
+  function wireInline(article,q){
+    const title=article.querySelector('.inline-question-title');
+    const desc=article.querySelector('.inline-question-desc');
+    title?.addEventListener('input',e=>{q.title=e.target.value;const other=$('#title');if(other)other.value=q.title});
+    desc?.addEventListener('input',e=>{q.description=e.target.value;const other=$('#desc');if(other)other.value=q.description});
+    article.querySelector('[data-inline-required]')?.addEventListener('change',e=>{q.required=e.target.checked;const other=$('#req');if(other)other.checked=q.required;const badge=article.querySelector('.question-type');if(badge)badge.textContent=`${state.questions.indexOf(q)+1}. ${LABEL[q.type]}${q.required?' · required':''}`});
+    article.querySelectorAll('[data-inline-opt]').forEach(input=>input.addEventListener('input',()=>{q.config.options[+input.dataset.inlineOpt]=input.value;const other=document.querySelector(`#inspector [data-opt="${input.dataset.inlineOpt}"]`);if(other)other.value=input.value}));
+    article.querySelectorAll('[data-inline-rm]').forEach(button=>button.onclick=e=>{e.stopPropagation();if((q.config.options||[]).length<=1)return alert('A choice question needs at least one answer choice.');q.config.options.splice(+button.dataset.inlineRm,1);render()});
+    article.querySelector('[data-inline-add]')?.addEventListener('click',e=>{e.stopPropagation();q.config.options.push(`Option ${q.config.options.length+1}`);render();requestAnimationFrame(()=>{const items=document.querySelectorAll(`[data-qid="${q.id}"] [data-inline-opt]`);items[items.length-1]?.focus();items[items.length-1]?.select()})});
+    article.querySelector('[data-inline-rows]')?.addEventListener('input',e=>{q.config.rows=e.target.value.split('\n').filter(v=>v.trim());const other=$('#rows');if(other)other.value=e.target.value});
+    article.querySelector('[data-inline-cols]')?.addEventListener('input',e=>{q.config.columns=e.target.value.split('\n').filter(v=>v.trim());const other=$('#cols');if(other)other.value=e.target.value});
+  }
+
+  renderCanvas=function(){
+    const canvas=$('#questionCanvas');
+    $('#surveyTitle').value=state.title;
+    $('#surveyDescription').value=state.description;
+    canvas.innerHTML=state.questions.length?'':'<div class="empty-canvas"><strong>Your survey is empty.</strong><br>Choose a question type on the left. It will open immediately for editing.</div>';
+    state.questions.forEach((q,i)=>{
+      const selected=q.id===state.selected;
+      const article=document.createElement('article');
+      article.className='question-card'+(selected?' selected editing':'');
+      article.dataset.qid=q.id;
+      article.draggable=!selected;
+      const body=selected?`<div class="inline-question-editor"><label class="field"><span>Question text</span><input class="inline-question-title" type="text" value="${esc(q.title)}" placeholder="Write your question here"></label><label class="field"><span>${q.type==='info'||q.type==='section'?'Text':'Description / help text'}</span><textarea class="inline-question-desc" placeholder="Optional description or guidance">${esc(q.description||'')}</textarea></label>${OPTS.has(q.type)?choiceEditor(q):''}${q.type==='matrix'?matrixEditor(q):''}<div class="inline-edit-footer">${!['info','section'].includes(q.type)?`<label class="check-row"><input data-inline-required type="checkbox" ${q.required?'checked':''}> Required question</label>`:'<span></span>'}<span class="field-help">Advanced settings are in the right panel.</span></div></div>`:`<div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(preview(q))}</div><button class="edit-question-btn" data-a="edit" type="button">Edit question & answers</button>`;
+      article.innerHTML=`<div class="question-meta"><span class="question-type">${i+1}. ${LABEL[q.type]}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" data-a="up" type="button">↑</button><button class="icon-btn" data-a="down" type="button">↓</button><button class="icon-btn" data-a="copy" type="button">⧉</button><button class="icon-btn" data-a="del" type="button">×</button></div></div>${body}`;
+      article.onclick=e=>{if(e.target.closest('button,input,textarea,select,label'))return;if(state.selected!==q.id){state.selected=q.id;render()}};
+      article.ondragstart=()=>window.dragQ=q.id;
+      article.ondragover=e=>e.preventDefault();
+      article.ondrop=e=>{e.preventDefault();const from=state.questions.findIndex(x=>x.id===window.dragQ),to=state.questions.findIndex(x=>x.id===q.id);if(from>=0&&to>=0&&from!==to){const [x]=state.questions.splice(from,1);state.questions.splice(to,0,x);render()}};
+      article.querySelector('[data-a=up]').onclick=()=>move(q.id,-1);
+      article.querySelector('[data-a=down]').onclick=()=>move(q.id,1);
+      article.querySelector('[data-a=copy]').onclick=()=>{const x=structuredClone(q);x.id=uid();x.title+=' (copy)';state.questions.splice(i+1,0,x);state.selected=x.id;render()};
+      article.querySelector('[data-a=del]').onclick=()=>{if(confirm(`Delete “${q.title}”?`)){state.questions.splice(i,1);state.selected=null;render()}};
+      article.querySelector('[data-a=edit]')?.addEventListener('click',()=>{state.selected=q.id;render();requestAnimationFrame(()=>document.querySelector(`[data-qid="${q.id}"] .inline-question-title`)?.focus())});
+      if(selected)wireInline(article,q);
+      canvas.appendChild(article);
+    });
+  };
+
+  const originalRenderPalette=renderPalette;
+  renderPalette=function(){
+    originalRenderPalette();
+    document.querySelectorAll('#palette [data-type]').forEach(button=>{
+      const old=button.onclick;
+      button.onclick=()=>{old();requestAnimationFrame(()=>{const input=document.querySelector(`[data-qid="${state.selected}"] .inline-question-title`);input?.focus();input?.select()})};
+    });
+  };
+
+  renderPalette();
+  render();
+})();
+</script>
 </body>
 </html>
