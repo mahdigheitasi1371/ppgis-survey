@@ -37,7 +37,7 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 def builder_html() -> HTMLResponse:
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
     html = html.replace("builder.js?v=1", "builder.js?v=6")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=3">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</body>", '<script src="map-question-override.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="builder-experience.js?v=3"></script>')
@@ -48,16 +48,17 @@ def builder_html() -> HTMLResponse:
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
     html = html.replace("survey.js?v=1", "survey.js?v=4")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=3">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=5"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=2"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=1"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
 def styled_html(name: str) -> HTMLResponse:
     html = (BASE_DIR / name).read_text(encoding="utf-8")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=3">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=4">')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
@@ -201,6 +202,7 @@ for filename, media_type in {
     "builder-languages.js": "application/javascript",
     "survey-experience.js": "application/javascript",
     "survey-languages.js": "application/javascript",
+    "survey-runtime-fixes.js": "application/javascript",
     "admin.js": "application/javascript",
     "survey.js": "application/javascript",
     "style.css": "text/css",
