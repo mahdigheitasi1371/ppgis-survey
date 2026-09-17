@@ -263,14 +263,16 @@
       ? `<div class="map-search-row"><input type="search" data-city-input placeholder="Search city or place"><button class="map-search-button" type="button" data-city-search>Search</button></div><div class="map-city-results" data-city-results></div>`
       : '';
 
+    const fullscreenButton = '<button class="map-action map-fullscreen-action" type="button" data-map-fullscreen aria-pressed="false">⛶ Full screen</button>';
+
     let instruction;
     let actions;
     if (q.type === 'map_multi') {
       instruction = `Tap the map to select up to <strong>${d.max}</strong> ${d.noun}.`;
-      actions = `${locationButton}<button class="map-action" type="button" data-undo>Undo</button><button class="map-action" type="button" data-clear>Clear</button>`;
+      actions = `${locationButton}${fullscreenButton}<button class="map-action" type="button" data-undo>Undo</button><button class="map-action" type="button" data-clear>Clear</button>`;
     } else {
       instruction = `Tap the map to draw. <strong>Desktop:</strong> right-click to finish. <strong>Mobile:</strong> double-tap to finish. You can create up to <strong>${d.maxFeatures}</strong> ${d.featurePlural}.`;
-      actions = `${locationButton}<button class="map-action map-save-feature" type="button" data-save-feature>Finish ${d.feature}</button><button class="map-action" type="button" data-undo>Undo vertex</button><button class="map-action" type="button" data-clear-current>Clear current</button><button class="map-action" type="button" data-remove-saved>Remove last saved</button><button class="map-action" type="button" data-clear>Clear all</button>`;
+      actions = `${locationButton}${fullscreenButton}<button class="map-action map-save-feature" type="button" data-save-feature>Finish ${d.feature}</button><button class="map-action" type="button" data-undo>Undo vertex</button><button class="map-action" type="button" data-clear-current>Clear current</button><button class="map-action" type="button" data-remove-saved>Remove last saved</button><button class="map-action" type="button" data-clear>Clear all</button>`;
     }
 
     element.classList.add('map-page-card');
@@ -302,6 +304,45 @@
     const cityInput = card?.querySelector('[data-city-input]');
     const mapElement = document.getElementById(`map_${q.id}`);
     const touchMode = window.matchMedia?.('(pointer: coarse)')?.matches === true;
+    const fullscreenTarget = document.querySelector('.experience-stage') || card;
+
+    function syncFullscreenButton() {
+      const button = card?.querySelector('[data-map-fullscreen]');
+      if (!button) return;
+      const active = document.fullscreenElement === fullscreenTarget || document.body.classList.contains('map-viewport-fullscreen');
+      button.textContent = active ? '⛶ Exit full screen' : '⛶ Full screen';
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      button.setAttribute('aria-label', active ? 'Exit map full screen' : 'Open map full screen');
+    }
+
+    async function toggleFullscreen() {
+      const fallbackActive = document.body.classList.contains('map-viewport-fullscreen');
+      if (document.fullscreenElement === fullscreenTarget) {
+        try { await document.exitFullscreen(); } catch (_) {}
+        return;
+      }
+      if (fallbackActive) {
+        document.body.classList.remove('map-viewport-fullscreen');
+        syncFullscreenButton();
+        setTimeout(() => m.invalidateSize({pan:false}), 50);
+        return;
+      }
+      try {
+        if (fullscreenTarget?.requestFullscreen) {
+          await fullscreenTarget.requestFullscreen();
+          return;
+        }
+      } catch (_) {}
+      document.body.classList.add('map-viewport-fullscreen');
+      syncFullscreenButton();
+      setTimeout(() => m.invalidateSize({pan:false}), 50);
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement !== fullscreenTarget) document.body.classList.remove('map-viewport-fullscreen');
+      syncFullscreenButton();
+      setTimeout(() => m.invalidateSize({pan:false}), 50);
+    });
 
     const m = L.map(mapElement, {
       zoomControl:true,
@@ -498,6 +539,9 @@
       });
       mapElement.addEventListener('contextmenu', e => e.preventDefault());
     }
+
+    card?.querySelector('[data-map-fullscreen]')?.addEventListener('click', toggleFullscreen);
+    syncFullscreenButton();
 
     card?.querySelector('[data-save-feature]')?.addEventListener('click', finishDraft);
 
