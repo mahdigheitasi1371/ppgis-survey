@@ -4,25 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Survey Builder</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=chillax@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="platform.css?v=1" />
-  <!-- <link rel="stylesheet" href="modern-ui.css?v=4"> -->
   <style>
-:root{--accent:#2f6f5e;--accent-soft:#eaf3ef;--bg:#f3f6f3;--surface:#fff;--border:#d8e0da;--text:#17231c;--muted:#6a766f;--danger:#a23333;--shadow:0 10px 30px rgba(25,45,34,.08);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Noto Sans",sans-serif;color:var(--text);background:var(--bg)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}button{cursor:pointer}.topbar{position:sticky;top:0;z-index:20;min-height:64px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-bottom:1px solid var(--border)}.brand{display:flex;align-items:center;gap:9px;min-width:0}.brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:white;font-size:12px}.status-pill{padding:4px 8px;border-radius:999px;background:#eef2ef;color:var(--muted);font-size:11px;font-weight:700}.status-pill.published{background:#e5f4ea;color:#24623c}.top-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.top-actions button,.btn{min-height:40px;padding:8px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font-weight:700}.top-actions .primary,.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.builder-layout{display:grid;grid-template-columns:240px minmax(360px,1fr) 340px;min-height:calc(100vh - 64px)}.palette-panel,.inspector-panel{background:#fff}.palette-panel{border-right:1px solid var(--border);padding:16px;overflow:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}.inspector-panel{border-left:1px solid var(--border);padding:18px;overflow:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}.panel-heading{font-weight:800;font-size:16px;margin-bottom:14px}.group-title{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 7px}.question-type-grid{display:grid;gap:7px}.qtype-btn{width:100%;display:flex;align-items:center;gap:9px;text-align:left;min-height:44px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}.qtype-btn:hover,.qtype-btn:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}.qtype-icon{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:900;flex:none}.canvas-panel{min-width:0;padding:22px}.survey-header-card,.question-card,.empty-state{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}.survey-header-card{padding:18px;display:grid;gap:13px;margin-bottom:14px}.survey-header-card label,.field{display:grid;gap:6px;font-size:12px;font-weight:750;color:var(--muted)}input,textarea,select{width:100%;border:1px solid #ccd6cf;border-radius:10px;padding:10px 11px;background:#fff;color:var(--text);font-size:15px}input:focus,textarea:focus,select:focus{outline:2px solid color-mix(in srgb,var(--accent) 22%,transparent);border-color:var(--accent)}textarea{resize:vertical}.question-canvas{display:grid;gap:10px}.empty-state{padding:30px;text-align:center;color:var(--muted)}.question-card{padding:15px;cursor:pointer}.question-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}.question-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.question-type{font-size:11px;font-weight:800;color:var(--accent)}.question-actions{display:flex;gap:5px}.icon-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff}.icon-btn.danger{color:var(--danger)}.question-title{font-size:17px;font-weight:750}.question-preview{color:var(--muted);font-size:13px;margin-top:4px}.inspector-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.inspector-title h2{font-size:17px;margin:0}.section{padding:14px 0;border-top:1px solid var(--border);display:grid;gap:11px}.section:first-of-type{border-top:0;padding-top:0}.section h3{font-size:12px;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.check{display:flex;gap:8px;align-items:flex-start;font-size:14px}.check input{width:auto;margin-top:3px}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.choice-row{display:grid;grid-template-columns:1fr 38px;gap:7px;margin-bottom:7px}.small-help{font-size:12px;line-height:1.45;color:var(--muted)}.language-chip-row{display:flex;flex-wrap:wrap;gap:6px}.language-chip{padding:5px 8px;border-radius:999px;background:var(--accent-soft);font-size:12px}.translation-block{border:1px solid var(--border);border-radius:10px;padding:9px}.translation-block summary{cursor:pointer;font-weight:750}.save-state{font-size:12px;color:var(--muted);min-height:18px}.hidden{display:none!important}
-@media(max-width:1050px){.builder-layout{grid-template-columns:210px minmax(0,1fr)}.inspector-panel{position:fixed;right:0;top:64px;bottom:0;width:min(380px,92vw);max-height:none;z-index:30;box-shadow:-10px 0 30px rgba(20,40,30,.15);transform:translateX(100%);transition:transform .18s ease}.inspector-panel.open{transform:translateX(0)}}
-@media(max-width:720px){.topbar{position:relative;align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}.top-actions button{white-space:nowrap}.builder-layout{display:block}.palette-panel{position:relative;top:auto;max-height:none;border-right:0;border-bottom:1px solid var(--border)}#palette{display:grid;grid-template-columns:1fr 1fr;gap:10px}.group-block{min-width:0}.qtype-btn{min-height:48px}.canvas-panel{padding:12px}.inspector-panel{top:0;width:100vw}.row{grid-template-columns:1fr}.question-card{scroll-margin-top:10px}}
-@media(max-width:430px){#palette{grid-template-columns:1fr}.brand strong{font-size:14px}}
+    :root{ --preview-w: 380px; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+
+    .topbar{position:sticky;top:0;z-index:40;min-height:64px;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--accent);color:#fff;font-size:12px;font-family:var(--font-display);font-weight:700}
+    .brand strong{font-family:var(--font-display);font-weight:600;font-size:16px}
+    .status-pill{padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:700}
+    .status-pill.published{background:var(--accent-soft);color:var(--accent-2)}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{min-height:40px;padding:8px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-weight:600}
+    .btn:hover{border-color:var(--accent)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.primary:hover{background:var(--accent-2)}
+    .btn.ghost{border-color:transparent;background:transparent}
+    .btn.small{min-height:32px;padding:5px 10px;font-size:12px;border-radius:9px}
+
+    .builder-layout{display:grid;grid-template-columns:250px minmax(0,1fr) var(--preview-w);min-height:calc(100vh - 64px)}
+    .palette-panel{background:var(--surface);border-right:1px solid var(--border);padding:18px;overflow:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}
+    .panel-heading{font-family:var(--font-display);font-weight:600;font-size:15px;margin-bottom:14px}
+    .group-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+    .group-block:first-child .group-title{margin-top:0}
+    .question-type-grid{display:grid;gap:7px}
+    .qtype-btn{width:100%;display:flex;align-items:center;gap:9px;text-align:left;min-height:44px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);transition:border-color .15s ease,background .15s ease}
+    .qtype-btn:hover,.qtype-btn:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}
+    .qtype-icon{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:900;flex:none}
+
+    .canvas-panel{min-width:0;padding:24px 26px 60px}
+    .survey-header-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;display:grid;gap:14px;margin-bottom:16px}
+    .survey-header-card label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+    .title-input{font-family:var(--font-display);font-size:22px;font-weight:600;border:none;padding:2px 0;background:transparent}
+    .title-input:focus{outline:none}
+    input,textarea,select{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:14px}
+    input:focus,textarea:focus,select:focus{outline:2px solid color-mix(in srgb,var(--accent) 22%,transparent);border-color:var(--accent)}
+    textarea{resize:vertical}
+    .question-canvas{display:grid;gap:12px}
+    .empty-state{background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);padding:34px;text-align:center;color:var(--muted)}
+
+    .question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease}
+    .question-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 14%,transparent),var(--shadow)}
+    .question-card-head{padding:15px 16px;cursor:pointer}
+    .question-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+    .question-type{font-size:11px;font-weight:700;color:var(--accent)}
+    .question-actions{display:flex;gap:5px}
+    .icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:9px;background:var(--surface);display:inline-flex;align-items:center;justify-content:center}
+    .icon-btn:hover{border-color:var(--accent)}
+    .icon-btn.danger{color:var(--danger)}
+    .question-title{font-size:16px;font-weight:600}
+    .question-preview{color:var(--muted);font-size:13px;margin-top:4px}
+    .question-card-body{padding:0 16px 18px;border-top:1px solid var(--border);margin-top:2px;padding-top:14px;display:grid;gap:12px}
+
+    .field{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .choice-row{display:grid;grid-template-columns:1fr 36px;gap:7px;margin-bottom:7px}
+    .small-help{font-size:12px;line-height:1.45;color:var(--muted);font-weight:400}
+    .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;font-weight:500;color:var(--text)}
+    .check input{width:auto;margin-top:3px}
+    .field-section{border-top:1px solid var(--border);padding-top:12px;display:grid;gap:11px}
+    .field-section:first-child{border-top:0;padding-top:0}
+    .field-section h4{font-size:11px;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+    .translation-block{border:1px solid var(--border);border-radius:10px;padding:10px}
+    .translation-block summary{cursor:pointer;font-weight:600;font-size:13px}
+    .language-chip-row{display:flex;flex-wrap:wrap;gap:6px}
+    .language-chip{padding:5px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-2);font-size:12px;font-weight:600}
+    .save-state{font-size:12px;color:var(--muted);min-height:18px}
+    .hidden{display:none!important}
+
+    /* Live preview panel */
+    .preview-panel{background:var(--surface-2);border-left:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:64px;height:calc(100vh - 64px)}
+    .preview-panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+    .preview-panel-title{font-family:var(--font-display);font-weight:600;font-size:14px;display:flex;align-items:center;gap:7px}
+    .preview-panel-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s ease-in-out infinite}
+    @media (prefers-reduced-motion: reduce){ .preview-panel-title .dot{animation:none} }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    .preview-controls{display:flex;gap:8px;align-items:center}
+    .preview-controls select{padding:6px 8px;font-size:12px;min-height:34px}
+    .preview-frame-wrap{flex:1;overflow:hidden;padding:14px;display:flex}
+    #livePreviewFrame{flex:1;width:100%;height:100%;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+
+    /* Settings modal overlay */
+    .settings-overlay{position:fixed;inset:0;z-index:200;background:rgba(20,30,25,.35);display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow:auto}
+    .settings-overlay.open{display:flex}
+    .settings-modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);width:min(560px,100%);padding:22px;display:grid;gap:14px;max-height:90vh;overflow:auto}
+    .settings-modal-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .settings-modal-title h2{font-family:var(--font-display);font-size:18px;margin:0;font-weight:600}
+
+    @media(max-width:1200px){ .builder-layout{ --preview-w: 320px; } }
+    @media(max-width:1050px){
+      .builder-layout{grid-template-columns:210px minmax(0,1fr)}
+      .preview-panel{position:fixed;right:0;top:64px;bottom:0;width:min(380px,92vw);height:auto;z-index:30;box-shadow:-10px 0 30px rgba(20,40,30,.15);transform:translateX(100%);transition:transform .18s ease}
+      .preview-panel.open{transform:translateX(0)}
+    }
+    @media(max-width:720px){
+      .topbar{position:relative;align-items:flex-start;flex-direction:column}
+      .top-actions{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+      .top-actions .btn{white-space:nowrap}
+      .builder-layout{display:block}
+      .palette-panel{position:relative;top:auto;max-height:none;border-right:0;border-bottom:1px solid var(--border)}
+      #palette{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .group-block{min-width:0}
+      .canvas-panel{padding:14px}
+      .preview-panel{top:0;width:100vw}
+      .field-row{grid-template-columns:1fr}
+    }
+    @media(max-width:430px){ #palette{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark">SB</span><strong>Survey Builder</strong><span id="statusPill" class="status-pill">Draft</span></div>
     <div class="top-actions">
-      <button id="settingsBtn" type="button">Survey settings</button>
-      <button id="previewBtn" type="button">Preview</button>
-      <button id="adminBtn" type="button">Dashboard</button>
-      <button id="saveBtn" type="button">Save draft</button>
-      <button id="publishBtn" class="primary" type="button">Publish</button>
+      <button id="settingsBtn" class="btn" type="button">Survey settings</button>
+      <button id="previewToggleBtn" class="btn" type="button">Live preview</button>
+      <button id="adminBtn" class="btn" type="button">Dashboard</button>
+      <button id="saveBtn" class="btn" type="button">Save draft</button>
+      <button id="publishBtn" class="btn primary" type="button">Publish</button>
     </div>
   </header>
 
@@ -34,14 +138,31 @@
 
     <section class="canvas-panel">
       <div class="survey-header-card">
-        <label>Survey title<input id="surveyTitle" type="text" value="Untitled survey" /></label>
-        <label>Introduction<textarea id="surveyDescription" rows="3" placeholder="Add a short introduction for respondents"></textarea></label>
+        <label>Survey title<input id="surveyTitle" class="title-input" type="text" value="Untitled survey" /></label>
+        <label>Introduction<textarea id="surveyDescription" rows="2" placeholder="Add a short introduction for respondents"></textarea></label>
       </div>
       <div id="questionCanvas" class="question-canvas"></div>
     </section>
 
-    <aside id="inspector" class="inspector-panel" aria-live="polite"></aside>
+    <aside id="previewPanel" class="preview-panel">
+      <div class="preview-panel-head">
+        <div class="preview-panel-title"><span class="dot"></span>Live preview</div>
+        <div class="preview-controls">
+          <select id="previewLanguage" aria-label="Preview language"></select>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <iframe id="livePreviewFrame" title="Live survey preview" src="survey.html?preview=live&embed=1"></iframe>
+      </div>
+    </aside>
   </main>
+
+  <div id="settingsOverlay" class="settings-overlay">
+    <div class="settings-modal">
+      <div class="settings-modal-title"><h2>Survey settings</h2><button class="btn small" id="closeSettingsBtn" type="button">Close</button></div>
+      <div id="settingsBody"></div>
+    </div>
+  </div>
 
   <script src="builder.js?v=1"></script>
 </body>

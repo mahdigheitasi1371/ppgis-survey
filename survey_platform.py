@@ -163,6 +163,40 @@ class SurveyPayload(BaseModel):
     slug: str | None = Field(default=None, max_length=100)
     questions: list[dict[str, Any]] = Field(default_factory=list)
     settings: dict[str, Any] = Field(default_factory=dict)
+    translations: dict[str, Any] = Field(default_factory=dict)
+
+
+LANGUAGE_NAMES = {
+    "en": "English", "de": "German", "fr": "French", "es": "Spanish", "it": "Italian",
+    "nl": "Dutch", "pl": "Polish", "pt": "Portuguese", "tr": "Turkish", "ar": "Arabic",
+    "uk": "Ukrainian", "ru": "Russian", "fa": "Persian (Farsi)", "zh": "Chinese (Simplified)",
+    "ja": "Japanese",
+}
+
+
+class TranslateQuestion(BaseModel):
+    id: str
+    title: str = ""
+    description: str = ""
+    options: list[str] | None = None
+    rows: list[str] | None = None
+    columns: list[str] | None = None
+    checkboxLabel: str | None = None
+    popupQuestion: str | None = None
+    popupOptions: list[str] | None = None
+
+
+class TranslateSurvey(BaseModel):
+    title: str = ""
+    description: str = ""
+    thankYou: str = ""
+    questions: list[TranslateQuestion] = Field(default_factory=list)
+
+
+class TranslatePayload(BaseModel):
+    targetLanguage: str
+    sourceLanguage: str = "en"
+    survey: TranslateSurvey
 
 
 class ResponsePayload(BaseModel):
@@ -320,6 +354,86 @@ def close_survey(
     )
     db.commit()
     return {"status": "closed"}
+
+
+@router.post("/api/builder/translate")
+def translate_survey(
+    payload: TranslatePayload,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    admin_guard(x_admin_key)
+    target_name = LANGUAGE_NAMES.get(payload.targetLanguage, payload.targetLanguage)
+    source_name = LANGUAGE_NAMES.get(payload.sourceLanguage, payload.sourceLanguage)
+    source_payload = {
+        "title": payload.survey.title,
+        "description": payload.survey.description,
+        "thankYou": payload.survey.thankYou,
+        "questions": {
+            q.id: {
+                key: value
+                for key, value in q.model_dump(exclude={"id"}).items()
+                if value not in (None, "", [])
+            }
+            for q in payload.survey.questions
+        },
+    }
+    prompt = (
+        f"Translate the JSON survey content below from {source_name} into {target_name}. "
+        "Keep the exact same JSON structure and keys. Only translate human-readable text values "
+        "(strings and items inside string lists). Never translate the outer keys, question ids, "
+        "or leave any field out. Preserve tone, keep translations natural for a public participation "
+        "survey, and keep list ordering identical to the source so items still line up positionally. "
+        "Return ONLY the translated JSON object, with no markdown fences and no commentary.\n\n"
+        f"{json.dumps(source_payload, ensure_ascii=False)}"
+    )
+    try:
+        from anthropic import Anthropic
+
+        client = Anthropic()
+        message = client.messages.create(
+            model="claude_sonnet_4_6",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = "".join(
+            block.text for block in message.content if getattr(block, "type", None) == "text"
+        ).strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+        translated = json.loads(raw)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Translation failed: {exc}") from exc
+
+    questions_out: dict[str, Any] = {}
+    translated_questions = translated.get("questions", {}) if isinstance(translated, dict) else {}
+    for q in payload.survey.questions:
+        qt = translated_questions.get(q.id) or {}
+        entry: dict[str, Any] = {}
+        if qt.get("title"):
+            entry["title"] = qt["title"]
+        if qt.get("description"):
+            entry["description"] = qt["description"]
+        if isinstance(qt.get("options"), list):
+            entry["options"] = qt["options"]
+        if isinstance(qt.get("rows"), list):
+            entry["rows"] = qt["rows"]
+        if isinstance(qt.get("columns"), list):
+            entry["columns"] = qt["columns"]
+        if qt.get("checkboxLabel"):
+            entry["checkboxLabel"] = qt["checkboxLabel"]
+        if qt.get("popupQuestion"):
+            entry["popupQuestion"] = qt["popupQuestion"]
+        if isinstance(qt.get("popupOptions"), list):
+            entry["popupOptions"] = qt["popupOptions"]
+        questions_out[q.id] = entry
+
+    return {
+        "title": translated.get("title", "") if isinstance(translated, dict) else "",
+        "description": translated.get("description", "") if isinstance(translated, dict) else "",
+        "thankYou": translated.get("thankYou", "") if isinstance(translated, dict) else "",
+        "questions": questions_out,
+    }
 
 
 @router.delete("/api/builder/surveys/{survey_id}")

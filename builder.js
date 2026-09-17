@@ -122,54 +122,70 @@ function questionPreview(q){
   return q.description||'Answer field';
 }
 
+function field(label,html,help=''){ return `<label class="field"><span>${esc(label)}</span>${html}${help?`<small class="small-help">${esc(help)}</small>`:''}</label>`; }
+function textInput(id,value=''){ return `<input id="${id}" type="text" value="${escAttr(value)}">`; }
+function choiceEditor(q){ return `<div id="choiceEditor">${(q.config.options||[]).map((opt,i)=>`<div class="choice-row"><input data-choice-index="${i}" value="${escAttr(opt)}"><button class="btn small" type="button" data-remove-choice="${i}">×</button></div>`).join('')}</div><button class="btn small" type="button" id="addChoice">+ Add option</button>`; }
+function mapSettings(q){
+  const c=q.config||{}; const isPoint=q.type==='map_multi'; const isPolygon=q.type==='map_polygon';
+  return `<div class="field-section"><h4>Map configuration</h4>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="field-row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer "Use my location"</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></div>`;
+}
+function translationFields(q){
+  normalizeState(); const extras=state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); if(!extras.length) return '';
+  return `<div class="field-section"><h4>Translations</h4>${extras.map(lang=>{const t=ensureQuestionTranslation(lang.code,q.id);let extra='';
+    if(q.type==='matrix'){extra+=field('Rows (translated)',`<textarea data-tr-lang="${lang.code}" data-tr-key="rows">${esc((t.rows||[]).join('\n'))}</textarea>`,'One translated row per line, matching the original order.');extra+=field('Columns (translated)',`<textarea data-tr-lang="${lang.code}" data-tr-key="columns">${esc((t.columns||[]).join('\n'))}</textarea>`,'One translated column per line, matching the original order.');}
+    if(q.type==='consent'){extra+=field('Checkbox label',`<input data-tr-lang="${lang.code}" data-tr-key="checkboxLabel" value="${escAttr(t.checkboxLabel||'')}">`);}
+    return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Question text',`<input data-tr-lang="${lang.code}" data-tr-key="title" value="${escAttr(t.title||'')}">`)}${field('Description',`<textarea data-tr-lang="${lang.code}" data-tr-key="description">${esc(t.description||'')}</textarea>`)}${OPTS.has(q.type)?field('Choices',`<textarea data-tr-lang="${lang.code}" data-tr-key="options">${esc((t.options||[]).join('\n'))}</textarea>`,'One translated choice per line, matching the original order.'):''}${extra}</details>`}).join('')}</div>`;
+}
+
+function questionEditorHtml(q){
+  const c=q.config||{};
+  let html=`<div class="field-section">${field('Question',textInput(`qTitle_${q.id}`,q.title))}${field('Description / help text',`<textarea id="qDescription_${q.id}" rows="2">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired_${q.id}" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</div>`;
+  if(OPTS.has(q.type)) html+=`<div class="field-section"><h4>Choices</h4>${choiceEditor(q)}</div>`;
+  if(q.type==='matrix') html+=`<div class="field-section"><h4>Matrix</h4>${field('Rows',`<textarea id="matrixRows_${q.id}">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols_${q.id}">${esc((c.columns||[]).join('\n'))}</textarea>`)}</div>`;
+  if(['rating','slider','number'].includes(q.type)) html+=`<div class="field-section"><h4>Range</h4><div class="field-row">${field('Minimum',`<input id="qMin_${q.id}" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax_${q.id}" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep_${q.id}" type="number" value="${c.step??1}">`)}</div>`;
+  if(q.type.startsWith('map_')) html+=mapSettings(q);
+  if(['photo','photos','file'].includes(q.type)) html+=`<div class="field-section"><h4>Files</h4>${field('Maximum files',`<input id="maxFiles_${q.id}" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</div>`;
+  if(['audio','video'].includes(q.type)) html+=`<div class="field-section"><h4>Recording</h4>${field('Maximum duration (seconds)',`<input id="maxDuration_${q.id}" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord_${q.id}" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload_${q.id}" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></div>`;
+  if(q.type==='allocation') html+=`<div class="field-section"><h4>Allocation</h4>${field('Total',`<input id="allocationTotal_${q.id}" type="number" value="${c.total||100}">`)}${field('Unit',textInput(`allocationUnit_${q.id}`,c.unit||'points'))}</div>`;
+  if(q.type==='consent') html+=`<div class="field-section"><h4>Consent</h4>${field('Checkbox label',textInput(`consentLabel_${q.id}`,c.checkboxLabel||'I agree'))}</div>`;
+  html+=translationFields(q);
+  return html;
+}
+
 function renderCanvas(){
   $('#surveyTitle').value=state.title||'';
   $('#surveyDescription').value=state.description||'';
   const canvas=$('#questionCanvas');
   if(!state.questions.length){ canvas.innerHTML='<div class="empty-state"><strong>Your survey is empty.</strong><br>Choose a question type from the left.</div>'; return; }
-  canvas.innerHTML=state.questions.map((q,index)=>`<article class="question-card ${q.id===selectedId?'selected':''}" data-qid="${q.id}" tabindex="0"><div class="question-meta"><span class="question-type">${index+1}. ${esc(LABEL[q.type]||q.type)}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" type="button" data-action="up" data-qid="${q.id}" title="Move up">↑</button><button class="icon-btn" type="button" data-action="down" data-qid="${q.id}" title="Move down">↓</button><button class="icon-btn" type="button" data-action="copy" data-qid="${q.id}" title="Duplicate">⧉</button><button class="icon-btn danger" type="button" data-action="delete" data-qid="${q.id}" title="Delete">×</button></div></div><div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(questionPreview(q))}</div></article>`).join('');
+  canvas.innerHTML=state.questions.map((q,index)=>{
+    const open=q.id===selectedId;
+    return `<article class="question-card ${open?'selected':''}" data-qid="${q.id}"><div class="question-card-head" data-toggle-qid="${q.id}" tabindex="0" role="button"><div class="question-meta"><span class="question-type">${index+1}. ${esc(LABEL[q.type]||q.type)}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" type="button" data-action="up" data-qid="${q.id}" title="Move up">↑</button><button class="icon-btn" type="button" data-action="down" data-qid="${q.id}" title="Move down">↓</button><button class="icon-btn" type="button" data-action="copy" data-qid="${q.id}" title="Duplicate">⧉</button><button class="icon-btn danger" type="button" data-action="delete" data-qid="${q.id}" title="Delete">×</button></div></div><div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(questionPreview(q))}</div></div>${open?`<div class="question-card-body">${questionEditorHtml(q)}</div>`:''}</article>`;
+  }).join('');
 }
 
-function field(label,html,help=''){ return `<label class="field"><span>${esc(label)}</span>${html}${help?`<small class="small-help">${esc(help)}</small>`:''}</label>`; }
-function textInput(id,value=''){ return `<input id="${id}" type="text" value="${escAttr(value)}">`; }
-function choiceEditor(q){ return `<div id="choiceEditor">${(q.config.options||[]).map((opt,i)=>`<div class="choice-row"><input data-choice-index="${i}" value="${escAttr(opt)}"><button class="btn" type="button" data-remove-choice="${i}">×</button></div>`).join('')}</div><button class="btn" type="button" id="addChoice">+ Add option</button>`; }
-function mapSettings(q){
-  const c=q.config||{}; const isPoint=q.type==='map_multi'; const isPolygon=q.type==='map_polygon';
-  return `<section class="section"><h3>Map configuration</h3>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer “Use my location”</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></section>`;
-}
-function translationFields(q){
-  normalizeState(); const extras=state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); if(!extras.length) return '';
-  return `<section class="section"><h3>Translations</h3>${extras.map(lang=>{const t=ensureQuestionTranslation(lang.code,q.id);return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Question text',`<input data-tr-lang="${lang.code}" data-tr-key="title" value="${escAttr(t.title||'')}">`)}${field('Description',`<textarea data-tr-lang="${lang.code}" data-tr-key="description">${esc(t.description||'')}</textarea>`)}${OPTS.has(q.type)?field('Choices',`<textarea data-tr-lang="${lang.code}" data-tr-key="options">${esc((t.options||[]).join('\n'))}</textarea>`,'One translated choice per line.'):''}</details>`}).join('')}</section>`;
-}
-
-function renderInspector(){
-  normalizeState();
-  const panel=$('#inspector'); const q=state.questions.find(x=>x.id===selectedId);
-  if(!q){ renderSettings(); return; }
-  const c=q.config||{};
-  let html=`<div class="inspector-title"><h2>Question settings</h2><button class="btn" id="closeInspector" type="button">Close</button></div><section class="section">${field('Question',textInput('qTitle',q.title))}${field('Description / help text',`<textarea id="qDescription" rows="4">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</section>`;
-  if(OPTS.has(q.type)) html+=`<section class="section"><h3>Choices</h3>${choiceEditor(q)}</section>`;
-  if(q.type==='matrix') html+=`<section class="section"><h3>Matrix</h3>${field('Rows',`<textarea id="matrixRows">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols">${esc((c.columns||[]).join('\n'))}</textarea>`)}</section>`;
-  if(['rating','slider','number'].includes(q.type)) html+=`<section class="section"><h3>Range</h3><div class="row">${field('Minimum',`<input id="qMin" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep" type="number" value="${c.step??1}">`)}</section>`;
-  if(q.type.startsWith('map_')) html+=mapSettings(q);
-  if(['photo','photos','file'].includes(q.type)) html+=`<section class="section"><h3>Files</h3>${field('Maximum files',`<input id="maxFiles" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</section>`;
-  if(['audio','video'].includes(q.type)) html+=`<section class="section"><h3>Recording</h3>${field('Maximum duration (seconds)',`<input id="maxDuration" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></section>`;
-  if(q.type==='allocation') html+=`<section class="section"><h3>Allocation</h3>${field('Total',`<input id="allocationTotal" type="number" value="${c.total||100}">`)}${field('Unit',textInput('allocationUnit',c.unit||'points'))}</section>`;
-  if(q.type==='consent') html+=`<section class="section"><h3>Consent</h3>${field('Checkbox label',textInput('consentLabel',c.checkboxLabel||'I agree'))}</section>`;
-  html+=translationFields(q);
-  panel.innerHTML=html; panel.classList.add('open');
-}
-
-function renderSettings(){
+function settingsHtml(){
   normalizeState(); const s=state.settings; const enabled=new Set(s.languages.map(x=>x.code));
   const extraTranslations=s.languages.filter(x=>x.code!==s.defaultLanguage);
-  $('#inspector').innerHTML=`<div class="inspector-title"><h2>Survey settings</h2><span id="saveState" class="save-state"></span></div><section class="section"><h3>Publishing</h3>${field('Public slug',textInput('surveySlug',state.slug||''),'Used in the public URL.')}${field('Primary color',`<input id="primaryColor" type="color" value="${escAttr(s.primaryColor||'#2f6f5e')}">`)}<label class="check"><input id="showProgress" type="checkbox" ${s.showProgress!==false?'checked':''}><span>Show progress</span></label><label class="check"><input id="allowDrafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}><span>Save respondent draft locally</span></label></section><section class="section"><h3>Branding</h3>${field('Custom domain',textInput('customDomain',s.customDomain||''))}${field('Thank-you message',`<textarea id="thankYou" rows="4">${esc(s.thankYou||'')}</textarea>`)}</section><section class="section"><h3>Survey languages</h3>${field('Main language',`<select id="defaultLanguage">${LANGUAGE_CATALOG.map(([code,name])=>`<option value="${code}" ${code===s.defaultLanguage?'selected':''}>${esc(name)}</option>`).join('')}</select>`)}<div class="small-help">Choose additional participant languages:</div>${LANGUAGE_CATALOG.map(([code,name])=>`<label class="check"><input type="checkbox" data-language="${code}" ${enabled.has(code)?'checked':''} ${code===s.defaultLanguage?'disabled':''}><span>${esc(name)}</span></label>`).join('')}</section>${extraTranslations.length?`<section class="section"><h3>Survey translations</h3>${extraTranslations.map(lang=>{const tr=ensureTranslation(lang.code).survey;return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Survey title',`<input data-survey-tr-lang="${lang.code}" data-survey-tr-key="title" value="${escAttr(tr.title||'')}">`)}${field('Introduction',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="description">${esc(tr.description||'')}</textarea>`)}${field('Thank-you message',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="thankYou">${esc(tr.thankYou||'')}</textarea>`)}</details>`}).join('')}</section>`:''}`;
+  return `<div class="field-section"><h4>Publishing</h4>${field('Public slug',textInput('surveySlug',state.slug||''),'Used in the public URL.')}${field('Primary color',`<input id="primaryColor" type="color" value="${escAttr(s.primaryColor||'#2f6f5e')}">`)}<label class="check"><input id="showProgress" type="checkbox" ${s.showProgress!==false?'checked':''}><span>Show progress</span></label><label class="check"><input id="allowDrafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}><span>Save respondent draft locally</span></label><span id="saveState" class="save-state"></span></div><div class="field-section"><h4>Branding</h4>${field('Custom domain',textInput('customDomain',s.customDomain||''))}${field('Thank-you message',`<textarea id="thankYou" rows="3">${esc(s.thankYou||'')}</textarea>`)}</div><div class="field-section"><h4>Survey languages</h4>${field('Main language',`<select id="defaultLanguage">${LANGUAGE_CATALOG.map(([code,name])=>`<option value="${code}" ${code===s.defaultLanguage?'selected':''}>${esc(name)}</option>`).join('')}</select>`)}<div class="small-help">Choose additional participant languages. New languages are auto-translated immediately — you can fine-tune the text afterward.</div>${LANGUAGE_CATALOG.map(([code,name])=>`<label class="check"><input type="checkbox" data-language="${code}" ${enabled.has(code)?'checked':''} ${code===s.defaultLanguage?'disabled':''}><span>${esc(name)}</span></label>`).join('')}</div>${extraTranslations.length?`<div class="field-section"><h4>Survey translations</h4>${extraTranslations.map(lang=>{const tr=ensureTranslation(lang.code).survey;return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Survey title',`<input data-survey-tr-lang="${lang.code}" data-survey-tr-key="title" value="${escAttr(tr.title||'')}">`)}${field('Introduction',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="description">${esc(tr.description||'')}</textarea>`)}${field('Thank-you message',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="thankYou">${esc(tr.thankYou||'')}</textarea>`)}</details>`}).join('')}</div>`:''}`;
+}
+function renderSettings(){ $('#settingsBody').innerHTML=settingsHtml(); }
+
+function renderPreviewLanguageSelect(){
+  normalizeState();
+  const sel=$('#previewLanguage'); if(!sel) return;
+  const prior=sel.value;
+  sel.innerHTML=state.settings.languages.map(l=>`<option value="${l.code}">${esc(l.name||languageName(l.code))}</option>`).join('');
+  if(state.settings.languages.some(l=>l.code===prior)) sel.value=prior;
 }
 
 function render(){
   normalizeState();
   const pill=$('#statusPill'); pill.textContent=state.status==='published'?'Published':'Draft'; pill.classList.toggle('published',state.status==='published');
-  renderCanvas(); renderInspector();
+  renderCanvas();
+  if(!$('#settingsOverlay').classList.contains('open')) { /* settings body refreshed lazily on open */ }
+  else renderSettings();
+  renderPreviewLanguageSelect();
+  refreshPreview();
 }
 
 function addQuestion(type){
@@ -179,27 +195,34 @@ function addQuestion(type){
   selectedId=q.id; render();
   requestAnimationFrame(()=>document.querySelector(`[data-qid="${q.id}"]`)?.scrollIntoView({block:'center'}));
 }
-function moveQuestion(id,delta){ const i=state.questions.findIndex(q=>q.id===id),j=i+delta; if(i<0||j<0||j>=state.questions.length)return; [state.questions[i],state.questions[j]]=[state.questions[j],state.questions[i]]; renderCanvas(); }
+function moveQuestion(id,delta){ const i=state.questions.findIndex(q=>q.id===id),j=i+delta; if(i<0||j<0||j>=state.questions.length)return; [state.questions[i],state.questions[j]]=[state.questions[j],state.questions[i]]; renderCanvas(); refreshPreview(); }
 function copyQuestion(id){ const i=state.questions.findIndex(q=>q.id===id); if(i<0)return; const copy=structuredClone(state.questions[i]); copy.id=uid(); copy.title+= ' (copy)'; state.questions.splice(i+1,0,copy); selectedId=copy.id; render(); }
-function deleteQuestion(id){ const i=state.questions.findIndex(q=>q.id===id); if(i<0)return; if(!confirm(`Delete “${state.questions[i].title}”?`))return; state.questions.splice(i,1); if(selectedId===id)selectedId=null; render(); }
+function deleteQuestion(id){ const i=state.questions.findIndex(q=>q.id===id); if(i<0)return; if(!confirm(`Delete "${state.questions[i].title}"?`))return; state.questions.splice(i,1); if(selectedId===id)selectedId=null; render(); }
 
-function syncSimpleInspector(target){
-  const q=state.questions.find(x=>x.id===selectedId); if(!q)return;
-  const id=target.id;
-  if(id==='qTitle'){q.title=target.value;renderCanvas();return}
-  if(id==='qDescription'){q.description=target.value;renderCanvas();return}
-  if(id==='qRequired'){q.required=target.checked;renderCanvas();return}
-  if(target.matches('[data-choice-index]')){q.config.options[Number(target.dataset.choiceIndex)]=target.value;renderCanvas();return}
+function syncQuestionField(q,target){
+  const suffix=`_${q.id}`;
+  const id=target.id&&target.id.endsWith(suffix)?target.id.slice(0,-suffix.length):target.id;
+  if(id==='qTitle'){q.title=target.value;renderCanvasTitleOnly(q);return}
+  if(id==='qDescription'){q.description=target.value;return}
+  if(id==='qRequired'){q.required=target.checked;renderCanvasTitleOnly(q);return}
+  if(target.matches('[data-choice-index]')){q.config.options[Number(target.dataset.choiceIndex)]=target.value;renderCanvasTitleOnly(q);return}
   if(id==='matrixRows'){q.config.rows=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixCols'){q.config.columns=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total'};
-  if(numberMap[id]){q.config[numberMap[id]]=target.value===''?'':Number(target.value);renderCanvas();return}
+  if(numberMap[id]){q.config[numberMap[id]]=target.value===''?'':Number(target.value);return}
   const checkMap={allowGeo:'allowGeo',allowCitySearch:'allowCitySearch',allowRecord:'allowRecord',allowUpload:'allowUpload'};
   if(checkMap[id]){q.config[checkMap[id]]=target.checked;return}
-  if(id==='allocationUnit'){q.config.unit=target.value;renderCanvas();return}
+  if(id==='allocationUnit'){q.config.unit=target.value;return}
   if(id==='consentLabel'){q.config.checkboxLabel=target.value;return}
-  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=key==='options'?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
+  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
 }
+function renderCanvasTitleOnly(q){
+  const card=document.querySelector(`[data-qid="${q.id}"]`); if(!card) return;
+  const titleEl=card.querySelector('.question-title'); if(titleEl) titleEl.textContent=q.title;
+  const previewEl=card.querySelector('.question-preview'); if(previewEl) previewEl.textContent=questionPreview(q);
+  const typeEl=card.querySelector('.question-type'); if(typeEl){ const index=state.questions.findIndex(x=>x.id===q.id); typeEl.textContent=`${index+1}. ${LABEL[q.type]||q.type}${q.required?' · required':''}`; }
+}
+
 function syncSettings(target){
   const s=state.settings;
   if(target.id==='surveySlug') state.slug=target.value;
@@ -211,21 +234,95 @@ function syncSettings(target){
   else if(target.id==='defaultLanguage'){
     s.defaultLanguage=target.value;
     if(!s.languages.some(x=>x.code===target.value))s.languages.unshift({code:target.value,name:languageName(target.value)});
-    renderSettings();
+    renderSettings(); renderPreviewLanguageSelect();
   } else if(target.matches('[data-language]')){
     const code=target.dataset.language;
-    if(target.checked && !s.languages.some(x=>x.code===code))s.languages.push({code,name:languageName(code)});
+    if(target.checked && !s.languages.some(x=>x.code===code)){
+      s.languages.push({code,name:languageName(code)});
+      autoTranslateLanguage(code);
+    }
     if(!target.checked)s.languages=s.languages.filter(x=>x.code!==code);
-    renderSettings();
+    renderSettings(); renderPreviewLanguageSelect();
   } else if(target.matches('[data-survey-tr-lang]')){
     ensureTranslation(target.dataset.surveyTrLang).survey[target.dataset.surveyTrKey]=target.value;
   }
+  refreshPreview();
 }
 
+// --- Auto-translation ---------------------------------------------------
+async function autoTranslateLanguage(code){
+  setSaveState('Translating…');
+  try{
+    const body={
+      targetLanguage:code,
+      sourceLanguage:state.settings.defaultLanguage,
+      survey:{
+        title:state.title,
+        description:state.description,
+        thankYou:state.settings.thankYou||'',
+        questions:state.questions.map(q=>({
+          id:q.id,
+          title:q.title,
+          description:q.description||'',
+          options:OPTS.has(q.type)?(q.config.options||[]):null,
+          rows:q.type==='matrix'?(q.config.rows||[]):null,
+          columns:q.type==='matrix'?(q.config.columns||[]):null,
+          checkboxLabel:q.type==='consent'?(q.config.checkboxLabel||''):null,
+          popupQuestion:q.config?.popup?.question||null,
+          popupOptions:q.config?.popup?.options||null
+        }))
+      }
+    };
+    const response=await fetch(`${API}/api/builder/translate`,{method:'POST',headers:headers(),body:JSON.stringify(body)});
+    if(!response.ok) throw new Error(await response.text());
+    const data=await response.json();
+    const tr=ensureTranslation(code);
+    tr.survey.title=data.title||'';
+    tr.survey.description=data.description||'';
+    tr.survey.thankYou=data.thankYou||'';
+    Object.entries(data.questions||{}).forEach(([qid,qt])=>{
+      const target=ensureQuestionTranslation(code,qid);
+      if(qt.title) target.title=qt.title;
+      if(qt.description) target.description=qt.description;
+      if(Array.isArray(qt.options)) target.options=qt.options;
+      if(Array.isArray(qt.rows)) target.rows=qt.rows;
+      if(Array.isArray(qt.columns)) target.columns=qt.columns;
+      if(qt.checkboxLabel) target.checkboxLabel=qt.checkboxLabel;
+      if(qt.popupQuestion) target.popupQuestion=qt.popupQuestion;
+      if(Array.isArray(qt.popupOptions)) target.popupOptions=qt.popupOptions;
+    });
+    setSaveState('Translated');
+    if($('#settingsOverlay').classList.contains('open')) renderSettings();
+    renderCanvas();
+    refreshPreview();
+  }catch(error){
+    console.error(error);
+    setSaveState('');
+    alert(`Automatic translation into ${languageName(code)} failed. You can still fill it in manually below.`);
+  }
+}
+
+// --- Live preview (postMessage to the survey.html iframe) ---------------
+let previewReady=false;
+let previewTimer=null;
 function payload(){
   state.title=$('#surveyTitle').value.trim()||'Untitled survey'; state.description=$('#surveyDescription').value;
-  return {title:state.title,description:state.description,slug:state.slug||null,questions:state.questions,settings:{...state.settings,translations:state.translations}};
+  return {title:state.title,description:state.description,slug:state.slug||null,questions:state.questions,settings:{...state.settings},translations:state.translations};
 }
+function refreshPreview(){
+  clearTimeout(previewTimer);
+  previewTimer=setTimeout(()=>{
+    const frame=$('#livePreviewFrame');
+    if(!frame || !frame.contentWindow || !previewReady) return;
+    const lang=$('#previewLanguage')?.value || state.settings.defaultLanguage;
+    frame.contentWindow.postMessage({type:'ppgis-preview-update', survey:payload(), lang}, '*');
+  }, 180);
+}
+window.addEventListener('message', event=>{
+  if(event.data?.type==='ppgis-preview-ready'){ previewReady=true; refreshPreview(); }
+});
+$('#previewLanguage').addEventListener('change', refreshPreview);
+
 async function save(quiet=false){
   if(!requireAdminKey()) return false;
   setSaveState('Saving…');
@@ -244,27 +341,32 @@ async function load(){
   if(!requireAdminKey())return;
   try{const response=await fetch(`${API}/api/builder/surveys/${id}`,{headers:headers(false)});if(!response.ok)throw new Error(await response.text());const data=await response.json();state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||{}};selectedId=null;render();}catch(error){console.error(error);alert('Could not load survey.');}
 }
-function previewSurvey(){state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;safeStorage.setItem('survey-builder-preview',JSON.stringify(state));window.open('/survey?preview=local','_blank');}
 async function publish(){if(!state.questions.length){alert('Add at least one question first.');return}if(!await save(true))return;const response=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:headers(false)});if(!response.ok){alert('Could not publish survey.');return}const data=await response.json();state.status='published';state.slug=data.slug;render();alert('Survey published.');}
+
+function openSettings(){ renderSettings(); $('#settingsOverlay').classList.add('open'); }
+function closeSettings(){ $('#settingsOverlay').classList.remove('open'); }
 
 $('#palette').addEventListener('click',event=>{const button=event.target.closest('[data-add-type]');if(button)addQuestion(button.dataset.addType);});
 $('#questionCanvas').addEventListener('click',event=>{
   const action=event.target.closest('[data-action]'); if(action){event.stopPropagation(); const id=action.dataset.qid; if(action.dataset.action==='up')moveQuestion(id,-1); if(action.dataset.action==='down')moveQuestion(id,1); if(action.dataset.action==='copy')copyQuestion(id); if(action.dataset.action==='delete')deleteQuestion(id); return;}
-  const card=event.target.closest('[data-qid]'); if(card){selectedId=card.dataset.qid;render();}
+  const toggle=event.target.closest('[data-toggle-qid]'); if(toggle){const id=toggle.dataset.toggleQid; selectedId=(selectedId===id)?null:id; renderCanvas(); refreshPreview();}
 });
-$('#questionCanvas').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-qid]')){event.preventDefault();selectedId=event.target.dataset.qid;render();}});
-$('#inspector').addEventListener('input',event=>{if(selectedId)syncSimpleInspector(event.target);else syncSettings(event.target);});
-$('#inspector').addEventListener('change',event=>{if(selectedId)syncSimpleInspector(event.target);else syncSettings(event.target);});
-$('#inspector').addEventListener('click',event=>{
-  if(event.target.id==='closeInspector'){selectedId=null;render();return}
-  const q=state.questions.find(x=>x.id===selectedId); if(!q)return;
-  if(event.target.id==='addChoice'){q.config.options.push(`Option ${q.config.options.length+1}`);renderInspector();return}
-  const remove=event.target.closest('[data-remove-choice]'); if(remove && q.config.options.length>1){q.config.options.splice(Number(remove.dataset.removeChoice),1);renderInspector();renderCanvas();}
+$('#questionCanvas').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-toggle-qid]')){event.preventDefault();const id=event.target.dataset.toggleQid;selectedId=(selectedId===id)?null:id;renderCanvas();refreshPreview();}});
+$('#questionCanvas').addEventListener('input',event=>{const card=event.target.closest('[data-qid]'); if(!card) return; const q=state.questions.find(x=>x.id===card.dataset.qid); if(!q) return; syncQuestionField(q,event.target); refreshPreview();});
+$('#questionCanvas').addEventListener('change',event=>{const card=event.target.closest('[data-qid]'); if(!card) return; const q=state.questions.find(x=>x.id===card.dataset.qid); if(!q) return; syncQuestionField(q,event.target); refreshPreview();});
+$('#questionCanvas').addEventListener('click',event=>{
+  const card=event.target.closest('[data-qid]'); if(!card) return; const q=state.questions.find(x=>x.id===card.dataset.qid); if(!q) return;
+  if(event.target.id===`addChoice`){ if(event.target.closest('.question-card-body')){ q.config.options.push(`Option ${q.config.options.length+1}`); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); } return; }
+  const remove=event.target.closest('[data-remove-choice]'); if(remove && q.config.options && q.config.options.length>1){ q.config.options.splice(Number(remove.dataset.removeChoice),1); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); }
 });
-$('#surveyTitle').addEventListener('input',event=>{state.title=event.target.value;});
-$('#surveyDescription').addEventListener('input',event=>{state.description=event.target.value;});
-$('#settingsBtn').addEventListener('click',()=>{selectedId=null;renderInspector();$('#inspector').classList.add('open');});
-$('#previewBtn').addEventListener('click',previewSurvey);
+$('#surveyTitle').addEventListener('input',event=>{state.title=event.target.value;refreshPreview();});
+$('#surveyDescription').addEventListener('input',event=>{state.description=event.target.value;refreshPreview();});
+$('#settingsBtn').addEventListener('click',openSettings);
+$('#closeSettingsBtn').addEventListener('click',closeSettings);
+$('#settingsOverlay').addEventListener('click',event=>{ if(event.target.id==='settingsOverlay') closeSettings(); });
+$('#settingsBody').addEventListener('input',event=>syncSettings(event.target));
+$('#settingsBody').addEventListener('change',event=>syncSettings(event.target));
+$('#previewToggleBtn').addEventListener('click',()=>$('#previewPanel').classList.toggle('open'));
 $('#adminBtn').addEventListener('click',()=>{location.href=state.id?`/admin?survey=${state.id}`:'/admin';});
 $('#saveBtn').addEventListener('click',()=>save(false));
 $('#publishBtn').addEventListener('click',publish);

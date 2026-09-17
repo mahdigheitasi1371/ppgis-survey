@@ -48,7 +48,7 @@
   function localizedDefinition(source,lang){
     const localized=clone(source),base=String(source?.settings?.defaultLanguage||'en').toLowerCase();
     if(lang===base)return localized;
-    const tr=source?.translations?.[lang]; if(!tr)return localized;
+    const tr=source?.translations?.[lang] || source?.settings?.translations?.[lang]; if(!tr)return localized;
     const survey=tr.survey||{};
     if(survey.title)localized.title=survey.title;
     if(survey.description)localized.description=survey.description;
@@ -211,6 +211,21 @@
     if(!observer){observer=new MutationObserver(()=>{if(patching)return;requestAnimationFrame(patchRenderedLabels);});observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
   };
 
-  window.SurveyLanguage={get:()=>currentLanguage,t,switchLanguage};
+  function setDefinition(newDef,lang){
+    if(!newDef)return;
+    sourceDefinition=clone(newDef);
+    const langs=languagesOf(sourceDefinition);
+    if(lang&&langs.some(x=>x.code===lang))currentLanguage=lang;
+    else if(!langs.some(x=>x.code===currentLanguage))currentLanguage=langs[0]?.code||String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();
+    ans.__language=currentLanguage;
+    def=localizedDefinition(sourceDefinition,currentLanguage);
+    document.documentElement.lang=currentLanguage;
+    document.documentElement.dir=['ar','fa'].includes(currentLanguage.split('-')[0])?'rtl':'ltr';
+    document.title=def.title||'Survey';
+    try{maps.forEach(entry=>entry.m?.remove?.());maps.clear();}catch(_){}
+    finalRender();installSelector();patchRenderedLabels();
+  }
+
+  window.SurveyLanguage={get:()=>currentLanguage,t,switchLanguage,setDefinition};
   if(def)render();
 })();
