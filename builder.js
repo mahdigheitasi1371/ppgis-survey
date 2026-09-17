@@ -30,7 +30,24 @@ let state = {
   translations:{}
 };
 let selectedId = null;
-let adminKey = localStorage.getItem('survey-admin-key') || '';
+
+// Safe wrapper around localStorage: some deployment/preview environments run
+// this page in a sandboxed context where localStorage throws instead of
+// working (SecurityError on an opaque origin). Without this guard, the very
+// first line below would crash before anything else on the page could run,
+// leaving the builder blank with no error message.
+const safeStorage = (() => {
+  const mem = new Map();
+  let ok = false;
+  try { localStorage.setItem('__probe__', '1'); localStorage.removeItem('__probe__'); ok = true; } catch (_) {}
+  return {
+    getItem(k) { try { return ok ? localStorage.getItem(k) : (mem.has(k) ? mem.get(k) : null); } catch (_) { return mem.has(k) ? mem.get(k) : null; } },
+    setItem(k, v) { try { if (ok) { localStorage.setItem(k, v); return; } } catch (_) {} mem.set(k, v); },
+    removeItem(k) { try { if (ok) { localStorage.removeItem(k); return; } } catch (_) {} mem.delete(k); }
+  };
+})();
+
+let adminKey = safeStorage.getItem('survey-admin-key') || '';
 let saveStatusTimer = null;
 
 function esc(value='') { const div=document.createElement('div'); div.textContent=String(value); return div.innerHTML; }
@@ -60,7 +77,7 @@ function ensureQuestionTranslation(code,qid){
 function requireAdminKey(){
   if(adminKey) return adminKey;
   adminKey=(prompt('Enter ADMIN_KEY:')||'').trim();
-  if(adminKey) localStorage.setItem('survey-admin-key',adminKey);
+  if(adminKey) safeStorage.setItem('survey-admin-key',adminKey);
   return adminKey;
 }
 function headers(json=true){ const key=requireAdminKey(); const h={'X-Admin-Key':key}; if(json) h['Content-Type']='application/json'; return h; }
@@ -227,7 +244,7 @@ async function load(){
   if(!requireAdminKey())return;
   try{const response=await fetch(`${API}/api/builder/surveys/${id}`,{headers:headers(false)});if(!response.ok)throw new Error(await response.text());const data=await response.json();state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||{}};selectedId=null;render();}catch(error){console.error(error);alert('Could not load survey.');}
 }
-function previewSurvey(){state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;localStorage.setItem('survey-builder-preview',JSON.stringify(state));window.open('/survey?preview=local','_blank');}
+function previewSurvey(){state.title=$('#surveyTitle').value;state.description=$('#surveyDescription').value;safeStorage.setItem('survey-builder-preview',JSON.stringify(state));window.open('/survey?preview=local','_blank');}
 async function publish(){if(!state.questions.length){alert('Add at least one question first.');return}if(!await save(true))return;const response=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:headers(false)});if(!response.ok){alert('Could not publish survey.');return}const data=await response.json();state.status='published';state.slug=data.slug;render();alert('Survey published.');}
 
 $('#palette').addEventListener('click',event=>{const button=event.target.closest('[data-add-type]');if(button)addQuestion(button.dataset.addType);});

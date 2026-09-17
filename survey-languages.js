@@ -192,7 +192,7 @@
   }
 
   function languageKey(){return sourceDefinition?.slug?`survey-language:${sourceDefinition.slug}`:'survey-language:preview';}
-  function chooseInitialLanguage(){const langs=languagesOf(sourceDefinition),allowed=new Set(langs.map(x=>x.code)),requested=new URLSearchParams(location.search).get('lang')?.toLowerCase(),remembered=localStorage.getItem(languageKey())?.toLowerCase(),browser=(navigator.language||'').toLowerCase().split('-')[0],fallback=String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();currentLanguage=[requested,remembered,browser,fallback].find(x=>x&&allowed.has(x))||langs[0]?.code||'en';}
+  function chooseInitialLanguage(){const langs=languagesOf(sourceDefinition),allowed=new Set(langs.map(x=>x.code)),requested=new URLSearchParams(location.search).get('lang')?.toLowerCase(),remembered=(typeof safeStorage!=='undefined'?safeStorage.getItem(languageKey()):null)?.toLowerCase(),browser=(navigator.language||'').toLowerCase().split('-')[0],fallback=String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();currentLanguage=[requested,remembered,browser,fallback].find(x=>x&&allowed.has(x))||langs[0]?.code||'en';}
 
   function installSelector(){
     if(!sourceDefinition)return;const langs=languagesOf(sourceDefinition);if(langs.length<2)return;const topbar=document.getElementById('respondentTopbar');if(!topbar)return;let holder=topbar.querySelector('.respondent-language');
@@ -201,7 +201,7 @@
   }
 
   function switchLanguage(code){
-    const langs=languagesOf(sourceDefinition);if(!langs.some(x=>x.code===code))return;currentLanguage=code;localStorage.setItem(languageKey(),code);ans.__language=code;def=localizedDefinition(sourceDefinition,code);document.documentElement.lang=code;document.documentElement.dir=['ar','fa'].includes(code.split('-')[0])?'rtl':'ltr';document.title=def.title||'Survey';try{maps.forEach(entry=>entry.m?.remove?.());maps.clear();}catch(_){}render();
+    const langs=languagesOf(sourceDefinition);if(!langs.some(x=>x.code===code))return;currentLanguage=code;if(typeof safeStorage!=='undefined')safeStorage.setItem(languageKey(),code);ans.__language=code;def=localizedDefinition(sourceDefinition,code);document.documentElement.lang=code;document.documentElement.dir=['ar','fa'].includes(code.split('-')[0])?'rtl':'ltr';document.title=def.title||'Survey';try{maps.forEach(entry=>entry.m?.remove?.());maps.clear();}catch(_){}render();
   }
 
   render=function(){
