@@ -159,9 +159,7 @@
 
   function patchGenericSystemText(){
     const copy=ui();
-    const sub=document.querySelector('.respondent-brand-sub');if(sub)sub.textContent=copy.interactive;
     const kicker=document.querySelector('.survey-kicker');if(kicker)kicker.textContent=copy.welcome;
-    const meta=document.querySelectorAll('.survey-intro-meta span');if(meta[0])meta[0].textContent=copy.interactive;if(meta[1])meta[1].textContent=copy.mapEnabled;if(meta[2])meta[2].textContent=copy.mobileFriendly;
     const step=document.getElementById('respondentStepLabel');if(step&&(!/\d+\s*\/\s*\d+/.test(step.textContent)))step.textContent=copy.welcome;
     const start=document.querySelector('[data-start-survey]');if(start)start.textContent=`${copy.start} →`;
     const back=document.querySelector('[data-prev]');if(back)back.textContent=`← ${copy.back}`;

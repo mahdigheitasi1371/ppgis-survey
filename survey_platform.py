@@ -265,6 +265,14 @@ def validate_required(definition: dict[str, Any], answers: dict[str, Any]) -> No
             )
 
 
+@router.get("/api/builder/auth-check")
+def auth_check(x_admin_key: str | None = Header(default=None, alias="X-Admin-Key")):
+    """Lightweight endpoint the builder and dashboard call to gate the whole
+    site behind the admin key before any survey can be created or viewed."""
+    admin_guard(x_admin_key)
+    return {"ok": True}
+
+
 @router.get("/api/builder/surveys")
 def list_surveys(x_admin_key: str | None = Header(default=None, alias="X-Admin-Key")):
     admin_guard(x_admin_key)
@@ -626,8 +634,10 @@ def export_builder_responses_shp(
     Map geometry cannot be represented in the CSV export, so it is excluded
     there and shipped here instead - one Shapefile per map question, zipped
     together. Every feature carries a ``resp_id`` attribute equal to the
-    ``response_id`` column in the CSV export, so the two exports can be
-    joined back together in a GIS or spreadsheet for combined analysis.
+    ``response_id`` column in the CSV export (the shared join key for
+    merging map data back with the rest of a response's answers), plus a
+    ``quest_id`` attribute with the originating question's id, so features
+    from different map questions can be told apart after merging.
     """
     admin_guard(x_admin_key)
     survey = db.execute("SELECT * FROM surveys WHERE id = ?", (survey_id,)).fetchone()
@@ -663,6 +673,7 @@ def export_builder_responses_shp(
             shp_buf, shx_buf, dbf_buf = io.BytesIO(), io.BytesIO(), io.BytesIO()
             writer = shapefile.Writer(shp=shp_buf, shx=shx_buf, dbf=dbf_buf, shapeType=shape_by_type[qtype])
             writer.field("resp_id", "C", size=40)
+            writer.field("quest_id", "C", size=40)
             writer.field("subm_at", "C", size=30)
             writer.field("idx", "N", size=6)
             writer.field("popup", "C", size=254)
@@ -682,7 +693,7 @@ def export_builder_responses_shp(
                         if lat is None or lng is None:
                             continue
                         writer.point(float(lng), float(lat))
-                        writer.record(resp_id, submitted, idx, shp_field_value(point.get("popupAnswer")))
+                        writer.record(resp_id, qid, submitted, idx, shp_field_value(point.get("popupAnswer")))
                         count += 1
                 else:
                     min_pts = 2 if qtype == "map_line" else 3
@@ -702,7 +713,7 @@ def export_builder_responses_shp(
                         else:
                             writer.poly([coords])
                         popups = [p.get("popupAnswer") for p in pts if p.get("popupAnswer") is not None]
-                        writer.record(resp_id, submitted, idx, shp_field_value(popups) if popups else "")
+                        writer.record(resp_id, qid, submitted, idx, shp_field_value(popups) if popups else "")
                         count += 1
 
             if count == 0:

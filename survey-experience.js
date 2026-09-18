@@ -36,7 +36,7 @@
       ? `<div class="respondent-brand-logos">${logos.map(src => `<img class="respondent-brand-logo" src="${src}" alt="Survey logo">`).join('')}</div>`
       : '<span class="respondent-brand-mark">S</span>';
     return `<header class="respondent-topbar" id="respondentTopbar">
-      <div class="respondent-brand">${logo}<div class="respondent-brand-copy"><div class="respondent-brand-title">${esc(def.title || 'Survey')}</div><div class="respondent-brand-sub">Interactive survey</div></div></div>
+      <div class="respondent-brand">${logo}<div class="respondent-brand-copy"><div class="respondent-brand-title">${esc(def.title || 'Survey')}</div></div></div>
       <div class="respondent-step-label" id="respondentStepLabel">Welcome</div>
     </header>
     <div class="experience-progress"><div class="experience-progress-fill" id="experienceProgressFill"></div></div>`;
@@ -63,12 +63,6 @@
       kicker.className = 'survey-kicker';
       kicker.textContent = 'Welcome';
       head.prepend(kicker);
-    }
-    if (!head.querySelector('.survey-intro-meta')) {
-      const meta = document.createElement('div');
-      meta.className = 'survey-intro-meta';
-      meta.innerHTML = '<span>Interactive</span><span>Map-enabled</span><span>Mobile friendly</span>';
-      head.append(meta);
     }
     if (!head.querySelector('[data-start-survey]')) {
       const row = document.createElement('div');

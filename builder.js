@@ -81,22 +81,41 @@ function ensureQuestionTranslation(code,qid){
 }
 function requireAdminKeyAsync(){
   if(adminKey) return Promise.resolve(adminKey);
-  return new Promise(resolve=>{
-    const overlay=$('#adminKeyOverlay'), input=$('#adminKeyInput'), errorEl=$('#adminKeyError');
-    errorEl.style.display='none'; input.value='';
-    overlay.classList.add('open');
-    setTimeout(()=>input.focus(),0);
-    function cleanup(){ overlay.classList.remove('open'); continueBtn.removeEventListener('click',onContinue); cancelBtn.removeEventListener('click',onCancel); input.removeEventListener('keydown',onKeydown); }
-    function onContinue(){ const v=input.value.trim(); if(!v){ errorEl.textContent='Enter an admin key to continue.'; errorEl.style.display='block'; return; } adminKey=v; safeStorage.setItem('survey-admin-key',adminKey); cleanup(); resolve(adminKey); }
-    function onCancel(){ cleanup(); resolve(''); }
-    function onKeydown(e){ if(e.key==='Enter') onContinue(); if(e.key==='Escape') onCancel(); }
-    const continueBtn=$('#adminKeyContinue'), cancelBtn=$('#adminKeyCancel');
-    continueBtn.addEventListener('click',onContinue);
-    cancelBtn.addEventListener('click',onCancel);
-    input.addEventListener('keydown',onKeydown);
-  });
+  lockSite('Your admin session expired. Enter the admin key again to continue.');
+  return Promise.resolve('');
 }
 async function headersAsync(json=true){ const key=await requireAdminKeyAsync(); const h={'X-Admin-Key':key}; if(json) h['Content-Type']='application/json'; return h; }
+
+// --- Site-wide admin key gate: the whole builder is unusable until a valid
+// admin key is provided, so no survey can be created or edited without it.
+function lockSite(msg='', clearKey=true){
+  if(clearKey){ adminKey=''; safeStorage.removeItem('survey-admin-key'); }
+  document.body.classList.add('locked');
+  const errorEl=$('#siteGateError'), input=$('#siteGateInput');
+  if(errorEl){ if(msg){ errorEl.textContent=msg; errorEl.style.display='block'; } else errorEl.style.display='none'; }
+  if(input){ input.value=''; setTimeout(()=>input.focus(),0); }
+}
+function unlockSite(){ document.body.classList.remove('locked'); }
+async function attemptSiteUnlock(){
+  const input=$('#siteGateInput'), btn=$('#siteGateContinue'), errorEl=$('#siteGateError');
+  const value=(input.value||'').trim();
+  if(!value){ errorEl.textContent='Enter the admin key to continue.'; errorEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Checking…';
+  try{
+    const response=await fetch(`${API}/api/builder/auth-check`,{headers:{'X-Admin-Key':value}});
+    if(response.status===403){ errorEl.textContent='Admin key not accepted.'; errorEl.style.display='block'; return; }
+    if(!response.ok){ errorEl.textContent='Could not connect to the survey server.'; errorEl.style.display='block'; return; }
+    adminKey=value; safeStorage.setItem('survey-admin-key',adminKey);
+    unlockSite();
+    renderPalette(); render(); load();
+  }catch(_){
+    errorEl.textContent='Could not connect to the survey server.'; errorEl.style.display='block';
+  }finally{
+    btn.disabled=false; btn.textContent='Continue';
+  }
+}
+$('#siteGateContinue').addEventListener('click',attemptSiteUnlock);
+$('#siteGateInput').addEventListener('keydown',event=>{ if(event.key==='Enter') attemptSiteUnlock(); });
 function setSaveState(text){
   const el=$('#saveState'); if(el) el.textContent=text;
   clearTimeout(saveStatusTimer); if(text) saveStatusTimer=setTimeout(()=>{if(el)el.textContent='';},3000);
@@ -464,6 +483,14 @@ $('#adminBtn').addEventListener('click',()=>{location.href=state.id?`/admin?surv
 $('#saveBtn').addEventListener('click',()=>save(false));
 $('#publishBtn').addEventListener('click',publish);
 
-renderPalette();
-render();
-load();
+async function boot(){
+  if(!adminKey){ lockSite('',false); return; }
+  try{
+    const response=await fetch(`${API}/api/builder/auth-check`,{headers:{'X-Admin-Key':adminKey}});
+    if(response.status===403){ lockSite('Admin key not accepted. Enter it again.'); return; }
+    if(!response.ok){ lockSite('Could not connect to the survey server.',false); return; }
+  }catch(_){ lockSite('Could not connect to the survey server.',false); return; }
+  unlockSite();
+  renderPalette(); render(); load();
+}
+boot();

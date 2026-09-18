@@ -139,9 +139,26 @@
     .device-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
     #previewPanel.device-mobile .preview-frame-wrap{justify-content:center}
     #previewPanel.device-mobile #livePreviewFrame{max-width:390px;margin:0 auto;border-radius:26px;box-shadow:0 0 0 8px #111,var(--shadow)}
+
+    .site-gate{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+    .site-gate-card{width:min(360px,100%);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;display:grid;gap:12px;text-align:center}
+    .site-gate-card input{text-align:left}
+    body.locked #appRoot{display:none}
+    body:not(.locked) .site-gate{display:none}
   </style>
 </head>
-<body>
+<body class="locked">
+  <div id="siteGate" class="site-gate">
+    <div class="site-gate-card">
+      <div class="brand-mark" style="width:44px;height:44px;font-size:13px;margin:0 auto">PSP</div>
+      <h2 style="margin:4px 0 0;font-family:var(--font-display)">Participatory Survey Platform</h2>
+      <p class="muted" style="margin:0">Enter the admin key to create or manage surveys.</p>
+      <p id="siteGateError" class="error-text" style="margin:0;display:none"></p>
+      <input id="siteGateInput" type="password" placeholder="Admin key" autocomplete="current-password" />
+      <button class="btn primary" id="siteGateContinue" type="button">Continue</button>
+    </div>
+  </div>
+  <div id="appRoot">
   <header class="topbar">
     <div class="brand"><span class="brand-mark">PSP</span><strong>Participatory Survey Platform</strong><span id="statusPill" class="status-pill">Draft</span></div>
     <div class="top-actions">
@@ -191,19 +208,7 @@
     </div>
   </div>
 
-  <div id="adminKeyOverlay" class="settings-overlay">
-    <div class="settings-modal" style="width:min(420px,100%)">
-      <div class="settings-modal-title"><h2>Admin key required</h2></div>
-      <p class="muted" style="margin:0">Enter the platform ADMIN_KEY to save or publish this survey.</p>
-      <p id="adminKeyError" class="error-text" style="margin:0;display:none"></p>
-      <input id="adminKeyInput" type="password" placeholder="Admin key" />
-      <div class="submit-bar" style="display:flex;justify-content:flex-end;gap:8px">
-        <button class="btn" id="adminKeyCancel" type="button">Cancel</button>
-        <button class="btn primary" id="adminKeyContinue" type="button">Continue</button>
-      </div>
-    </div>
   </div>
-
   <script src="builder.js?v=1"></script>
 </body>
 </html>
