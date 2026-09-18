@@ -74,10 +74,20 @@
     });
   }
 
+  let reconnectTimer = null;
   function stabilize() {
+    // Disconnect while stabilize() runs (it can add/move map DOM nodes),
+    // and keep it disconnected through the delayed invalidateSize/label
+    // passes below — otherwise Leaflet's own tile churn kept re-triggering
+    // this observer forever, pinning the CPU and slowing the whole survey.
+    observer.disconnect();
+    clearTimeout(reconnectTimer);
     syncLocalizedHeader();
     ensureMaps();
     setTimeout(localizeFeatureLabels, 100);
+    reconnectTimer = setTimeout(() => {
+      observer.observe(document.body, {childList:true,subtree:true});
+    }, 650);
   }
 
   document.addEventListener('change', event => {
@@ -97,7 +107,10 @@
   const observer = new MutationObserver(mutations => {
     let relevant = false;
     for (const mutation of mutations) {
-      if (mutation.type === 'childList' && mutation.addedNodes.length) { relevant = true; break; }
+      if (mutation.type !== 'childList' || !mutation.addedNodes.length) continue;
+      const target = mutation.target;
+      if (target && target.closest && target.closest('.leaflet-container')) continue;
+      relevant = true; break;
     }
     if (relevant) requestAnimationFrame(stabilize);
   });

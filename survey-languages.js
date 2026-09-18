@@ -176,8 +176,16 @@
 
   function patchRenderedLabels(){
     if(!def)return;
+    // Disconnect while we write to the DOM ourselves, so our own edits don't
+    // re-trigger this observer and create an infinite patch loop (this was
+    // pinning the CPU and causing the whole survey to feel slow/frozen).
+    if(observer)observer.disconnect();
     patching=true;
-    try{(def.questions||[]).forEach(q=>{const card=document.querySelector(`[data-qid="${q.id}"]`);if(card)patchQuestion(q,card);});patchGenericSystemText();installGestureFallback();}finally{patching=false;}
+    try{(def.questions||[]).forEach(q=>{const card=document.querySelector(`[data-qid="${q.id}"]`);if(card)patchQuestion(q,card);});patchGenericSystemText();installGestureFallback();}
+    finally{
+      patching=false;
+      if(observer)observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    }
   }
 
   function installGestureFallback(){
@@ -208,7 +216,23 @@
     if(def&&!sourceDefinition){sourceDefinition=clone(def);chooseInitialLanguage();ans.__language=currentLanguage;}
     if(sourceDefinition)def=localizedDefinition(sourceDefinition,currentLanguage);
     finalRender();installSelector();patchRenderedLabels();
-    if(!observer){observer=new MutationObserver(()=>{if(patching)return;requestAnimationFrame(patchRenderedLabels);});observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
+    if(!observer){
+      let scheduled=false;
+      observer=new MutationObserver(mutations=>{
+        if(patching)return;
+        // Ignore churn inside the map (tile loads, marker redraws, panning) —
+        // that's expected and unrelated to text localization, and reacting to
+        // it here was the source of the freeze/slowdown.
+        const relevant=mutations.some(m=>{
+          const node=m.target instanceof Element?m.target:m.target?.parentElement;
+          return !(node&&node.closest&&node.closest('.leaflet-container'));
+        });
+        if(!relevant||scheduled)return;
+        scheduled=true;
+        requestAnimationFrame(()=>{scheduled=false;patchRenderedLabels();});
+      });
+      observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+    }
   };
 
   function setDefinition(newDef,lang){

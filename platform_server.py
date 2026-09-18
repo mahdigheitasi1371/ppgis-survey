@@ -48,8 +48,8 @@ def survey_html() -> HTMLResponse:
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=1">')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=6"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=2"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=1"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=3"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=1"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
