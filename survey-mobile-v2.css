@@ -34,6 +34,7 @@
     box-shadow:none!important;
     backdrop-filter:none!important;
   }
+  .survey-modern .survey-head.experience-hidden{display:none!important}
   .survey-modern .survey-logo{max-height:54px!important;max-width:160px!important;margin-bottom:20px!important}
   .survey-kicker{font-size:11px!important;letter-spacing:.08em!important;margin-bottom:10px!important}
   .survey-modern .survey-title{font-size:clamp(32px,10vw,42px)!important;line-height:1.08!important;letter-spacing:-.02em!important;margin-bottom:14px!important}
