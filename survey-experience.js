@@ -31,8 +31,9 @@
 
   function topbarMarkup() {
     const s = def.settings || {};
-    const logo = s.logo
-      ? `<img class="respondent-brand-logo" src="${s.logo}" alt="Survey logo">`
+    const logos = Array.isArray(s.logos) && s.logos.length ? s.logos : (s.logo ? [s.logo] : []);
+    const logo = logos.length
+      ? `<div class="respondent-brand-logos">${logos.map(src => `<img class="respondent-brand-logo" src="${src}" alt="Survey logo">`).join('')}</div>`
       : '<span class="respondent-brand-mark">S</span>';
     return `<header class="respondent-topbar" id="respondentTopbar">
       <div class="respondent-brand">${logo}<div class="respondent-brand-copy"><div class="respondent-brand-title">${esc(def.title || 'Survey')}</div><div class="respondent-brand-sub">Interactive survey</div></div></div>
@@ -218,6 +219,7 @@
     const next = nav?.querySelector('[data-next]');
     document.body.classList.remove('map-page-active');
 
+    document.body.classList.toggle('survey-welcome-active', currentStep === 0);
     if (currentStep === 0) {
       if (label) label.textContent = 'Welcome';
       if (fill) fill.style.width = '0%';

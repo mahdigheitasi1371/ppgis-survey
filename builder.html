@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Survey Builder</title>
+  <title>Participatory Survey Platform</title>
   <link rel="preconnect" href="https://api.fontshare.com" />
   <link href="https://api.fontshare.com/v2/css?f[]=chillax@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="platform.css?v=1" />
@@ -116,19 +116,42 @@
       .field-row{grid-template-columns:1fr}
     }
     @media(max-width:430px){ #palette{grid-template-columns:1fr} }
+
+    .background-preview{height:100px;border-radius:12px;border:1px solid var(--border);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);overflow:hidden;font-size:12px}
+    .background-preview-empty{background:linear-gradient(135deg,var(--surface-2),var(--surface))}
+    .logo-thumb-row{display:flex;flex-wrap:wrap;gap:10px}
+    .logo-thumb{position:relative;width:76px;height:56px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:grid;place-items:center;overflow:hidden}
+    .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+    .logo-thumb button{position:absolute;top:2px;right:2px;width:20px;height:20px;min-height:0;padding:0;line-height:1;border-radius:50%;font-size:12px}
+    .logo-add-btn{display:inline-flex;align-items:center;justify-content:center;width:fit-content}
+    .photo-choice-row{display:grid;grid-template-columns:56px 1fr 36px;gap:9px;align-items:center;margin-bottom:8px}
+    .photo-choice-thumb{width:56px;height:44px;border-radius:8px;border:1px solid var(--border);background-size:cover;background-position:center;display:grid;place-items:center;font-size:9px;color:var(--muted);text-align:center}
+    .photo-choice-thumb-empty{background:var(--surface-2)}
+    .photo-choice-fields{display:grid;gap:5px;min-width:0}
+    .photo-choice-fields input[type=file]{font-size:11px;padding:4px}
+
+    /* Floating preview toggle (mobile/narrow only) */
+    .preview-fab{display:none;position:fixed;right:16px;bottom:16px;z-index:35;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;box-shadow:var(--shadow);font-size:18px;align-items:center;justify-content:center}
+    @media(max-width:1050px){ .preview-fab{display:flex} }
+
+    .device-toggle{display:flex;gap:4px;background:var(--surface-2);border-radius:9px;padding:3px}
+    .device-toggle button{min-height:26px;padding:3px 9px;font-size:11px;border:none;border-radius:7px;background:transparent;color:var(--muted)}
+    .device-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    #previewPanel.device-mobile .preview-frame-wrap{justify-content:center}
+    #previewPanel.device-mobile #livePreviewFrame{max-width:390px;margin:0 auto;border-radius:26px;box-shadow:0 0 0 8px #111,var(--shadow)}
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">SB</span><strong>Survey Builder</strong><span id="statusPill" class="status-pill">Draft</span></div>
+    <div class="brand"><span class="brand-mark">PSP</span><strong>Participatory Survey Platform</strong><span id="statusPill" class="status-pill">Draft</span></div>
     <div class="top-actions">
       <button id="settingsBtn" class="btn" type="button">Survey settings</button>
-      <button id="previewToggleBtn" class="btn" type="button">Live preview</button>
       <button id="adminBtn" class="btn" type="button">Dashboard</button>
       <button id="saveBtn" class="btn" type="button">Save draft</button>
       <button id="publishBtn" class="btn primary" type="button">Publish</button>
     </div>
   </header>
+  <button id="previewFabBtn" class="preview-fab" type="button" title="Live preview" aria-label="Toggle live preview">&#9664;</button>
 
   <main class="builder-layout">
     <aside class="palette-panel">
@@ -148,6 +171,10 @@
       <div class="preview-panel-head">
         <div class="preview-panel-title"><span class="dot"></span>Live preview</div>
         <div class="preview-controls">
+          <div class="device-toggle" role="group" aria-label="Preview device">
+            <button type="button" data-device="desktop" class="active">Desktop</button>
+            <button type="button" data-device="mobile">Mobile</button>
+          </div>
           <select id="previewLanguage" aria-label="Preview language"></select>
         </div>
       </div>
@@ -177,6 +204,6 @@
     </div>
   </div>
 
-  <script src="builder.js?v=2"></script>
+  <script src="builder.js?v=1"></script>
 </body>
 </html>

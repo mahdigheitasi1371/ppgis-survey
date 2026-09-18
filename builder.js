@@ -10,7 +10,7 @@ const GROUPS = {
     ['short_text','Short text'],['long_text','Open text'],['number','Number'],['email','Email'],['phone','Phone']
   ],
   'Choose & rate': [
-    ['yes_no','Yes / No'],['single_choice','Single choice'],['multiple_choice','Multiple choice'],['dropdown','Dropdown'],['rating','Rating scale'],['slider','Slider'],['matrix','Matrix / Likert']
+    ['yes_no','Yes / No'],['single_choice','Single choice'],['multiple_choice','Multiple choice'],['photo_choice','Photo choice'],['dropdown','Dropdown'],['rating','Rating scale'],['slider','Slider'],['matrix','Matrix / Likert']
   ],
   'Date & time': [['date','Date'],['time','Time'],['datetime','Date & time']],
   'Map & location': [['map_multi','Point map'],['map_line','Line map'],['map_polygon','Polygon map']],
@@ -19,14 +19,15 @@ const GROUPS = {
   'Content & consent': [['info','Information text'],['section','Section heading'],['consent','Consent checkbox']]
 };
 const LABEL = Object.fromEntries(Object.values(GROUPS).flat());
-const OPTS = new Set(['single_choice','multiple_choice','dropdown','ranking','allocation']);
+const OPTS = new Set(['single_choice','multiple_choice','photo_choice','dropdown','ranking','allocation']);
+const PHOTO_CHOICE_TYPES = new Set(['photo_choice']);
 const LANGUAGE_CATALOG = [
   ['en','English'],['de','Deutsch'],['fr','Français'],['es','Español'],['it','Italiano'],['nl','Nederlands'],['pl','Polski'],['pt','Português'],['tr','Türkçe'],['ar','العربية'],['uk','Українська'],['ru','Русский'],['fa','فارسی'],['zh','中文'],['ja','日本語']
 ];
 
 let state = {
   id:null, slug:null, status:'draft', title:'Untitled survey', description:'', questions:[],
-  settings:{logo:'',customDomain:'',primaryColor:'#2f6f5e',defaultLanguage:'en',languages:[{code:'en',name:'English'}],thankYou:'Thank you for your response.',showProgress:true,allowDrafts:true},
+  settings:{logo:'',logos:[],customDomain:'',primaryColor:'#2f6f5e',backgroundColor:'#f5f7f4',backgroundImage:'',backgroundOverlay:0.18,defaultLanguage:'en',languages:[{code:'en',name:'English'}],thankYou:'Thank you for your response.',showProgress:true,allowDrafts:true},
   translations:{}
 };
 let selectedId = null;
@@ -56,6 +57,10 @@ function languageName(code){ return LANGUAGE_CATALOG.find(([c])=>c===code)?.[1] 
 function normalizeState(){
   state.settings ||= {};
   state.settings.defaultLanguage ||= 'en';
+  if(!Array.isArray(state.settings.logos)) state.settings.logos=state.settings.logo?[state.settings.logo]:[];
+  state.settings.backgroundColor ||= '#f5f7f4';
+  state.settings.backgroundImage ||= '';
+  if(typeof state.settings.backgroundOverlay!=='number') state.settings.backgroundOverlay=0.18;
   if(!Array.isArray(state.settings.languages) || !state.settings.languages.length){
     state.settings.languages=[{code:state.settings.defaultLanguage,name:languageName(state.settings.defaultLanguage)}];
   }
@@ -100,6 +105,7 @@ function setSaveState(text){
 function newQuestion(type){
   const q={id:uid(),type,title:LABEL[type]||'Question',description:'',required:false,config:{},logic:null};
   if(OPTS.has(type)) q.config.options=['Option 1','Option 2','Option 3'];
+  if(type==='photo_choice'){ q.config.optionImages=['','','']; q.config.multiple=false; }
   if(type==='rating') Object.assign(q.config,{min:1,max:5,minLabel:'Low',maxLabel:'High'});
   if(type==='slider') Object.assign(q.config,{min:0,max:100,step:1});
   if(type==='matrix') Object.assign(q.config,{rows:['Statement 1','Statement 2'],columns:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree']});
@@ -122,6 +128,7 @@ function renderPalette(){
 
 function questionPreview(q){
   const c=q.config||{};
+  if(q.type==='photo_choice') return `${(c.options||[]).length} photo option(s)`;
   if(OPTS.has(q.type)) return (c.options||[]).join(' · ');
   if(q.type==='matrix') return `${(c.rows||[]).length} rows × ${(c.columns||[]).length} choices`;
   if(q.type==='map_multi') return `Point map · max ${c.maxPoints||1}`;
@@ -136,9 +143,28 @@ function questionPreview(q){
 function field(label,html,help=''){ return `<label class="field"><span>${esc(label)}</span>${html}${help?`<small class="small-help">${esc(help)}</small>`:''}</label>`; }
 function textInput(id,value=''){ return `<input id="${id}" type="text" value="${escAttr(value)}">`; }
 function choiceEditor(q){ return `<div id="choiceEditor">${(q.config.options||[]).map((opt,i)=>`<div class="choice-row"><input data-choice-index="${i}" value="${escAttr(opt)}"><button class="btn small" type="button" data-remove-choice="${i}">×</button></div>`).join('')}</div><button class="btn small" type="button" id="addChoice">+ Add option</button>`; }
+function photoChoiceEditor(q){
+  const c=q.config||{}; const opts=c.options||[]; const imgs=c.optionImages||[];
+  return `<div id="photoChoiceEditor">${opts.map((opt,i)=>{
+    const img=imgs[i]||'';
+    return `<div class="photo-choice-row" data-photo-index="${i}">
+      <div class="photo-choice-thumb ${img?'':'photo-choice-thumb-empty'}" ${img?`style="background-image:url('${img.replace(/'/g,'%27')}')"`:''}>${img?'':'No photo'}</div>
+      <div class="photo-choice-fields">
+        <input data-photo-choice-index="${i}" value="${escAttr(opt)}" placeholder="Label (optional)">
+        <input type="file" accept="image/*" data-photo-choice-file="${i}">
+      </div>
+      <button class="btn small" type="button" data-remove-photo-choice="${i}">×</button>
+    </div>`;
+  }).join('')}</div><button class="btn small" type="button" id="addPhotoChoice">+ Add photo option</button><label class="check"><input id="photoChoiceMultiple_${q.id}" type="checkbox" ${c.multiple?'checked':''}><span>Allow selecting multiple photos</span></label>`;
+}
 function mapSettings(q){
   const c=q.config||{}; const isPoint=q.type==='map_multi'; const isPolygon=q.type==='map_polygon';
-  return `<div class="field-section"><h4>Map configuration</h4>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="field-row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer "Use my location"</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></div>`;
+  return `<div class="field-section"><h4>Map configuration</h4>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="field-row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer "Use my location"</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></div>${popupSettings(q)}`;
+}
+function popupSettings(q){
+  const c=q.config||{}; const p=c.popup||{}; const enabled=!!p.enabled; const ptype=p.type||'single_choice';
+  const unitLabel=q.type==='map_multi'?'point':'vertex';
+  return `<div class="field-section"><h4>Pop-up question</h4><label class="check"><input id="popupEnabled" type="checkbox" ${enabled?'checked':''}><span>Ask a follow-up question per ${unitLabel}</span></label>${enabled?`${field('Follow-up type',`<select id="popupType"><option value="single_choice" ${ptype==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${ptype==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${ptype==='open_text'?'selected':''}>Open text</option></select>`)}${field('Follow-up question text',textInput('popupQuestion',p.question||'Tell us more about this place'))}${ptype==='single_choice'?field('Choices',`<textarea id="popupOptions" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}`:''}</div>`;
 }
 function translationFields(q){
   normalizeState(); const extras=state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); if(!extras.length) return '';
@@ -151,7 +177,8 @@ function translationFields(q){
 function questionEditorHtml(q){
   const c=q.config||{};
   let html=`<div class="field-section">${field('Question',textInput(`qTitle_${q.id}`,q.title))}${field('Description / help text',`<textarea id="qDescription_${q.id}" rows="2">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired_${q.id}" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</div>`;
-  if(OPTS.has(q.type)) html+=`<div class="field-section"><h4>Choices</h4>${choiceEditor(q)}</div>`;
+  if(q.type==='photo_choice') html+=`<div class="field-section"><h4>Photo choices</h4>${photoChoiceEditor(q)}</div>`;
+  else if(OPTS.has(q.type)) html+=`<div class="field-section"><h4>Choices</h4>${choiceEditor(q)}</div>`;
   if(q.type==='matrix') html+=`<div class="field-section"><h4>Matrix</h4>${field('Rows',`<textarea id="matrixRows_${q.id}">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols_${q.id}">${esc((c.columns||[]).join('\n'))}</textarea>`)}</div>`;
   if(['rating','slider','number'].includes(q.type)) html+=`<div class="field-section"><h4>Range</h4><div class="field-row">${field('Minimum',`<input id="qMin_${q.id}" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax_${q.id}" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep_${q.id}" type="number" value="${c.step??1}">`)}</div>`;
   if(q.type.startsWith('map_')) html+=mapSettings(q);
@@ -174,10 +201,20 @@ function renderCanvas(){
   }).join('');
 }
 
+function logoSettingsHtml(){
+  const logos=state.settings.logos||[];
+  const thumbs=logos.map((src,i)=>`<div class="logo-thumb"><img src="${src}" alt="Logo ${i+1}"><button class="btn small" type="button" data-remove-logo="${i}">×</button></div>`).join('');
+  const canAdd=logos.length<5;
+  return `<div class="field-section"><h4>Logos (up to 5)</h4><div class="logo-thumb-row">${thumbs||'<span class="small-help">No logos added yet.</span>'}</div>${canAdd?`<label class="btn small logo-add-btn">Add logo<input id="logoAdd" type="file" accept="image/*" hidden></label>`:'<div class="small-help">Maximum of 5 logos reached.</div>'}<div class="small-help">The first logo shows large at the bottom of the welcome page. All logos then show small and semi-transparent at the top of every other page.</div></div>`;
+}
+function backgroundSettingsHtml(){
+  const s=state.settings; const imagePreview=s.backgroundImage?`<div class="background-preview" style="background-image:url('${s.backgroundImage.replace(/'/g,'%27')}')"></div>`:'<div class="background-preview background-preview-empty">No background image</div>';
+  return `<div class="field-section"><h4>Background</h4>${field('Background color',`<input id="backgroundColor" type="color" value="${escAttr(s.backgroundColor||'#f5f7f4')}">`,'Used behind the survey when no image is set.')}${imagePreview}${field('Background image',`<input id="backgroundImage" type="file" accept="image/*">`,'Optional. Keep it under 1.5 MB.')}${field('Image overlay',`<input id="backgroundOverlay" type="range" min="0" max="0.7" step="0.05" value="${Number(s.backgroundOverlay??0.18)}">`,'Softens the image so questions stay readable.')}<button class="btn small" id="removeBackground" type="button" ${s.backgroundImage?'':'disabled'}>Remove background image</button></div>`;
+}
 function settingsHtml(){
   normalizeState(); const s=state.settings; const enabled=new Set(s.languages.map(x=>x.code));
   const extraTranslations=s.languages.filter(x=>x.code!==s.defaultLanguage);
-  return `<div class="field-section"><h4>Publishing</h4>${field('Public slug',textInput('surveySlug',state.slug||''),'Used in the public URL.')}${field('Primary color',`<input id="primaryColor" type="color" value="${escAttr(s.primaryColor||'#2f6f5e')}">`)}<label class="check"><input id="showProgress" type="checkbox" ${s.showProgress!==false?'checked':''}><span>Show progress</span></label><label class="check"><input id="allowDrafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}><span>Save respondent draft locally</span></label><span id="saveState" class="save-state"></span></div><div class="field-section"><h4>Branding</h4>${field('Custom domain',textInput('customDomain',s.customDomain||''))}${field('Thank-you message',`<textarea id="thankYou" rows="3">${esc(s.thankYou||'')}</textarea>`)}</div><div class="field-section"><h4>Survey languages</h4>${field('Main language',`<select id="defaultLanguage">${LANGUAGE_CATALOG.map(([code,name])=>`<option value="${code}" ${code===s.defaultLanguage?'selected':''}>${esc(name)}</option>`).join('')}</select>`)}<div class="small-help">Choose additional participant languages. New languages are auto-translated immediately — you can fine-tune the text afterward.</div>${LANGUAGE_CATALOG.map(([code,name])=>`<label class="check"><input type="checkbox" data-language="${code}" ${enabled.has(code)?'checked':''} ${code===s.defaultLanguage?'disabled':''}><span>${esc(name)}</span></label>`).join('')}</div>${extraTranslations.length?`<div class="field-section"><h4>Survey translations</h4>${extraTranslations.map(lang=>{const tr=ensureTranslation(lang.code).survey;return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Survey title',`<input data-survey-tr-lang="${lang.code}" data-survey-tr-key="title" value="${escAttr(tr.title||'')}">`)}${field('Introduction',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="description">${esc(tr.description||'')}</textarea>`)}${field('Thank-you message',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="thankYou">${esc(tr.thankYou||'')}</textarea>`)}</details>`}).join('')}</div>`:''}`;
+  return `<div class="field-section"><h4>Publishing</h4>${field('Public slug',textInput('surveySlug',state.slug||''),'Used in the public URL.')}${field('Primary color',`<input id="primaryColor" type="color" value="${escAttr(s.primaryColor||'#2f6f5e')}">`)}<label class="check"><input id="showProgress" type="checkbox" ${s.showProgress!==false?'checked':''}><span>Show progress</span></label><label class="check"><input id="allowDrafts" type="checkbox" ${s.allowDrafts!==false?'checked':''}><span>Save respondent draft locally</span></label><span id="saveState" class="save-state"></span></div><div class="field-section"><h4>Branding</h4>${field('Custom domain',textInput('customDomain',s.customDomain||''))}${field('Thank-you message',`<textarea id="thankYou" rows="3">${esc(s.thankYou||'')}</textarea>`)}</div>${logoSettingsHtml()}${backgroundSettingsHtml()}<div class="field-section"><h4>Survey languages</h4>${field('Main language',`<select id="defaultLanguage">${LANGUAGE_CATALOG.map(([code,name])=>`<option value="${code}" ${code===s.defaultLanguage?'selected':''}>${esc(name)}</option>`).join('')}</select>`)}<div class="small-help">Choose additional participant languages. New languages are auto-translated immediately — you can fine-tune the text afterward.</div>${LANGUAGE_CATALOG.map(([code,name])=>`<label class="check"><input type="checkbox" data-language="${code}" ${enabled.has(code)?'checked':''} ${code===s.defaultLanguage?'disabled':''}><span>${esc(name)}</span></label>`).join('')}</div>${extraTranslations.length?`<div class="field-section"><h4>Survey translations</h4>${extraTranslations.map(lang=>{const tr=ensureTranslation(lang.code).survey;return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Survey title',`<input data-survey-tr-lang="${lang.code}" data-survey-tr-key="title" value="${escAttr(tr.title||'')}">`)}${field('Introduction',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="description">${esc(tr.description||'')}</textarea>`)}${field('Thank-you message',`<textarea data-survey-tr-lang="${lang.code}" data-survey-tr-key="thankYou">${esc(tr.thankYou||'')}</textarea>`)}</details>`}).join('')}</div>`:''}`;
 }
 function renderSettings(){ $('#settingsBody').innerHTML=settingsHtml(); }
 
@@ -217,6 +254,12 @@ function syncQuestionField(q,target){
   if(id==='qDescription'){q.description=target.value;return}
   if(id==='qRequired'){q.required=target.checked;renderCanvasTitleOnly(q);return}
   if(target.matches('[data-choice-index]')){q.config.options[Number(target.dataset.choiceIndex)]=target.value;renderCanvasTitleOnly(q);return}
+  if(target.matches('[data-photo-choice-index]')){q.config.options[Number(target.dataset.photoChoiceIndex)]=target.value;renderCanvasTitleOnly(q);return}
+  if(id==='photoChoiceMultiple'){q.config.multiple=target.checked;return}
+  if(id==='popupEnabled'){q.config.popup=q.config.popup||{};q.config.popup.enabled=target.checked;const body=document.querySelector(`[data-qid="${q.id}"] .question-card-body`);if(body)body.innerHTML=questionEditorHtml(q);return}
+  if(id==='popupType'){q.config.popup=q.config.popup||{};q.config.popup.type=target.value;const body=document.querySelector(`[data-qid="${q.id}"] .question-card-body`);if(body)body.innerHTML=questionEditorHtml(q);return}
+  if(id==='popupQuestion'){q.config.popup=q.config.popup||{};q.config.popup.question=target.value;return}
+  if(id==='popupOptions'){q.config.popup=q.config.popup||{};q.config.popup.options=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixRows'){q.config.rows=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixCols'){q.config.columns=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total'};
@@ -256,7 +299,25 @@ function syncSettings(target){
     renderSettings(); renderPreviewLanguageSelect();
   } else if(target.matches('[data-survey-tr-lang]')){
     ensureTranslation(target.dataset.surveyTrLang).survey[target.dataset.surveyTrKey]=target.value;
-  }
+  } else if(target.id==='backgroundColor'){ s.backgroundColor=target.value; }
+  else if(target.id==='backgroundOverlay'){ s.backgroundOverlay=Math.min(0.7,Math.max(0,Number(target.value)||0)); }
+  else if(target.id==='backgroundImage'){
+    const file=target.files?.[0]; if(!file) return;
+    if(file.size>1500000){ alert('Please choose a background image under 1.5 MB.'); target.value=''; return; }
+    const reader=new FileReader();
+    reader.onload=()=>{ s.backgroundImage=reader.result; renderSettings(); refreshPreview(); };
+    reader.readAsDataURL(file);
+    return;
+  } else if(target.id==='removeBackground'){ s.backgroundImage=''; renderSettings(); }
+  else if(target.id==='logoAdd'){
+    const file=target.files?.[0]; if(!file) return;
+    if((s.logos||[]).length>=5){ alert('Maximum of 5 logos reached.'); target.value=''; return; }
+    if(file.size>1500000){ alert('Please choose a logo image under 1.5 MB.'); target.value=''; return; }
+    const reader=new FileReader();
+    reader.onload=()=>{ s.logos=s.logos||[]; s.logos.push(reader.result); renderSettings(); refreshPreview(); };
+    reader.readAsDataURL(file);
+    return;
+  } else if(target.matches('[data-remove-logo]')){ const idx=Number(target.dataset.removeLogo); (s.logos||[]).splice(idx,1); renderSettings(); }
   refreshPreview();
 }
 
@@ -369,6 +430,18 @@ $('#questionCanvas').addEventListener('click',event=>{
   const card=event.target.closest('[data-qid]'); if(!card) return; const q=state.questions.find(x=>x.id===card.dataset.qid); if(!q) return;
   if(event.target.id===`addChoice`){ if(event.target.closest('.question-card-body')){ q.config.options.push(`Option ${q.config.options.length+1}`); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); } return; }
   const remove=event.target.closest('[data-remove-choice]'); if(remove && q.config.options && q.config.options.length>1){ q.config.options.splice(Number(remove.dataset.removeChoice),1); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); }
+  if(event.target.id==='addPhotoChoice'){ q.config.options=q.config.options||[]; q.config.optionImages=q.config.optionImages||[]; q.config.options.push(`Option ${q.config.options.length+1}`); q.config.optionImages.push(''); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); return; }
+  const removePhoto=event.target.closest('[data-remove-photo-choice]'); if(removePhoto && q.config.options && q.config.options.length>1){ const idx=Number(removePhoto.dataset.removePhotoChoice); q.config.options.splice(idx,1); (q.config.optionImages||[]).splice(idx,1); const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); renderCanvasTitleOnly(q); refreshPreview(); }
+});
+$('#questionCanvas').addEventListener('change',event=>{
+  const fileInput=event.target.closest('[data-photo-choice-file]'); if(!fileInput) return;
+  const card=event.target.closest('[data-qid]'); if(!card) return; const q=state.questions.find(x=>x.id===card.dataset.qid); if(!q) return;
+  const file=fileInput.files?.[0]; if(!file) return;
+  if(file.size>1500000){ alert('Please choose a photo under 1.5 MB.'); fileInput.value=''; return; }
+  const index=Number(fileInput.dataset.photoChoiceFile);
+  const reader=new FileReader();
+  reader.onload=()=>{ q.config.optionImages=q.config.optionImages||[]; q.config.optionImages[index]=reader.result; const body=card.querySelector('.question-card-body'); if(body) body.innerHTML=questionEditorHtml(q); refreshPreview(); };
+  reader.readAsDataURL(file);
 });
 $('#surveyTitle').addEventListener('input',event=>{state.title=event.target.value;refreshPreview();});
 $('#surveyDescription').addEventListener('input',event=>{state.description=event.target.value;refreshPreview();});
@@ -377,7 +450,16 @@ $('#closeSettingsBtn').addEventListener('click',closeSettings);
 $('#settingsOverlay').addEventListener('click',event=>{ if(event.target.id==='settingsOverlay') closeSettings(); });
 $('#settingsBody').addEventListener('input',event=>syncSettings(event.target));
 $('#settingsBody').addEventListener('change',event=>syncSettings(event.target));
-$('#previewToggleBtn').addEventListener('click',()=>$('#previewPanel').classList.toggle('open'));
+$('#settingsBody').addEventListener('click',event=>{ const rm=event.target.closest('[data-remove-logo]'); if(rm) syncSettings(rm); });
+const previewFabBtn=$('#previewFabBtn');
+if(previewFabBtn){ previewFabBtn.addEventListener('click',()=>$('#previewPanel').classList.toggle('open')); }
+const previewDeviceButtons=$$('#previewPanel [data-device]');
+if(previewDeviceButtons.length){
+  previewDeviceButtons.forEach(btn=>btn.addEventListener('click',()=>{
+    previewDeviceButtons.forEach(b=>b.classList.toggle('active',b===btn));
+    $('#previewPanel').classList.toggle('device-mobile',btn.dataset.device==='mobile');
+  }));
+}
 $('#adminBtn').addEventListener('click',()=>{location.href=state.id?`/admin?survey=${state.id}`:'/admin';});
 $('#saveBtn').addEventListener('click',()=>save(false));
 $('#publishBtn').addEventListener('click',publish);

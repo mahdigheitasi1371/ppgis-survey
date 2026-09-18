@@ -17,6 +17,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import zipfile
+
+import shapefile
 from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -34,6 +37,19 @@ SLUG_RE = re.compile(r"[^a-z0-9-]+")
 router = APIRouter()
 db = sqlite3.connect(DB_PATH, check_same_thread=False)
 db.row_factory = sqlite3.Row
+
+WGS84_PRJ = (
+    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],'
+    'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]'
+)
+
+
+def shp_field_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)[:254]
+    return str(value)[:254]
 
 db.executescript(
     """
@@ -569,7 +585,10 @@ def export_builder_responses(
     if not survey:
         raise HTTPException(status_code=404, detail="Survey not found")
     definition = parse_definition(survey)
-    questions = [q for q in definition.get("questions", []) if q.get("type") not in {"info", "section"}]
+    questions = [
+        q for q in definition.get("questions", [])
+        if q.get("type") not in {"info", "section", "map_multi", "map_line", "map_polygon"}
+    ]
     rows = db.execute(
         "SELECT * FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at", (survey_id,)
     ).fetchall()
@@ -594,6 +613,115 @@ def export_builder_responses(
         buf,
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{safe_slug}-responses.csv"'},
+    )
+
+
+@router.get("/api/builder/surveys/{survey_id}/responses/export-shp")
+def export_builder_responses_shp(
+    survey_id: str,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    """Export point / line / polygon map-question answers as Shapefiles.
+
+    Map geometry cannot be represented in the CSV export, so it is excluded
+    there and shipped here instead - one Shapefile per map question, zipped
+    together. Every feature carries a ``resp_id`` attribute equal to the
+    ``response_id`` column in the CSV export, so the two exports can be
+    joined back together in a GIS or spreadsheet for combined analysis.
+    """
+    admin_guard(x_admin_key)
+    survey = db.execute("SELECT * FROM surveys WHERE id = ?", (survey_id,)).fetchone()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    definition = parse_definition(survey)
+    map_questions = [
+        q for q in definition.get("questions", [])
+        if q.get("type") in {"map_multi", "map_line", "map_polygon"}
+    ]
+    if not map_questions:
+        raise HTTPException(status_code=404, detail="This survey has no map questions to export")
+    rows = db.execute(
+        "SELECT * FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at", (survey_id,)
+    ).fetchall()
+
+    kind_by_type = {"map_multi": "point", "map_line": "line", "map_polygon": "polygon"}
+    shape_by_type = {
+        "map_multi": shapefile.POINT,
+        "map_line": shapefile.POLYLINE,
+        "map_polygon": shapefile.POLYGON,
+    }
+
+    zip_buf = io.BytesIO()
+    included_any = False
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for q in map_questions:
+            qid = q.get("id")
+            qtype = q.get("type")
+            safe_qid = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(qid))[:40]
+            base_name = f"{kind_by_type[qtype]}-{safe_qid}"
+
+            shp_buf, shx_buf, dbf_buf = io.BytesIO(), io.BytesIO(), io.BytesIO()
+            writer = shapefile.Writer(shp=shp_buf, shx=shx_buf, dbf=dbf_buf, shapeType=shape_by_type[qtype])
+            writer.field("resp_id", "C", size=40)
+            writer.field("subm_at", "C", size=30)
+            writer.field("idx", "N", size=6)
+            writer.field("popup", "C", size=254)
+            count = 0
+
+            for row in rows:
+                answers = safe_json_loads(row["answers_json"], {})
+                value = answers.get(qid)
+                if not isinstance(value, dict):
+                    continue
+                resp_id = row["id"]
+                submitted = row["submitted_at"]
+
+                if qtype == "map_multi":
+                    for idx, point in enumerate(value.get("points") or []):
+                        lat, lng = point.get("lat"), point.get("lng")
+                        if lat is None or lng is None:
+                            continue
+                        writer.point(float(lng), float(lat))
+                        writer.record(resp_id, submitted, idx, shp_field_value(point.get("popupAnswer")))
+                        count += 1
+                else:
+                    min_pts = 2 if qtype == "map_line" else 3
+                    features = value.get("features")
+                    if not isinstance(features, list) or not features:
+                        legacy_pts = value.get("points")
+                        features = [{"points": legacy_pts}] if isinstance(legacy_pts, list) and legacy_pts else []
+                    for idx, feature in enumerate(features):
+                        pts = feature.get("points") or []
+                        if len(pts) < min_pts:
+                            continue
+                        coords = [[float(p.get("lng")), float(p.get("lat"))] for p in pts]
+                        if qtype == "map_polygon" and coords[0] != coords[-1]:
+                            coords.append(coords[0])
+                        if qtype == "map_line":
+                            writer.line([coords])
+                        else:
+                            writer.poly([coords])
+                        popups = [p.get("popupAnswer") for p in pts if p.get("popupAnswer") is not None]
+                        writer.record(resp_id, submitted, idx, shp_field_value(popups) if popups else "")
+                        count += 1
+
+            if count == 0:
+                continue
+            writer.close()
+            zf.writestr(f"{base_name}.shp", shp_buf.getvalue())
+            zf.writestr(f"{base_name}.shx", shx_buf.getvalue())
+            zf.writestr(f"{base_name}.dbf", dbf_buf.getvalue())
+            zf.writestr(f"{base_name}.prj", WGS84_PRJ)
+            included_any = True
+
+    if not included_any:
+        raise HTTPException(status_code=404, detail="No map responses recorded yet")
+    zip_buf.seek(0)
+    safe_slug = normalize_slug(survey["slug"])
+    return StreamingResponse(
+        zip_buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{safe_slug}-maps-shp.zip"'},
     )
 
 

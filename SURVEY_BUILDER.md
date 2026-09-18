@@ -1,4 +1,4 @@
-# Survey Builder Platform — v1
+# Participatory Survey Platform — v1
 
 This branch turns the project into a reusable survey platform while leaving the original LiFRES survey intact.
 

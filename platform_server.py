@@ -37,17 +37,17 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 def builder_html() -> HTMLResponse:
     """Serve the rebuilt builder exactly as committed, without runtime rewriting."""
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    html = html.replace("builder.js?v=1", "builder.js?v=9")
+    html = html.replace("builder.js?v=1", "builder.js?v=10")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
-    html = html.replace("survey.js?v=1", "survey.js?v=4")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=5">')
+    html = html.replace("survey.js?v=1", "survey.js?v=5")
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=6">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=1">')
-    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=6"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=1"></script>')
@@ -56,7 +56,7 @@ def survey_html() -> HTMLResponse:
 
 def styled_html(name: str) -> HTMLResponse:
     html = (BASE_DIR / name).read_text(encoding="utf-8")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=5">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=6">')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
@@ -179,12 +179,7 @@ for filename, media_type in {
     "platform.css": "text/css",
     "modern-ui.css": "text/css",
     "languages.css": "text/css",
-    "builder-mobile.css": "text/css",
     "survey-mobile-v2.css": "text/css",
-    "map-question-override.js": "application/javascript",
-    "builder-experience.js": "application/javascript",
-    "builder-languages.js": "application/javascript",
-    "builder-mobile.js": "application/javascript",
     "survey-experience.js": "application/javascript",
     "survey-languages.js": "application/javascript",
     "survey-runtime-fixes.js": "application/javascript",
