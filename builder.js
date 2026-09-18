@@ -74,13 +74,24 @@ function ensureQuestionTranslation(code,qid){
   root.questions[qid] ||= {};
   return root.questions[qid];
 }
-function requireAdminKey(){
-  if(adminKey) return adminKey;
-  adminKey=(prompt('Enter ADMIN_KEY:')||'').trim();
-  if(adminKey) safeStorage.setItem('survey-admin-key',adminKey);
-  return adminKey;
+function requireAdminKeyAsync(){
+  if(adminKey) return Promise.resolve(adminKey);
+  return new Promise(resolve=>{
+    const overlay=$('#adminKeyOverlay'), input=$('#adminKeyInput'), errorEl=$('#adminKeyError');
+    errorEl.style.display='none'; input.value='';
+    overlay.classList.add('open');
+    setTimeout(()=>input.focus(),0);
+    function cleanup(){ overlay.classList.remove('open'); continueBtn.removeEventListener('click',onContinue); cancelBtn.removeEventListener('click',onCancel); input.removeEventListener('keydown',onKeydown); }
+    function onContinue(){ const v=input.value.trim(); if(!v){ errorEl.textContent='Enter an admin key to continue.'; errorEl.style.display='block'; return; } adminKey=v; safeStorage.setItem('survey-admin-key',adminKey); cleanup(); resolve(adminKey); }
+    function onCancel(){ cleanup(); resolve(''); }
+    function onKeydown(e){ if(e.key==='Enter') onContinue(); if(e.key==='Escape') onCancel(); }
+    const continueBtn=$('#adminKeyContinue'), cancelBtn=$('#adminKeyCancel');
+    continueBtn.addEventListener('click',onContinue);
+    cancelBtn.addEventListener('click',onCancel);
+    input.addEventListener('keydown',onKeydown);
+  });
 }
-function headers(json=true){ const key=requireAdminKey(); const h={'X-Admin-Key':key}; if(json) h['Content-Type']='application/json'; return h; }
+async function headersAsync(json=true){ const key=await requireAdminKeyAsync(); const h={'X-Admin-Key':key}; if(json) h['Content-Type']='application/json'; return h; }
 function setSaveState(text){
   const el=$('#saveState'); if(el) el.textContent=text;
   clearTimeout(saveStatusTimer); if(text) saveStatusTimer=setTimeout(()=>{if(el)el.textContent='';},3000);
@@ -273,7 +284,7 @@ async function autoTranslateLanguage(code){
         }))
       }
     };
-    const response=await fetch(`${API}/api/builder/translate`,{method:'POST',headers:headers(),body:JSON.stringify(body)});
+    const response=await fetch(`${API}/api/builder/translate`,{method:'POST',headers:await headersAsync(),body:JSON.stringify(body)});
     if(!response.ok) throw new Error(await response.text());
     const data=await response.json();
     const tr=ensureTranslation(code);
@@ -324,11 +335,11 @@ window.addEventListener('message', event=>{
 $('#previewLanguage').addEventListener('change', refreshPreview);
 
 async function save(quiet=false){
-  if(!requireAdminKey()) return false;
+  const key=await requireAdminKeyAsync(); if(!key) return false;
   setSaveState('Saving…');
   try{
     const url=state.id?`${API}/api/builder/surveys/${state.id}`:`${API}/api/builder/surveys`;
-    const response=await fetch(url,{method:state.id?'PUT':'POST',headers:headers(),body:JSON.stringify(payload())});
+    const response=await fetch(url,{method:state.id?'PUT':'POST',headers:await headersAsync(),body:JSON.stringify(payload())});
     if(!response.ok) throw new Error(await response.text());
     const data=await response.json();
     state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||state.translations};
@@ -338,10 +349,10 @@ async function save(quiet=false){
 }
 async function load(){
   const id=new URLSearchParams(location.search).get('id'); if(!id)return;
-  if(!requireAdminKey())return;
-  try{const response=await fetch(`${API}/api/builder/surveys/${id}`,{headers:headers(false)});if(!response.ok)throw new Error(await response.text());const data=await response.json();state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||{}};selectedId=null;render();}catch(error){console.error(error);alert('Could not load survey.');}
+  const key=await requireAdminKeyAsync(); if(!key)return;
+  try{const response=await fetch(`${API}/api/builder/surveys/${id}`,{headers:await headersAsync(false)});if(!response.ok)throw new Error(await response.text());const data=await response.json();state={...state,...data,settings:{...state.settings,...(data.settings||{})},translations:data.translations||data.settings?.translations||{}};selectedId=null;render();}catch(error){console.error(error);alert('Could not load survey.');}
 }
-async function publish(){if(!state.questions.length){alert('Add at least one question first.');return}if(!await save(true))return;const response=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:headers(false)});if(!response.ok){alert('Could not publish survey.');return}const data=await response.json();state.status='published';state.slug=data.slug;render();alert('Survey published.');}
+async function publish(){if(!state.questions.length){alert('Add at least one question first.');return}if(!await save(true))return;const response=await fetch(`${API}/api/builder/surveys/${state.id}/publish`,{method:'POST',headers:await headersAsync(false)});if(!response.ok){alert('Could not publish survey.');return}const data=await response.json();state.status='published';state.slug=data.slug;render();alert('Survey published.');}
 
 function openSettings(){ renderSettings(); $('#settingsOverlay').classList.add('open'); }
 function closeSettings(){ $('#settingsOverlay').classList.remove('open'); }

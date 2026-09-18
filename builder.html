@@ -164,6 +164,19 @@
     </div>
   </div>
 
-  <script src="builder.js?v=1"></script>
+  <div id="adminKeyOverlay" class="settings-overlay">
+    <div class="settings-modal" style="width:min(420px,100%)">
+      <div class="settings-modal-title"><h2>Admin key required</h2></div>
+      <p class="muted" style="margin:0">Enter the platform ADMIN_KEY to save or publish this survey.</p>
+      <p id="adminKeyError" class="error-text" style="margin:0;display:none"></p>
+      <input id="adminKeyInput" type="password" placeholder="Admin key" />
+      <div class="submit-bar" style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn" id="adminKeyCancel" type="button">Cancel</button>
+        <button class="btn primary" id="adminKeyContinue" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="builder.js?v=2"></script>
 </body>
 </html>
