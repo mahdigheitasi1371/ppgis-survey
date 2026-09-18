@@ -82,3 +82,9 @@ body.survey-modern .survey-page{max-width:none;margin:0;padding:0 22px 64px}
 @media(max-width:390px){
   .respondent-brand-title{max-width:30vw}.respondent-step-label{display:none}.survey-modern .survey-head{padding:23px 18px}.survey-modern .survey-title{font-size:30px}.survey-modern .survey-question{padding:23px 17px}.map-floating-panel{max-height:205px}.map-page-active .experience-nav .experience-back{padding-inline:9px}.map-page-active .experience-nav .experience-next{padding-inline:11px}
 }
+
+
+/* Map fullscreen: native when available, fixed-viewport fallback when embedded. */
+.experience-stage:fullscreen,.experience-stage:-webkit-full-screen{width:100vw!important;height:100vh!important;height:100dvh!important;min-height:0!important;max-width:none!important;margin:0!important;padding:0!important}
+body.map-viewport-fullscreen.map-page-active .experience-stage{inset:0!important;min-height:0!important}
+body.map-viewport-fullscreen .respondent-topbar,body.map-viewport-fullscreen .experience-progress{display:none!important}

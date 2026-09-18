@@ -4,7 +4,8 @@
 
 const API = (() => {
   const placeholder = '__PORT_8000__';
-  return placeholder.startsWith('__') ? 'http://localhost:8000' : placeholder;
+  if (!placeholder.startsWith('__')) return placeholder;
+  return location.protocol === 'file:' ? 'http://localhost:8000' : location.origin;
 })();
 
 // Location choices — each has a Leaflet center/zoom near where the Emscher
@@ -434,6 +435,42 @@ function render() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function syncLegacyMapFullscreen(mapWrap) {
+  const button = mapWrap?.querySelector('[data-map-fullscreen]');
+  if (!button) return;
+  const active = document.fullscreenElement === mapWrap || mapWrap.classList.contains('map-wrap-fullscreen');
+  button.textContent = active ? '⛶ Exit full screen' : '⛶ Full screen';
+  button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  button.setAttribute('aria-label', active ? 'Exit map full screen' : 'Open map full screen');
+}
+
+async function toggleLegacyMapFullscreen(mapWrap) {
+  if (document.fullscreenElement === mapWrap) {
+    try { await document.exitFullscreen(); } catch (_) {}
+    return;
+  }
+  if (mapWrap.classList.contains('map-wrap-fullscreen')) {
+    mapWrap.classList.remove('map-wrap-fullscreen');
+    syncLegacyMapFullscreen(mapWrap);
+    window.dispatchEvent(new Event('resize'));
+    return;
+  }
+  try {
+    if (mapWrap.requestFullscreen) {
+      await mapWrap.requestFullscreen();
+      return;
+    }
+  } catch (_) {}
+  mapWrap.classList.add('map-wrap-fullscreen');
+  syncLegacyMapFullscreen(mapWrap);
+  window.dispatchEvent(new Event('resize'));
+}
+
+document.addEventListener('fullscreenchange', () => {
+  document.querySelectorAll('.map-wrap').forEach(mapWrap => syncLegacyMapFullscreen(mapWrap));
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+});
+
 function nav(canGoBack, nextLabel, onNext, nextDisabled) {
   const tr = t();
   const wrap = document.createElement('div');
@@ -591,7 +628,8 @@ function renderStep(step) {
     const mapId = 'map-' + step.id;
     const count = state.data[step.key].length;
     const hintText = count > 0 ? tr.mapMarked(count, MAX_POINTS) : stepTr.hint;
-    mapWrap.innerHTML = `<div class="map-hint ${count > 0 ? 'placed' : ''}" id="hint-${step.id}">${hintText}</div><div class="map-el" id="${mapId}"></div>`;
+    mapWrap.innerHTML = `<div class="map-hint ${count > 0 ? 'placed' : ''}" id="hint-${step.id}">${hintText}</div><div class="map-el" id="${mapId}"></div><button type="button" class="map-fullscreen-btn" data-map-fullscreen aria-pressed="false">⛶ Full screen</button>`;
+    mapWrap.querySelector('[data-map-fullscreen]').onclick = () => toggleLegacyMapFullscreen(mapWrap);
     frag.appendChild(mapWrap);
 
     const note = document.createElement('p');
