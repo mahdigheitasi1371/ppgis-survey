@@ -118,6 +118,11 @@
     return qs[currentStep - 1];
   }
 
+  function ensureMapReady(q) {
+    if (!q || !MAP_TYPES.has(q.type) || maps.has(q.id)) return;
+    mapInit(q);
+  }
+
   function mapDescriptor(q) {
     if (q.type === 'map_line') return {
       label:'Line map', feature:'line', featurePlural:'lines', noun:'vertices', min:2,
@@ -229,6 +234,7 @@
       if (MAP_TYPES.has(q.type)) {
         document.body.classList.add('map-page-active');
         requestAnimationFrame(() => {
+          ensureMapReady(q);
           const entry = maps.get(q.id);
           entry?.m?.invalidateSize?.();
           setTimeout(() => entry?.m?.invalidateSize?.(), 120);
@@ -294,6 +300,8 @@
 
   mapInit = function (q) {
     if (!MAP_TYPES.has(q.type)) return baseMapInit(q);
+    const active = currentQuestion();
+    if (!active || active.id !== q.id) return;
     if (maps.has(q.id) || !$(`#map_${q.id}`)) return;
 
     const c = q.config || {};
