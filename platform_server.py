@@ -185,6 +185,8 @@ for filename, media_type in {
     "survey-runtime-fixes.js": "application/javascript",
     "survey-mobile-v2.js": "application/javascript",
     "admin.js": "application/javascript",
+    "admin-charts.js": "application/javascript",
+    "admin-charts.css": "text/css",
     "survey.js": "application/javascript",
     "style.css": "text/css",
     "app.js": "application/javascript",

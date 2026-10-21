@@ -583,6 +583,61 @@ def list_builder_responses(
     return [response_record(row) for row in rows]
 
 
+def _delete_media_files(rows) -> None:
+    for media in rows:
+        path = UPLOAD_DIR / media["survey_id"] / media["filename"]
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
+@router.delete("/api/builder/surveys/{survey_id}/responses/{response_id}")
+def delete_builder_response(
+    survey_id: str,
+    response_id: str,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    """Delete one response and the photos/audio uploaded with it."""
+    admin_guard(x_admin_key)
+    row = db.execute(
+        "SELECT id FROM survey_responses WHERE id = ? AND survey_id = ?", (response_id, survey_id)
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Response not found")
+    media = db.execute(
+        "SELECT survey_id, filename FROM survey_media WHERE survey_id = ? AND response_id = ?",
+        (survey_id, response_id),
+    ).fetchall()
+    db.execute("DELETE FROM survey_media WHERE survey_id = ? AND response_id = ?", (survey_id, response_id))
+    db.execute("DELETE FROM survey_responses WHERE id = ?", (response_id,))
+    db.commit()
+    _delete_media_files(media)
+    return {"deleted": 1}
+
+
+@router.delete("/api/builder/surveys/{survey_id}/responses")
+def delete_all_builder_responses(
+    survey_id: str,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    """Delete every response of a survey (e.g. after testing). The survey itself is kept."""
+    admin_guard(x_admin_key)
+    if not db.execute("SELECT 1 FROM surveys WHERE id = ?", (survey_id,)).fetchone():
+        raise HTTPException(status_code=404, detail="Survey not found")
+    count = db.execute(
+        "SELECT COUNT(*) AS n FROM survey_responses WHERE survey_id = ?", (survey_id,)
+    ).fetchone()["n"]
+    media = db.execute(
+        "SELECT survey_id, filename FROM survey_media WHERE survey_id = ?", (survey_id,)
+    ).fetchall()
+    db.execute("DELETE FROM survey_media WHERE survey_id = ?", (survey_id,))
+    db.execute("DELETE FROM survey_responses WHERE survey_id = ?", (survey_id,))
+    db.commit()
+    _delete_media_files(media)
+    return {"deleted": count}
+
+
 @router.get("/api/builder/surveys/{survey_id}/responses/export.csv")
 def export_builder_responses(
     survey_id: str,
