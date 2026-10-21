@@ -4,10 +4,10 @@
 # Run on a fresh Ubuntu server (tested target: Ubuntu 24.04 / 26.04 LTS) as root:
 #
 #   curl -fsSL https://raw.githubusercontent.com/mahdigheitasi1371/ppgis-survey/main/deploy/setup.sh -o setup.sh
-#   bash setup.sh --domain meine-emscher.de --email you@example.org
+#   bash setup.sh --domain emschermap.de --email you@example.org
 #
 # Options:
-#   --domain NAME        main domain for the survey (required)
+#   --domain NAME        main domain for the survey (default: emschermap.de)
 #   --email ADDRESS      email for Let's Encrypt certificate notices (required for HTTPS)
 #   --redirect NAME      old domain that should forward to the new one (optional, repeatable)
 #   --no-www             do not also serve www.<domain>
@@ -23,7 +23,7 @@ SERVICE="ppgis-survey"
 ENV_FILE="/etc/ppgis-survey.env"
 PORT="8000"
 
-DOMAIN=""
+DOMAIN="emschermap.de"
 EMAIL=""
 WWW=1
 REDIRECTS=()

@@ -2,7 +2,7 @@
 
 New server: **one.com VPS, Ubuntu 26.04**, IPv4 `85.190.125.93`, IPv6 `2001:880:a:341::92`
 
-Replace `NEWDOMAIN` below with your new domain (e.g. `meine-emscher.de`).
+Domain: **emschermap.de**
 
 > Secrets (admin key, API key) are typed in on the server only. They are stored in
 > `/etc/ppgis-survey.env` on the server and never go to GitHub.
@@ -21,7 +21,7 @@ In the DNS settings of the new domain, create:
 | AAAA | `www` | `2001:880:a:341::92` |
 
 Remove any other A/AAAA records for `@` and `www` (for example a default "parking" page).
-Check after a few minutes: `ping NEWDOMAIN` should show `85.190.125.93`.
+Check after a few minutes: `ping emschermap.de` should show `85.190.125.93`.
 
 ## Step 2 – Set up the new server
 
@@ -35,7 +35,7 @@ Then paste:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mahdigheitasi1371/ppgis-survey/main/deploy/setup.sh -o setup.sh
-bash setup.sh --domain NEWDOMAIN --email YOUR@EMAIL --redirect participatorysurvey.site
+bash setup.sh --domain emschermap.de --email YOUR@EMAIL --redirect participatorysurvey.site
 ```
 
 It asks for:
@@ -60,7 +60,7 @@ bash /opt/ppgis-survey/deploy/migrate-data.sh root@OLD_SERVER_IP /path/of/app/on
 
 It asks for the **old** server's password, copies `data.db`, `survey_uploads/` and
 `audio_uploads/`, and prints how many surveys, responses and files arrived.
-Open `https://NEWDOMAIN/admin.html` and check that everything is there.
+Open `https://emschermap.de/admin.html` and check that everything is there.
 
 ## Step 4 – Final switch (about 10 minutes)
 
@@ -69,7 +69,7 @@ Open `https://NEWDOMAIN/admin.html` and check that everything is there.
    systemctl stop <old-service-name>
    ```
 2. On the **new** server, run the copy again (same command as Step 3).
-3. Share the new links: `https://NEWDOMAIN/survey.html?slug=...`
+3. Share the new links: `https://emschermap.de/survey.html?slug=...`
    (use **Copy link** in the admin dashboard).
 
 ## Step 5 – Old domain participatorysurvey.site
@@ -92,7 +92,7 @@ Wait about a week. Then download a last backup from the **old** server to your c
 | Is the app running? | `systemctl status ppgis-survey` |
 | Live logs | `journalctl -u ppgis-survey -f` |
 | Restart | `systemctl restart ppgis-survey` |
-| Install the latest code from GitHub | `bash setup.sh --domain NEWDOMAIN --email YOUR@EMAIL` |
+| Install the latest code from GitHub | `bash setup.sh --domain emschermap.de --email YOUR@EMAIL` |
 | Backup now | `ppgis-backup` |
 | Copy backups to your computer | `scp -r root@85.190.125.93:/var/backups/ppgis ./ppgis-backups` (run on your computer) |
 | Change admin key / API key | `nano /etc/ppgis-survey.env` then `systemctl restart ppgis-survey` |
