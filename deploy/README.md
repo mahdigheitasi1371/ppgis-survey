@@ -17,10 +17,10 @@ In the DNS settings of the new domain, create:
 |------|-------------|-------|
 | A    | `@`   | `85.190.125.93` |
 | A    | `www` | `85.190.125.93` |
-| AAAA | `@`   | `2001:880:a:341::92` |
-| AAAA | `www` | `2001:880:a:341::92` |
 
-Remove any other A/AAAA records for `@` and `www` (for example a default "parking" page).
+Just change the value of the existing A records; keep the MX record (it is for email).
+IPv6 (AAAA records to `2001:880:a:341::92`) is optional – skip it for now and add it later
+once the site works.
 Check after a few minutes: `ping emschermap.de` should show `85.190.125.93`.
 
 ## Step 2 – Set up the new server
