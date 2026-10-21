@@ -89,6 +89,20 @@
     .preview-controls select{padding:6px 8px;font-size:12px;min-height:34px}
     .preview-frame-wrap{flex:1;overflow:hidden;padding:14px;display:flex}
     #livePreviewFrame{flex:1;width:100%;height:100%;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+    .preview-head-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .preview-max-btn{min-height:30px;padding:4px 10px;font-size:12px;white-space:nowrap}
+    /* Maximised preview: fills the whole window */
+    .preview-panel.maximized{position:fixed;inset:0;z-index:400;width:auto;height:auto;transform:none;border-left:0;box-shadow:none}
+    .preview-panel.maximized .preview-frame-wrap{padding:18px 24px}
+    .preview-panel.maximized .preview-controls select{width:220px;flex:none}
+    body.preview-maximized{overflow:hidden}
+    /* Drag handle to make the side preview wider */
+    .preview-resizer{position:absolute;left:-5px;top:0;bottom:0;width:10px;cursor:col-resize;z-index:6;touch-action:none}
+    .preview-resizer::after{content:"";position:absolute;left:4px;top:50%;width:2px;height:44px;margin-top:-22px;border-radius:2px;background:var(--border);transition:background .15s}
+    .preview-resizer:hover::after,.preview-resizer.dragging::after{background:var(--accent)}
+    .preview-panel.maximized .preview-resizer{display:none}
+    body.preview-resizing{cursor:col-resize;user-select:none}
+    body.preview-resizing #livePreviewFrame{pointer-events:none}
 
     /* Settings modal overlay */
     .settings-overlay{position:fixed;inset:0;z-index:200;background:rgba(20,30,25,.35);display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow:auto}
@@ -102,6 +116,7 @@
       .builder-layout{grid-template-columns:210px minmax(0,1fr)}
       .preview-panel{position:fixed;right:0;top:64px;bottom:0;width:min(380px,92vw);height:auto;z-index:30;box-shadow:-10px 0 30px rgba(20,40,30,.15);transform:translateX(100%);transition:transform .18s ease}
       .preview-panel.open{transform:translateX(0)}
+      .preview-resizer{display:none}
     }
     @media(max-width:720px){
       .topbar{position:relative;align-items:flex-start;flex-direction:column}
@@ -185,8 +200,12 @@
     </section>
 
     <aside id="previewPanel" class="preview-panel">
+      <div id="previewResizer" class="preview-resizer" title="Drag to resize the preview" aria-hidden="true"></div>
       <div class="preview-panel-head">
-        <div class="preview-panel-title"><span class="dot"></span>Live preview</div>
+        <div class="preview-head-row">
+          <div class="preview-panel-title"><span class="dot"></span>Live preview</div>
+          <button id="previewMaxBtn" class="btn preview-max-btn" type="button" title="Show the preview in the whole window (Esc to close)" aria-pressed="false">&#x2922; Maximise</button>
+        </div>
         <div class="preview-controls">
           <div class="device-toggle" role="group" aria-label="Preview device">
             <button type="button" data-device="desktop" class="active">Desktop</button>

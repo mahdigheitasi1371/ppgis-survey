@@ -489,6 +489,53 @@ if(previewDeviceButtons.length){
     $('#previewPanel').classList.toggle('device-mobile',btn.dataset.device==='mobile');
   }));
 }
+// --- Maximise preview (fills the whole window; Esc or the button closes it) ---
+const previewMaxBtn=$('#previewMaxBtn');
+function setPreviewMaximized(on){
+  const panel=$('#previewPanel');
+  panel.classList.toggle('maximized',on);
+  document.body.classList.toggle('preview-maximized',on);
+  previewMaxBtn.innerHTML=on?'&#x2715; Close full view':'&#x2922; Maximise';
+  previewMaxBtn.setAttribute('aria-pressed',String(on));
+}
+if(previewMaxBtn){
+  previewMaxBtn.addEventListener('click',()=>setPreviewMaximized(!$('#previewPanel').classList.contains('maximized')));
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape' && $('#previewPanel').classList.contains('maximized')) setPreviewMaximized(false);
+  });
+}
+
+// --- Drag the left edge of the preview to make it wider or narrower ---
+const PREVIEW_WIDTH_KEY='builder-preview-width';
+const builderLayout=$('.builder-layout');
+function clampPreviewWidth(px){ return Math.round(Math.max(300, Math.min(px, window.innerWidth-520))); }
+function applyPreviewWidth(px){ if(builderLayout) builderLayout.style.setProperty('--preview-w', clampPreviewWidth(px)+'px'); }
+try{ const saved=Number(localStorage.getItem(PREVIEW_WIDTH_KEY)); if(saved>0 && window.innerWidth>1050) applyPreviewWidth(saved); }catch(_){}
+const previewResizer=$('#previewResizer');
+if(previewResizer && builderLayout){
+  previewResizer.addEventListener('pointerdown',event=>{
+    if(window.innerWidth<=1050) return;
+    event.preventDefault();
+    previewResizer.setPointerCapture(event.pointerId);
+    previewResizer.classList.add('dragging');
+    document.body.classList.add('preview-resizing');
+  });
+  previewResizer.addEventListener('pointermove',event=>{
+    if(!previewResizer.classList.contains('dragging')) return;
+    applyPreviewWidth(window.innerWidth-event.clientX);
+  });
+  const endResize=()=>{
+    if(!previewResizer.classList.contains('dragging')) return;
+    previewResizer.classList.remove('dragging');
+    document.body.classList.remove('preview-resizing');
+    const w=parseInt(builderLayout.style.getPropertyValue('--preview-w'),10);
+    try{ if(w) localStorage.setItem(PREVIEW_WIDTH_KEY,String(w)); }catch(_){}
+  };
+  previewResizer.addEventListener('pointerup',endResize);
+  previewResizer.addEventListener('pointercancel',endResize);
+  previewResizer.addEventListener('dblclick',()=>{ builderLayout.style.removeProperty('--preview-w'); try{ localStorage.removeItem(PREVIEW_WIDTH_KEY); }catch(_){} });
+}
+
 $('#adminBtn').addEventListener('click',()=>{location.href=state.id?`/admin?survey=${state.id}`:'/admin';});
 $('#saveBtn').addEventListener('click',()=>save(false));
 $('#publishBtn').addEventListener('click',publish);
