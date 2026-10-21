@@ -111,7 +111,8 @@
       if (!q) return;
       card.classList.add('experience-question-hidden');
       if (MAP_TYPES.has(q.type)) return;
-      if (!card.querySelector('.step-kicker-modern')) {
+      // Only section headings get a small label ('Section 2 / 6'); questions show no type label.
+      if (q.type === 'section' && !card.querySelector('.step-kicker-modern')) {
         const heading = card.querySelector('h3,h2');
         if (heading) {
           const kicker = document.createElement('div');
@@ -350,7 +351,6 @@
     element.innerHTML = `<div class="map-page-canvas"><div class="map-box" id="map_${q.id}"></div></div>
       <aside class="map-floating-panel">
         <div class="map-panel-handle"></div>
-        <div class="step-kicker-modern">${d.label}</div>
         <h3>${title}${required}</h3>
         ${desc}
         <div class="map-point-limit">${instruction}</div>
