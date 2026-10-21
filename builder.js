@@ -412,6 +412,16 @@ function refreshPreview(){
 window.addEventListener('message', event=>{
   if(event.data?.type==='ppgis-preview-ready'){ previewReady=true; refreshPreview(); }
 });
+// The preview iframe can finish loading before this script runs (e.g. when its files are
+// already cached after visiting the dashboard), so its one-time "ready" message is missed.
+// Ask it again whenever we start, when the iframe (re)loads, and when the page is restored.
+function pingPreview(){
+  const frame=$('#livePreviewFrame');
+  try{ frame?.contentWindow?.postMessage({type:'ppgis-preview-ping'}, '*'); }catch(_){}
+}
+$('#livePreviewFrame')?.addEventListener('load', ()=>{ previewReady=false; pingPreview(); });
+window.addEventListener('pageshow', ()=>{ pingPreview(); refreshPreview(); });
+pingPreview();
 $('#previewLanguage').addEventListener('change', refreshPreview);
 
 async function save(quiet=false){

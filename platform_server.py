@@ -37,13 +37,13 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 def builder_html() -> HTMLResponse:
     """Serve the rebuilt builder exactly as committed, without runtime rewriting."""
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    html = html.replace("builder.js?v=1", "builder.js?v=11")
+    html = html.replace("builder.js?v=1", "builder.js?v=12")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
-    html = html.replace("survey.js?v=1", "survey.js?v=5")
+    html = html.replace("survey.js?v=1", "survey.js?v=6")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=6">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=2">')
