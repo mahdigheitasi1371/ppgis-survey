@@ -123,3 +123,10 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 
 /* Keep line breaks typed into question descriptions (e.g. long consent text) */
 .qdesc{white-space:pre-line}
+
+/* Section heading shown above the first question of its section (same page) */
+.survey-modern .section-block.section-lead{margin-bottom:14px;padding:26px 42px;background:color-mix(in srgb,var(--accent) 9%,rgba(255,255,255,.96));border-color:color-mix(in srgb,var(--accent) 22%,transparent);box-shadow:none}
+.survey-modern .section-block.section-lead>h2{font-size:26px;margin:0 0 8px}
+.survey-modern .section-block.section-lead .qdesc{margin:0}
+.survey-modern .section-block.section-lead .qdesc:empty{display:none}
+@media(max-width:720px){.survey-modern .section-block.section-lead{padding:18px 20px;margin-bottom:10px}.survey-modern .section-block.section-lead>h2{font-size:21px}}

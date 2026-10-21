@@ -116,7 +116,7 @@
         if (heading) {
           const kicker = document.createElement('div');
           kicker.className = 'step-kicker-modern';
-          kicker.textContent = labelForType(q.type);
+          kicker.textContent = q.type === 'section' ? sectionLabel(q) : labelForType(q.type);
           heading.before(kicker);
         }
       }
@@ -135,10 +135,41 @@
     nav.querySelector('[data-next]').addEventListener('click', nextStep);
   }
 
-  function currentQuestion() {
+  const CONTENT_TYPES = new Set(['info','section']);
+
+  // A section heading is shown on the same page as the question right after it,
+  // so participants see the explanation and the first question together.
+  // (Map questions use a full-screen layout, so a section before a map keeps its own page.)
+  function pages() {
     const qs = activeQuestions();
-    if (currentStep <= 0 || currentStep > qs.length) return null;
-    return qs[currentStep - 1];
+    const list = [];
+    for (let i = 0; i < qs.length; i += 1) {
+      const q = qs[i], next = qs[i + 1];
+      if (q.type === 'section' && next && !CONTENT_TYPES.has(next.type) && !MAP_TYPES.has(next.type)) {
+        list.push({lead:q, main:next});
+        i += 1;
+      } else {
+        list.push({lead:null, main:q});
+      }
+    }
+    return list;
+  }
+
+  function currentPage() {
+    const ps = pages();
+    if (currentStep <= 0 || currentStep > ps.length) return null;
+    return ps[currentStep - 1];
+  }
+
+  function currentQuestion() {
+    return currentPage()?.main || null;
+  }
+
+  function sectionLabel(q) {
+    const sections = (def?.questions || []).filter(item => item.type === 'section');
+    const index = sections.findIndex(item => item.id === q.id);
+    const word = window.SurveyLanguage?.t?.('section') || 'Section';
+    return sections.length > 1 && index >= 0 ? `${word} ${index + 1} / ${sections.length}` : word;
   }
 
   function ensureMapReady(q) {
@@ -208,7 +239,7 @@
   }
 
   function nextStep() {
-    const qs = activeQuestions();
+    const qs = pages();
     const q = currentQuestion();
     if (q && !validateCurrent(q)) return;
     if (currentStep < qs.length) {
@@ -227,7 +258,7 @@
   }
 
   function showCurrentStep(scrollTop) {
-    const qs = activeQuestions();
+    const qs = pages();
     if (currentStep > qs.length) currentStep = qs.length;
     const head = document.querySelector('.survey-head');
     head?.classList.toggle('experience-hidden', currentStep !== 0);
@@ -246,10 +277,20 @@
       if (label) label.textContent = 'Welcome';
       if (fill) fill.style.width = '0%';
     } else {
-      const q = qs[currentStep - 1];
+      const page = qs[currentStep - 1];
+      const q = page.main;
+      document.querySelectorAll('.section-lead').forEach(el => el.classList.remove('section-lead'));
+      if (page.lead) {
+        const leadCard = document.querySelector(`[data-qid="${page.lead.id}"]`);
+        leadCard?.classList.remove('experience-question-hidden');
+        leadCard?.classList.add('section-lead');
+      }
       const card = document.querySelector(`[data-qid="${q.id}"]`);
       card?.classList.remove('experience-question-hidden');
-      if (label) label.textContent = `${currentStep} / ${qs.length}`;
+      // Count only real questions (not section headings or information texts)
+      const realTotal = activeQuestions().filter(item => !CONTENT_TYPES.has(item.type)).length;
+      const realDone = qs.slice(0, currentStep).filter(p => !CONTENT_TYPES.has(p.main.type)).length;
+      if (label) label.textContent = realTotal ? `${Math.max(1, realDone)} / ${realTotal}` : `${currentStep} / ${qs.length}`;
       if (fill) fill.style.width = `${Math.round((currentStep / Math.max(1, qs.length)) * 100)}%`;
       if (next) {
         next.textContent = currentStep === qs.length ? (preview ? 'Preview complete' : 'Submit →') : 'Next →';

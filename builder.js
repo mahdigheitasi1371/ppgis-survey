@@ -242,6 +242,7 @@ function questionEditorHtml(q){
   if(['photo','photos','file'].includes(q.type)) html+=`<div class="field-section"><h4>Files</h4>${field('Maximum files',`<input id="maxFiles_${q.id}" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</div>`;
   if(['audio','video'].includes(q.type)) html+=`<div class="field-section"><h4>Recording</h4>${field('Maximum duration (seconds)',`<input id="maxDuration_${q.id}" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord_${q.id}" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload_${q.id}" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></div>`;
   if(q.type==='allocation') html+=`<div class="field-section"><h4>Allocation</h4>${field('Total',`<input id="allocationTotal_${q.id}" type="number" value="${c.total||100}">`)}${field('Unit',textInput(`allocationUnit_${q.id}`,c.unit||'points'))}</div>`;
+  if(q.type==='section') html+=`<div class="field-section"><small class="small-help">A section heading starts a new part of the survey. Its title and explanation are shown on the same page as the next question (or on their own page if the next question is a map).</small></div>`;
   if(q.type==='consent') html+=`<div class="field-section"><h4>Consent</h4>${field('Checkbox label',textInput(`consentLabel_${q.id}`,c.checkboxLabel||'I agree'))}</div>`;
   return html;
 }
