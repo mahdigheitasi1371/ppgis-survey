@@ -31,6 +31,7 @@ let state = {
   translations:{}
 };
 let selectedId = null;
+const DEFAULT_SETTINGS = JSON.parse(JSON.stringify(state.settings));
 
 // Safe wrapper around localStorage: some deployment/preview environments run
 // this page in a sandboxed context where localStorage throws instead of
@@ -490,6 +491,60 @@ if(previewDeviceButtons.length){
     $('#previewPanel').classList.toggle('device-mobile',btn.dataset.device==='mobile');
   }));
 }
+// --- Import / export a whole survey (questions, settings, translations) as a .json file ---
+function surveyFileName(){
+  const base=String(state.slug||state.title||'survey').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  return `${base||'survey'}.json`;
+}
+function exportSurvey(){
+  const data={format:'ppgis-survey',version:1,...payload()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob); link.download=surveyFileName();
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(()=>URL.revokeObjectURL(link.href),2000);
+}
+function importSurveyData(data){
+  if(!data||typeof data!=='object'||!Array.isArray(data.questions)) throw new Error('This file does not contain a survey.');
+  const seen=new Set();
+  const questions=data.questions.map((q,index)=>{
+    const type=String(q?.type||'');
+    if(!LABEL[type]) throw new Error(`Question ${index+1} has an unknown type: "${type}".`);
+    const base=newQuestion(type);
+    let id=String(q.id||'').trim()||base.id;
+    if(seen.has(id)) id=uid();
+    seen.add(id);
+    return {...base,...q,id,config:{...base.config,...(q.config||{})}};
+  });
+  state={
+    id:null, slug:data.slug||null, status:'draft',
+    title:String(data.title||'Untitled survey'), description:String(data.description||''),
+    questions,
+    settings:{...JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),...(data.settings||{})},
+    translations:(data.translations&&typeof data.translations==='object')?data.translations:{}
+  };
+  normalizeState();
+  selectedId=null;
+  history.replaceState(null,'',location.pathname);
+  render();
+}
+$('#exportBtn')?.addEventListener('click',exportSurvey);
+$('#importBtn')?.addEventListener('click',()=>{
+  if(state.questions.length && !confirm('Import a survey file?\n\nThe survey that is open now will be replaced in the builder (anything you already saved stays in the Dashboard). The imported survey is created as a new draft when you click "Save draft".')) return;
+  $('#importFile').value=''; $('#importFile').click();
+});
+$('#importFile')?.addEventListener('change',async event=>{
+  const file=event.target.files?.[0]; if(!file) return;
+  try{
+    importSurveyData(JSON.parse(await file.text()));
+    setSaveState('Imported – click "Save draft" to keep it');
+    alert(`Imported "${state.title}" with ${state.questions.length} questions.\n\nClick "Save draft" to save it.`);
+  }catch(error){
+    console.error(error);
+    alert(`Could not import this file.\n\n${error.message||error}`);
+  }
+});
+
 // --- Maximise preview (fills the whole window; Esc or the button closes it) ---
 const previewMaxBtn=$('#previewMaxBtn');
 function setPreviewMaximized(on){

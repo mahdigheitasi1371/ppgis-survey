@@ -177,6 +177,9 @@
   <header class="topbar">
     <div class="brand"><span class="brand-mark">PSP</span><strong>Participatory Survey Platform</strong><span id="statusPill" class="status-pill">Draft</span></div>
     <div class="top-actions">
+      <button id="importBtn" class="btn" type="button" title="Load a survey from a .json file">Import</button>
+      <button id="exportBtn" class="btn" type="button" title="Download this survey as a .json file">Export</button>
+      <input id="importFile" type="file" accept=".json,application/json" hidden>
       <button id="settingsBtn" class="btn" type="button">Survey settings</button>
       <button id="adminBtn" class="btn" type="button">Dashboard</button>
       <button id="saveBtn" class="btn" type="button">Save draft</button>
