@@ -186,17 +186,54 @@ function popupSettings(q){
   const unitLabel=q.type==='map_multi'?'point':'vertex';
   return `<div class="field-section"><h4>Pop-up question</h4><label class="check"><input id="popupEnabled" type="checkbox" ${enabled?'checked':''}><span>Ask a follow-up question per ${unitLabel}</span></label>${enabled?`${field('Follow-up type',`<select id="popupType"><option value="single_choice" ${ptype==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${ptype==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${ptype==='open_text'?'selected':''}>Open text</option></select>`)}${field('Follow-up question text',textInput('popupQuestion',p.question||'Tell us more about this place'))}${ptype==='single_choice'?field('Choices',`<textarea id="popupOptions" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}`:''}</div>`;
 }
+function extraLanguages(){ normalizeState(); return state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); }
+function addLanguageSelect(){
+  const used=new Set(state.settings.languages.map(x=>x.code));
+  const options=LANGUAGE_CATALOG.filter(([code])=>!used.has(code)).map(([code,name])=>`<option value="${code}" ${code==='de'?'selected':''}>${esc(name)}</option>`).join('');
+  if(!options) return '';
+  return `<div class="lang-add-row"><select data-add-lang-select aria-label="Language to add">${options}</select><button class="btn small" type="button" data-add-lang-version>+ Add language version</button></div>`;
+}
 function translationFields(q){
-  normalizeState(); const extras=state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); if(!extras.length) return '';
-  return `<div class="field-section"><h4>Translations</h4>${extras.map(lang=>{const t=ensureQuestionTranslation(lang.code,q.id);let extra='';
-    if(q.type==='matrix'){extra+=field('Rows (translated)',`<textarea data-tr-lang="${lang.code}" data-tr-key="rows">${esc((t.rows||[]).join('\n'))}</textarea>`,'One translated row per line, matching the original order.');extra+=field('Columns (translated)',`<textarea data-tr-lang="${lang.code}" data-tr-key="columns">${esc((t.columns||[]).join('\n'))}</textarea>`,'One translated column per line, matching the original order.');}
-    if(q.type==='consent'){extra+=field('Checkbox label',`<input data-tr-lang="${lang.code}" data-tr-key="checkboxLabel" value="${escAttr(t.checkboxLabel||'')}">`);}
-    return `<details class="translation-block"><summary>${esc(lang.name||languageName(lang.code))}</summary>${field('Question text',`<input data-tr-lang="${lang.code}" data-tr-key="title" value="${escAttr(t.title||'')}">`)}${field('Description',`<textarea data-tr-lang="${lang.code}" data-tr-key="description">${esc(t.description||'')}</textarea>`)}${OPTS.has(q.type)?field('Choices',`<textarea data-tr-lang="${lang.code}" data-tr-key="options">${esc((t.options||[]).join('\n'))}</textarea>`,'One translated choice per line, matching the original order.'):''}${extra}</details>`}).join('')}</div>`;
+  const extras=extraLanguages(); const c=q.config||{};
+  const mainName=languageName(state.settings.defaultLanguage);
+  if(!extras.length){
+    return `<div class="field-section lang-versions"><h4>Language versions</h4><small class="small-help">Write this survey in another language too. Participants can then switch language at the top of the survey.</small>${addLanguageSelect()}</div>`;
+  }
+  const lines=arr=>(arr||[]).join('\n');
+  const blocks=extras.map(lang=>{
+    const t=ensureQuestionTranslation(lang.code,q.id); const L=lang.code; let extra='';
+    if(OPTS.has(q.type)) extra+=field('Choices',`<textarea rows="${Math.max(3,(c.options||[]).length)}" data-tr-lang="${L}" data-tr-key="options" placeholder="${escAttr(lines(c.options))}">${esc(lines(t.options))}</textarea>`,'One per line, in the same order as the original.');
+    if(q.type==='matrix'){
+      extra+=field('Rows',`<textarea data-tr-lang="${L}" data-tr-key="rows" placeholder="${escAttr(lines(c.rows))}">${esc(lines(t.rows))}</textarea>`,'One per line, same order.');
+      extra+=field('Columns',`<textarea data-tr-lang="${L}" data-tr-key="columns" placeholder="${escAttr(lines(c.columns))}">${esc(lines(t.columns))}</textarea>`,'One per line, same order.');
+    }
+    if(q.type==='consent') extra+=field('Checkbox label',`<input data-tr-lang="${L}" data-tr-key="checkboxLabel" value="${escAttr(t.checkboxLabel||'')}" placeholder="${escAttr(c.checkboxLabel||'')}">`);
+    if(q.type.startsWith('map_') && c.popup?.enabled){
+      extra+=field('Pop-up question',`<input data-tr-lang="${L}" data-tr-key="popupQuestion" value="${escAttr(t.popupQuestion||'')}" placeholder="${escAttr(c.popup.question||'')}">`);
+      if((c.popup.type||'single_choice')==='single_choice') extra+=field('Pop-up choices',`<textarea rows="${Math.max(3,(c.popup.options||[]).length)}" data-tr-lang="${L}" data-tr-key="popupOptions" placeholder="${escAttr(lines(c.popup.options))}">${esc(lines(t.popupOptions))}</textarea>`,'One per line, same order.');
+    }
+    return `<div class="translation-block lang-version"><div class="lang-version-title">${esc(lang.name||languageName(L))} version</div>${field('Question text',`<input data-tr-lang="${L}" data-tr-key="title" value="${escAttr(t.title||'')}" placeholder="${escAttr(q.title||'')}">`)}${field('Description / help text',`<textarea rows="2" data-tr-lang="${L}" data-tr-key="description" placeholder="${escAttr(q.description||'')}">${esc(t.description||'')}</textarea>`)}${extra}</div>`;
+  }).join('');
+  return `<div class="field-section lang-versions"><h4>Language versions</h4><small class="small-help">Main language: ${esc(mainName)}. The grey text shows the original – empty fields show the original to participants.</small>${blocks}${addLanguageSelect()}</div>`;
+}
+function surveyTranslationFields(){
+  const extras=extraLanguages(); if(!extras.length) return '';
+  return extras.map(lang=>{const t=ensureTranslation(lang.code).survey; const L=lang.code;
+    return `<div class="translation-block lang-version"><div class="lang-version-title">${esc(lang.name||languageName(L))} version</div><label>Survey title<input data-survey-tr-lang="${L}" data-survey-tr-key="title" value="${escAttr(t.title||'')}" placeholder="${escAttr(state.title||'')}"></label><label>Introduction<textarea rows="2" data-survey-tr-lang="${L}" data-survey-tr-key="description" placeholder="${escAttr(state.description||'')}">${esc(t.description||'')}</textarea></label><label>Thank-you message<textarea rows="2" data-survey-tr-lang="${L}" data-survey-tr-key="thankYou" placeholder="${escAttr(state.settings.thankYou||'')}">${esc(t.thankYou||'')}</textarea></label></div>`;}).join('');
+}
+function addLanguageVersion(code){
+  if(!code||state.settings.languages.some(x=>x.code===code)) return;
+  state.settings.languages.push({code,name:languageName(code)});
+  ensureTranslation(code);
+  render();
+  const sel=$('#previewLanguage'); if(sel && [...sel.options].some(o=>o.value===code)){ sel.value=code; refreshPreview(); }
+  setSaveState(`${languageName(code)} added – fill in the ${languageName(code)} version under each question`);
 }
 
 function questionEditorHtml(q){
   const c=q.config||{};
   let html=`<div class="field-section">${field('Question',textInput(`qTitle_${q.id}`,q.title))}${field('Description / help text',`<textarea id="qDescription_${q.id}" rows="2">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired_${q.id}" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</div>`;
+  html+=translationFields(q);
   if(q.type==='photo_choice') html+=`<div class="field-section"><h4>Photo choices</h4>${photoChoiceEditor(q)}</div>`;
   else if(OPTS.has(q.type)) html+=`<div class="field-section"><h4>Choices</h4>${choiceEditor(q)}</div>`;
   if(q.type==='matrix') html+=`<div class="field-section"><h4>Matrix</h4>${field('Rows',`<textarea id="matrixRows_${q.id}">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols_${q.id}">${esc((c.columns||[]).join('\n'))}</textarea>`)}</div>`;
@@ -206,13 +243,13 @@ function questionEditorHtml(q){
   if(['audio','video'].includes(q.type)) html+=`<div class="field-section"><h4>Recording</h4>${field('Maximum duration (seconds)',`<input id="maxDuration_${q.id}" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord_${q.id}" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload_${q.id}" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></div>`;
   if(q.type==='allocation') html+=`<div class="field-section"><h4>Allocation</h4>${field('Total',`<input id="allocationTotal_${q.id}" type="number" value="${c.total||100}">`)}${field('Unit',textInput(`allocationUnit_${q.id}`,c.unit||'points'))}</div>`;
   if(q.type==='consent') html+=`<div class="field-section"><h4>Consent</h4>${field('Checkbox label',textInput(`consentLabel_${q.id}`,c.checkboxLabel||'I agree'))}</div>`;
-  html+=translationFields(q);
   return html;
 }
 
 function renderCanvas(){
   $('#surveyTitle').value=state.title||'';
   $('#surveyDescription').value=state.description||'';
+  const st=$('#surveyTranslations'); if(st) st.innerHTML=surveyTranslationFields();
   const canvas=$('#questionCanvas');
   if(!state.questions.length){ canvas.innerHTML='<div class="empty-state"><strong>Your survey is empty.</strong><br>Choose a question type from the left.</div>'; return; }
   canvas.innerHTML=state.questions.map((q,index)=>{
@@ -288,7 +325,7 @@ function syncQuestionField(q,target){
   if(checkMap[id]){q.config[checkMap[id]]=target.checked;return}
   if(id==='allocationUnit'){q.config.unit=target.value;return}
   if(id==='consentLabel'){q.config.checkboxLabel=target.value;return}
-  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
+  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns'||key==='popupOptions')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
 }
 function renderCanvasTitleOnly(q){
   const card=document.querySelector(`[data-qid="${q.id}"]`); if(!card) return;
@@ -491,6 +528,19 @@ if(previewDeviceButtons.length){
     $('#previewPanel').classList.toggle('device-mobile',btn.dataset.device==='mobile');
   }));
 }
+// --- Language versions (added by hand, no automatic translation needed) ---
+document.addEventListener('click',event=>{
+  const btn=event.target.closest('[data-add-lang-version]'); if(!btn) return;
+  event.preventDefault(); event.stopPropagation();
+  const sel=btn.parentElement?.querySelector('[data-add-lang-select]');
+  addLanguageVersion(sel?.value);
+});
+$('#surveyTranslations')?.addEventListener('input',event=>{
+  const el=event.target; if(!el.matches('[data-survey-tr-lang]')) return;
+  ensureTranslation(el.dataset.surveyTrLang).survey[el.dataset.surveyTrKey]=el.value;
+  refreshPreview();
+});
+
 // --- Import / export a whole survey (questions, settings, translations) as a .json file ---
 function surveyFileName(){
   const base=String(state.slug||state.title||'survey').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
