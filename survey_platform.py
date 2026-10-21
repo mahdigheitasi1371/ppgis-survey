@@ -415,7 +415,7 @@ def translate_survey(
 
         client = Anthropic()
         message = client.messages.create(
-            model="claude_sonnet_4_6",
+            model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
             max_tokens=4000,
             messages=[{"role": "user", "content": prompt}],
         )
