@@ -176,3 +176,20 @@
   .map-floating-panel h3{font-size:17px!important}
   .map-point-limit{font-size:12px!important}
 }
+
+/* With a background photo, keep the welcome text on a light card so it stays readable on phones */
+@media (max-width: 760px){
+  body.survey-modern.survey-has-bg .experience-stage{align-items:center!important}
+  body.survey-modern.survey-has-bg .survey-head{
+    min-height:0!important;
+    margin:22px 0 0!important;
+    padding:26px 20px 28px!important;
+    border-radius:20px!important;
+    border:1px solid rgba(255,255,255,.9)!important;
+    background:rgba(255,255,255,.9)!important;
+    box-shadow:0 12px 34px rgba(17,35,25,.12)!important;
+    -webkit-backdrop-filter:blur(6px)!important;
+    backdrop-filter:blur(6px)!important;
+  }
+  body.survey-modern.survey-has-bg .survey-intro-logos img{height:34px;max-width:130px}
+}

@@ -27,6 +27,34 @@
     } else {
       document.body.style.backgroundImage = 'linear-gradient(145deg,#eef3ef 0%,#f8faf7 45%,#f1f4f0 100%)';
     }
+    document.body.classList.toggle('survey-has-bg', !!s.backgroundImage);
+    renderBackgroundCredit(s);
+  }
+
+  // Small photo credit for the background image (bottom-left on desktop, end of page on mobile)
+  function renderBackgroundCredit(s) {
+    const text = s.backgroundImage ? String(s.backgroundCredit || '').trim() : '';
+    let el = document.getElementById('surveyBgCredit');
+    if (!text) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'surveyBgCredit';
+      el.className = 'survey-bg-credit';
+      document.body.appendChild(el);
+    }
+    el.textContent = '';
+    text.split(/(https?:\/\/[^\s]+|www\.[^\s]+|[a-z0-9-]+\.[a-z]{2,}\/[^\s]*)/i).forEach(part => {
+      if (!part) return;
+      if (/^(https?:\/\/|www\.|[a-z0-9-]+\.[a-z]{2,}\/)/i.test(part)) {
+        const a = document.createElement('a');
+        a.href = /^https?:/i.test(part) ? part : `https://${part}`;
+        a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = part;
+        el.appendChild(a);
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
+    });
   }
 
   function topbarMarkup() {

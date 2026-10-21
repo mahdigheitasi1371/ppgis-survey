@@ -228,7 +228,7 @@ function logoSettingsHtml(){
 }
 function backgroundSettingsHtml(){
   const s=state.settings; const imagePreview=s.backgroundImage?`<div class="background-preview" style="background-image:url('${s.backgroundImage.replace(/'/g,'%27')}')"></div>`:'<div class="background-preview background-preview-empty">No background image</div>';
-  return `<div class="field-section"><h4>Background</h4>${field('Background color',`<input id="backgroundColor" type="color" value="${escAttr(s.backgroundColor||'#f5f7f4')}">`,'Used behind the survey when no image is set.')}${imagePreview}${field('Background image',`<input id="backgroundImage" type="file" accept="image/*">`,'Optional. Keep it under 1.5 MB.')}${field('Image overlay',`<input id="backgroundOverlay" type="range" min="0" max="0.7" step="0.05" value="${Number(s.backgroundOverlay??0.18)}">`,'Softens the image so questions stay readable.')}<button class="btn small" id="removeBackground" type="button" ${s.backgroundImage?'':'disabled'}>Remove background image</button></div>`;
+  return `<div class="field-section"><h4>Background</h4>${field('Background color',`<input id="backgroundColor" type="color" value="${escAttr(s.backgroundColor||'#f5f7f4')}">`,'Used behind the survey when no image is set.')}${imagePreview}${field('Background image',`<input id="backgroundImage" type="file" accept="image/*">`,'Optional. Keep it under 1.5 MB.')}${field('Image credit',textInput('backgroundCredit',s.backgroundCredit||''),'Shown small at the bottom of the survey, e.g. the photo source.')}${field('Image overlay',`<input id="backgroundOverlay" type="range" min="0" max="0.7" step="0.05" value="${Number(s.backgroundOverlay??0.18)}">`,'Softens the image so questions stay readable.')}<button class="btn small" id="removeBackground" type="button" ${s.backgroundImage?'':'disabled'}>Remove background image</button></div>`;
 }
 function settingsHtml(){
   normalizeState(); const s=state.settings; const enabled=new Set(s.languages.map(x=>x.code));
@@ -319,6 +319,7 @@ function syncSettings(target){
   } else if(target.matches('[data-survey-tr-lang]')){
     ensureTranslation(target.dataset.surveyTrLang).survey[target.dataset.surveyTrKey]=target.value;
   } else if(target.id==='backgroundColor'){ s.backgroundColor=target.value; }
+  else if(target.id==='backgroundCredit'){ s.backgroundCredit=target.value; }
   else if(target.id==='backgroundOverlay'){ s.backgroundOverlay=Math.min(0.7,Math.max(0,Number(target.value)||0)); }
   else if(target.id==='backgroundImage'){
     const file=target.files?.[0]; if(!file) return;
