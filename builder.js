@@ -610,6 +610,23 @@ function importSurveyData(data){
   history.replaceState(null,'',location.pathname);
   render();
 }
+// Word file with every question and instruction in all language versions (made on the server)
+async function exportWord(){
+  const btn=$('#wordBtn'); const label=btn?.textContent;
+  if(btn){ btn.disabled=true; btn.textContent='Preparing…'; }
+  try{
+    const response=await fetch(`${API}/api/builder/export-docx`,{method:'POST',headers:await headersAsync(),body:JSON.stringify(payload())});
+    if(response.status===403){ lockSite('Admin key not accepted.'); return; }
+    if(!response.ok) throw new Error(`The server answered ${response.status}`);
+    const blob=await response.blob();
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob); link.download=surveyFileName().replace(/\.json$/,'-questionnaire.docx');
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(()=>URL.revokeObjectURL(link.href),2000);
+  }catch(e){ alert('Could not create the Word file: '+(e.message||e)); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=label; } }
+}
+$('#wordBtn')?.addEventListener('click',exportWord);
 $('#exportBtn')?.addEventListener('click',exportSurvey);
 $('#importBtn')?.addEventListener('click',()=>{
   if(state.questions.length && !confirm('Import a survey file?\n\nThe survey that is open now will be replaced in the builder (anything you already saved stays in the Dashboard). The imported survey is created as a new draft when you click "Save draft".')) return;

@@ -20,8 +20,8 @@ from typing import Any
 import zipfile
 
 import shapefile
-from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, Body, File, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -420,6 +420,25 @@ def close_survey(
     )
     db.commit()
     return {"status": "closed"}
+
+
+@router.post("/api/builder/export-docx")
+def export_questionnaire_docx(
+    definition: dict = Body(...),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    """Word file with all questions and instructions in every language version (the builder sends its current survey)."""
+    admin_guard(x_admin_key)
+    if not isinstance(definition.get("questions"), list):
+        raise HTTPException(status_code=400, detail="No questions to export")
+    from survey_docx import build_docx
+    data = build_docx(definition)
+    name = normalize_slug(definition.get("slug") or definition.get("title") or "survey") or "survey"
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{name}-questionnaire.docx"'},
+    )
 
 
 @router.post("/api/builder/translate")
