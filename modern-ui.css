@@ -158,3 +158,10 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .survey-modern .fmt-list li{margin:2px 0}
 .survey-modern .qdesc a,.survey-modern .survey-desc a,.survey-modern h3 a,.survey-modern h2 a{color:var(--accent,#2f6f5e);text-decoration:underline;text-underline-offset:2px;font-weight:600}
 .survey-modern .qdesc strong,.survey-modern .survey-desc strong{color:var(--text,#17251d)}
+
+/* Welcome page: logos centred (phone and computer) */
+.survey-modern .survey-logo{margin-left:auto!important;margin-right:auto!important}
+.survey-modern .survey-intro-logos{justify-content:center!important;width:100%}
+/* One combined logo image (e.g. TU · DAAD · LLP in a row): show it larger */
+.survey-modern .survey-intro-logos img:only-child{height:auto!important;max-height:64px!important;max-width:min(100%,420px)!important;width:auto}
+@media(max-width:760px){.survey-modern .survey-intro-logos img:only-child{max-height:46px!important;max-width:100%!important}}
