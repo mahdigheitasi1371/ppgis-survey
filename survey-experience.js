@@ -435,6 +435,7 @@
         <h3>${title}${required}</h3>
         ${desc}
         <div class="map-point-limit">${instruction}</div>
+        ${q.type === 'map_multi' ? `<div class="map-point-limit map-remove-hint">${String(window.SurveyLanguage?.get?.() || document.documentElement.lang || 'en').slice(0, 2) === 'de' ? 'Tippen Sie erneut auf einen Punkt, um ihn zu löschen.' : 'Tap a point again to delete it.'}</div>` : ''}
         ${search}
         <div class="map-actions-row">${actions}</div>
         <div class="map-location-status" data-location-status>${q.type === 'map_multi' ? 'Pan or zoom the map, then tap to add a point.' : `Start drawing your first ${d.feature}. Right-click or double-tap when it is finished.`}</div>
@@ -536,8 +537,19 @@
       if (q.type === 'map_multi') {
         const current = pointValues();
         current.forEach((point,index) => {
-          const marker = L.circleMarker([point.lat,point.lng], {radius:6,weight:2,fillOpacity:.95}).addTo(layer);
-          marker.bindTooltip(String(index + 1), {permanent:true,direction:'top',offset:[0,-7]});
+          // Tapping a point again removes it. The invisible larger circle makes it easy to hit on phones.
+          const removePoint = e => {
+            if (e?.originalEvent) L.DomEvent.stop(e.originalEvent);
+            const list = [...pointValues()];
+            list.splice(index, 1);
+            set(q.id, list.length ? {geometry:d.geometry,points:list} : null);
+            const lang = String(window.SurveyLanguage?.get?.() || document.documentElement.lang || 'en').slice(0, 2);
+            if (status) status.textContent = lang === 'de' ? 'Punkt entfernt.' : 'Point removed.';
+            draw();
+          };
+          L.circleMarker([point.lat,point.lng], {radius:18,stroke:false,fillOpacity:0,bubblingMouseEvents:false}).on('click', removePoint).addTo(layer);
+          const marker = L.circleMarker([point.lat,point.lng], {radius:7,weight:2,fillOpacity:.95,bubblingMouseEvents:false}).on('click', removePoint).addTo(layer);
+          marker.bindTooltip(String(index + 1), {permanent:true,direction:'top',offset:[0,-8]});
         });
         const count = card?.querySelector('[data-count]');
         if (count) count.textContent = `${current.length} of ${d.max} selected`;

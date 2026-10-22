@@ -84,22 +84,22 @@
   const TEXT = {
     en: {
       step1: 'Step 1: Search or tap the area you want to look at more closely.',
-      step2: 'Step 2: Tap the exact spot to place a point (up to {n}). Turn and tilt the view with the ↺ ↻ ⤒ ⤓ buttons, two fingers or the right mouse button.',
+      step2: 'Step 2: Tap the exact spot to place a point (up to {n}). Turn and tilt the view with the ↺ ↻ ⤒ ⤓ buttons, two fingers or the right mouse button. Tap a point again to delete it.',
       rotateLeft: 'Rotate left', rotateRight: 'Rotate right', tiltMore: 'Tilt more', tiltLess: 'Tilt less', showMap: 'Map view', showAerial: 'Aerial view',
       overview: '← Choose another area', undo: 'Undo', clear: 'Clear', search: 'Search', searchPh: 'Search a street or place',
       useLocation: '◎ Use my location', count: '{n} / {max} selected', max: 'Maximum of {max} points reached.',
-      added: 'Point added. Add another point or continue.', flying: 'Opening the 3D view…', cleared: 'Points cleared.',
+      added: 'Point added. Add another point or continue.', removed: 'Point removed.', flying: 'Opening the 3D view…', cleared: 'Points cleared.',
       noLib: 'The 3D map could not be loaded. Please check your internet connection and reload the page.',
       searching: 'Searching…', noResult: 'No matching place was found.', searchFail: 'Place search is not available right now. You can move the map by hand.',
       locating: 'Finding your location…', noLocation: 'Your location is not available. Search for a place or move the map by hand.'
     },
     de: {
       step1: 'Schritt 1: Suchen Sie den Bereich oder tippen Sie darauf, um ihn genauer anzusehen.',
-      step2: 'Schritt 2: Tippen Sie auf die genaue Stelle, um einen Punkt zu setzen (bis zu {n}). Drehen und neigen Sie die Ansicht mit ↺ ↻ ⤒ ⤓, mit zwei Fingern oder der rechten Maustaste.',
+      step2: 'Schritt 2: Tippen Sie auf die genaue Stelle, um einen Punkt zu setzen (bis zu {n}). Drehen und neigen Sie die Ansicht mit ↺ ↻ ⤒ ⤓, mit zwei Fingern oder der rechten Maustaste. Tippen Sie erneut auf einen Punkt, um ihn zu löschen.',
       rotateLeft: 'Nach links drehen', rotateRight: 'Nach rechts drehen', tiltMore: 'Stärker neigen', tiltLess: 'Weniger neigen', showMap: 'Kartenansicht', showAerial: 'Luftbild',
       overview: '← Anderen Bereich wählen', undo: 'Rückgängig', clear: 'Löschen', search: 'Suchen', searchPh: 'Straße oder Ort suchen',
       useLocation: '◎ Meinen Standort verwenden', count: '{n} / {max} gewählt', max: 'Maximal {max} Punkte erreicht.',
-      added: 'Punkt gesetzt. Setzen Sie einen weiteren Punkt oder fahren Sie fort.', flying: '3D-Ansicht wird geöffnet…', cleared: 'Punkte gelöscht.',
+      added: 'Punkt gesetzt. Setzen Sie einen weiteren Punkt oder fahren Sie fort.', removed: 'Punkt entfernt.', flying: '3D-Ansicht wird geöffnet…', cleared: 'Punkte gelöscht.',
       noLib: 'Die 3D-Karte konnte nicht geladen werden. Bitte prüfen Sie Ihre Internetverbindung und laden Sie die Seite neu.',
       searching: 'Suche läuft…', noResult: 'Kein passender Ort gefunden.', searchFail: 'Die Ortssuche ist gerade nicht verfügbar. Sie können die Karte von Hand verschieben.',
       locating: 'Standort wird ermittelt…', noLocation: 'Ihr Standort ist nicht verfügbar. Suchen Sie einen Ort oder verschieben Sie die Karte von Hand.'
@@ -243,7 +243,9 @@
         dot.title = `${i + 1}`;
         dot.addEventListener('click', ev => {
           ev.stopPropagation();
-          if (map.getZoom() < DETAIL_ZOOM - 0.01) flyIntoDetail(p.lng, p.lat);
+          if (map.getZoom() < DETAIL_ZOOM - 0.01) { flyIntoDetail(p.lng, p.lat); return; }
+          // In the close-up view, tapping a point again removes it.
+          const list = points(); list.splice(i, 1); save(list); draw(); setStatus(tr('removed'));
         });
         markers.push(new maplibregl.Marker({element: dot, anchor: 'center'}).setLngLat([p.lng, p.lat]).addTo(map));
       });
