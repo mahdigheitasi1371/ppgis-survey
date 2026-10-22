@@ -166,7 +166,9 @@
   .map-page-active .leaflet-top.leaflet-left{top:112px!important;left:4px!important}
   .map-page-active .leaflet-control-zoom a{width:40px!important;height:40px!important;line-height:40px!important;font-size:22px!important}
   .map-page-active .leaflet-control-attribution{max-width:58vw!important;white-space:normal!important;line-height:1.15!important}
-  .map-page-active .leaflet-container{direction:ltr!important;touch-action:pan-x pan-y!important}
+  .map-page-active .leaflet-container{direction:ltr!important;touch-action:none!important}
+  /* Blur effects over a moving map make panning stutter on phones */
+  .map-page-active .experience-nav,.map-page-active .respondent-topbar,.map-page-active .map-mobile-tools-toggle{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
   [dir="rtl"] .map-floating-panel{text-align:right!important}
   [dir="rtl"] .map-mobile-tools-toggle{left:auto!important;right:12px!important}
