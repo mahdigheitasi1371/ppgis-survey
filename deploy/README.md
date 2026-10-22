@@ -100,3 +100,18 @@ Wait about a week. Then download a last backup from the **old** server to your c
 Files on the server: app in `/opt/ppgis-survey`, database `/opt/ppgis-survey/data.db`,
 uploads in `/opt/ppgis-survey/survey_uploads` and `/opt/ppgis-survey/audio_uploads`,
 backups in `/var/backups/ppgis` (14 days kept).
+
+## Optional: sharp satellite images worldwide in the 3D map
+
+Inside North Rhine-Westphalia the 3D map uses the official NRW aerial photos (10 cm, free).
+For sharp images everywhere else, add a free Esri key (2 million map tiles per month free):
+
+1. Create a free account at https://location.arcgis.com and create an **API key** with the
+   privilege **Basemaps** (basemap styles / static basemap tiles).
+2. In the key's settings, restrict **Referrers** to `https://emschermap.de`.
+3. On the server:
+   ```bash
+   echo 'ESRI_API_KEY=PASTE_YOUR_KEY_HERE' | sudo tee -a /etc/ppgis-survey.env > /dev/null && sudo systemctl restart ppgis-survey
+   ```
+Without a key the 3D map still works: NRW aerial photos inside NRW, 10 m satellite images elsewhere.
+Aerial photo tiles are cached in `/opt/ppgis-survey/tile_cache` (safe to delete; they are fetched again).

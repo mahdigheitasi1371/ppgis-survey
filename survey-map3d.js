@@ -14,13 +14,14 @@
   // Sentinel-2 cloudless satellite imagery (EOX, CC BY 4.0) for areas outside NRW, with
   // OpenStreetMap 3D buildings and street names from OpenFreeMap.
   function aerialStyle(api) {
-    return {
+    const esriKey = String(window.PPGIS_CONFIG?.esriKey || '').trim();
+    const style = {
       version: 8,
       glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       sources: {
         s2: {type: 'raster', tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'], tileSize: 256, maxzoom: 15,
              attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2016</a> by EOX (CC BY 4.0)'},
-        aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: 256, minzoom: 10, maxzoom: 20,
+        aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: 256, minzoom: 10, maxzoom: 20, // server sends 512 px images (sharp on high-resolution screens)
                  bounds: [5.85, 50.32, 9.47, 52.54],
                  attribution: 'Luftbild © <a href="https://www.bezreg-koeln.nrw.de/geobasis-nrw" target="_blank" rel="noopener">Geobasis NRW</a> (dl-de/zero-2-0)'},
         omt: {type: 'vector', url: 'https://tiles.openfreemap.org/planet', attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}
@@ -28,7 +29,8 @@
       layers: [
         {id: 'bg', type: 'background', paint: {'background-color': '#24302a'}},
         {id: 's2', type: 'raster', source: 's2'},
-        {id: 'aerial', type: 'raster', source: 'aerial'},
+        ...(esriKey ? [{id: 'world-imagery', type: 'raster', source: 'esri', paint: {'raster-fade-duration': 150}}] : []),
+        {id: 'aerial', type: 'raster', source: 'aerial', paint: {'raster-fade-duration': 150}},
         {id: 'ppgis-3d-buildings', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14,
          paint: {'fill-extrusion-color': '#e6e0d4', 'fill-extrusion-vertical-gradient': true,
                  'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
@@ -42,6 +44,16 @@
          paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,.8)', 'text-halo-width': 1.6}}
       ]
     };
+    // Sharp worldwide satellite images (Esri World Imagery) when the server has an ESRI_API_KEY;
+    // the official NRW aerial photos (10 cm) stay on top inside North Rhine-Westphalia.
+    if (esriKey) {
+      style.sources.esri = {
+        type: 'raster', tileSize: 256, maxzoom: 19,
+        tiles: [`https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(esriKey)}`],
+        attribution: 'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> | Esri, Maxar, Earthstar Geographics, GIS User Community'
+      };
+    }
+    return style;
   }
 
   // Map buttons to rotate and tilt the 3D view (also possible with two fingers / right mouse button)

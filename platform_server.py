@@ -42,13 +42,24 @@ def builder_html() -> HTMLResponse:
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
+def map_config_script() -> str:
+    """Optional map settings for the survey page, read from /etc/ppgis-survey.env.
+
+    ESRI_API_KEY: ArcGIS Location Platform key for sharp worldwide satellite images
+    (Esri World Imagery). Restrict the key to this site's address in the ArcGIS dashboard.
+    """
+    config = {"esriKey": os.environ.get("ESRI_API_KEY", "").strip()}
+    return "<script>window.PPGIS_CONFIG=" + json.dumps(config).replace("</", "<\\/") + ";</script>"
+
+
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
+    html = inject_before(html, "</head>", map_config_script())
     html = html.replace("survey.js?v=1", "survey.js?v=6")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=12">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=8">')
-    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=5"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=17"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
@@ -81,7 +92,7 @@ def _remote_json(url: str) -> dict:
 import math
 import threading
 
-TILE_CACHE_DIR = BASE_DIR / "tile_cache" / "aerial"
+TILE_CACHE_DIR = BASE_DIR / "tile_cache" / "aerial512"  # 512 px images for sharp display on high-resolution screens
 DOP_WMS = "https://www.wms.nrw.de/geobasis/wms_nw_dop"
 _tile_lock = threading.Lock()
 
@@ -105,7 +116,7 @@ def aerial_tile(z: int, x: int, y: int):
     minx, miny, maxx, maxy = _tile_bbox_3857(z, x, y)
     url = DOP_WMS + "?" + urlencode({
         "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": "nw_dop_rgb", "STYLES": "",
-        "CRS": "EPSG:3857", "BBOX": f"{minx},{miny},{maxx},{maxy}", "WIDTH": "256", "HEIGHT": "256",
+        "CRS": "EPSG:3857", "BBOX": f"{minx},{miny},{maxx},{maxy}", "WIDTH": "512", "HEIGHT": "512",
         "FORMAT": "image/jpeg",
     })
     try:
@@ -113,7 +124,8 @@ def aerial_tile(z: int, x: int, y: int):
             data = response.read()
             if not response.headers.get("Content-Type", "").startswith("image/"):
                 raise ValueError("not an image")
-    except Exception:  # noqa: BLE001 - outside NRW or service unavailable
+    except Exception as exc:  # noqa: BLE001 - outside NRW or service unavailable
+        print(f"aerial tile {z}/{x}/{y} not available: {exc}", flush=True)  # visible in: journalctl -u ppgis-survey
         raise HTTPException(status_code=404, detail="Aerial photo not available")
     with _tile_lock:
         path.parent.mkdir(parents=True, exist_ok=True)
