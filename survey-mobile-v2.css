@@ -232,3 +232,25 @@ body.survey-modern .map-floating-panel .qdesc{font-size:13.5px!important}
   body.survey-modern .page-group-item .option-label input{flex:none!important}
   body.survey-modern .page-group-item .option-label>*:not(input){min-width:0}
 }
+
+/* Extra-compact text on pages that show several questions (less scrolling) */
+body.survey-modern .survey-question.page-group-item{padding:20px 26px!important;margin-bottom:10px!important}
+body.survey-modern .survey-question.page-group-item h3{font-size:17px!important;line-height:1.3!important;margin:0 0 10px!important}
+body.survey-modern .page-group-item .qdesc{font-size:13px!important;margin:-4px 0 8px!important}
+body.survey-modern .page-group-item .option-list{gap:7px!important}
+body.survey-modern .page-group-item .option-list.options-short{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important}
+body.survey-modern .page-group-item .option-label{min-height:40px!important;padding:8px 12px!important;font-size:14px!important;line-height:1.25!important;border-radius:11px!important}
+body.survey-modern .page-group-item .answer-slot>input,body.survey-modern .page-group-item .answer-slot>textarea{padding:9px 12px!important;min-height:0!important}
+body.survey-modern .section-block.section-lead{padding-top:16px!important;padding-bottom:16px!important}
+@media (max-width:760px){
+  body.survey-modern .survey-question.page-group-item{padding:13px 13px!important;margin-bottom:8px!important}
+  body.survey-modern .survey-question.page-group-item h3{font-size:15px!important;margin:0 0 8px!important}
+  body.survey-modern .page-group-item .qdesc{font-size:12.5px!important}
+  body.survey-modern .page-group-item .option-list{gap:6px!important}
+  body.survey-modern .page-group-item .option-list.options-short{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.survey-modern .page-group-item .option-label{min-height:38px!important;padding:7px 10px!important;font-size:13.5px!important;border-radius:10px!important}
+  body.survey-modern .page-group-item .answer-slot>input{font-size:16px!important;padding:8px 11px!important}
+  body.survey-modern .section-block.section-lead{padding:13px 15px!important}
+  body.survey-modern .section-block.section-lead>h2{font-size:16px!important;margin-bottom:4px!important}
+  body.survey-modern .section-block.section-lead .qdesc{font-size:12.5px!important}
+}
