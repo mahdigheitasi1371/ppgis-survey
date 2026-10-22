@@ -279,7 +279,7 @@ function renderCanvas(){
   if(!state.questions.length){ canvas.innerHTML='<div class="empty-state"><strong>Your survey is empty.</strong><br>Choose a question type from the left.</div>'; return; }
   canvas.innerHTML=state.questions.map((q,index)=>{
     const open=q.id===selectedId;
-    return `<article class="question-card ${open?'selected':''}" data-qid="${q.id}"><div class="question-card-head" data-toggle-qid="${q.id}" tabindex="0" role="button"><div class="question-meta"><span class="question-type">${index+1}. ${esc(LABEL[q.type]||q.type)}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" type="button" data-action="up" data-qid="${q.id}" title="Move up">↑</button><button class="icon-btn" type="button" data-action="down" data-qid="${q.id}" title="Move down">↓</button><button class="icon-btn" type="button" data-action="copy" data-qid="${q.id}" title="Duplicate">⧉</button><button class="icon-btn danger" type="button" data-action="delete" data-qid="${q.id}" title="Delete">×</button></div></div><div class="question-title">${esc(q.title)}</div><div class="question-preview">${esc(questionPreview(q))}</div></div>${open?`<div class="question-card-body">${questionEditorHtml(q)}</div>`:''}</article>`;
+    return `<article class="question-card ${open?'selected':''}" data-qid="${q.id}"><div class="question-card-head" data-toggle-qid="${q.id}" tabindex="0" role="button"><div class="question-meta"><span class="question-type">${index+1}. ${esc(LABEL[q.type]||q.type)}${q.required?' · required':''}</span><div class="question-actions"><button class="icon-btn" type="button" data-action="up" data-qid="${q.id}" title="Move up">↑</button><button class="icon-btn" type="button" data-action="down" data-qid="${q.id}" title="Move down">↓</button><button class="icon-btn" type="button" data-action="copy" data-qid="${q.id}" title="Duplicate">⧉</button><button class="icon-btn danger" type="button" data-action="delete" data-qid="${q.id}" title="Delete">×</button></div></div><div class="question-title">${esc(plainTitle(q.title))}</div><div class="question-preview">${esc(questionPreview(q))}</div></div>${open?`<div class="question-card-body">${questionEditorHtml(q)}</div>`:''}</article>`;
   }).join('');
 }
 
@@ -357,9 +357,11 @@ function syncQuestionField(q,target){
   if(id==='sectionHideHeading'){q.config.hideHeading=target.checked;return}
   if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns'||key==='popupOptions')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
 }
+// Titles may contain formatting markers (**bold** etc.); the question list shows them as plain text.
+function plainTitle(t){ return window.PPGISFormat ? window.PPGISFormat.strip(t||'') : (t||''); }
 function renderCanvasTitleOnly(q){
   const card=document.querySelector(`[data-qid="${q.id}"]`); if(!card) return;
-  const titleEl=card.querySelector('.question-title'); if(titleEl) titleEl.textContent=q.title;
+  const titleEl=card.querySelector('.question-title'); if(titleEl) titleEl.textContent=plainTitle(q.title);
   const previewEl=card.querySelector('.question-preview'); if(previewEl) previewEl.textContent=questionPreview(q);
   const typeEl=card.querySelector('.question-type'); if(typeEl){ const index=state.questions.findIndex(x=>x.id===q.id); typeEl.textContent=`${index+1}. ${LABEL[q.type]||q.type}${q.required?' · required':''}`; }
 }

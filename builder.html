@@ -162,6 +162,13 @@
       .preview-max-btn{min-height:36px}
     }
 
+    /* Text formatting toolbar */
+    .fmt-toolbar{display:flex;flex-wrap:wrap;gap:3px;margin:2px 0 -1px;padding:3px;border:1px solid var(--border);border-bottom:0;border-radius:10px 10px 0 0;background:var(--surface-2)}
+    .fmt-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:28px;padding:0 7px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;user-select:none;line-height:1}
+    .fmt-btn:hover,.fmt-btn:focus-visible{background:var(--surface);box-shadow:0 0 0 1px var(--border);outline:none}
+    .fmt-btn sub{font-size:9px}
+    .fmt-toolbar + .fmt-field{border-top-left-radius:0!important;border-top-right-radius:0!important}
+    @media(max-width:720px){ .fmt-btn{min-width:36px;height:34px} }
     .background-preview{height:100px;border-radius:12px;border:1px solid var(--border);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);overflow:hidden;font-size:12px}
     .background-preview-empty{background:linear-gradient(135deg,var(--surface-2),var(--surface))}
     .logo-thumb-row{display:flex;flex-wrap:wrap;gap:10px}
@@ -262,6 +269,8 @@
   </div>
 
   </div>
+  <script src="text-format.js?v=1"></script>
+  <script src="builder-format.js?v=1"></script>
   <script src="builder.js?v=1"></script>
 </body>
 </html>

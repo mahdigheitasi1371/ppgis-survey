@@ -251,7 +251,7 @@
       const values = responses.map(r => r.answers?.[q.id]).filter(answered);
       const card = document.createElement('article');
       card.className = 'card analysis-card chart-card' + (q.type.startsWith('map_') ? ' chart-wide' : '');
-      card.innerHTML = `<div class="chart-head"><span class="chart-index">${index + 1}</span><h3>${esc(q.title || 'Question')}</h3><span class="chart-count" title="Answered / responses">${values.length}/${responses.length}</span></div>`;
+      card.innerHTML = `<div class="chart-head"><span class="chart-index">${index + 1}</span><h3>${esc((window.PPGISFormat ? window.PPGISFormat.strip(q.title || '') : q.title) || 'Question')}</h3><span class="chart-count" title="Answered / responses">${values.length}/${responses.length}</span></div>`;
       container.appendChild(card);
       let body = '';
       if (['single_choice', 'dropdown', 'yes_no', 'multiple_choice', 'photo_choice', 'consent'].includes(q.type)) body = choiceChart(q, values, responses.length);

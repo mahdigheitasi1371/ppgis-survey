@@ -152,3 +152,9 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .voice-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f3f6f3;border-radius:12px;padding:8px 10px;font-size:13.5px}
 .voice-item audio{height:34px;max-width:100%}
 .voice-name{font-weight:600}
+
+/* Formatted survey texts (bold, links, lists from the builder toolbar) */
+.survey-modern .fmt-list{margin:6px 0 4px;padding-left:22px;white-space:normal}
+.survey-modern .fmt-list li{margin:2px 0}
+.survey-modern .qdesc a,.survey-modern .survey-desc a,.survey-modern h3 a,.survey-modern h2 a{color:var(--accent,#2f6f5e);text-decoration:underline;text-underline-offset:2px;font-weight:600}
+.survey-modern .qdesc strong,.survey-modern .survey-desc strong{color:var(--text,#17251d)}

@@ -680,6 +680,16 @@ def delete_all_builder_responses(
     return {"deleted": count}
 
 
+def plain_text(text) -> str:
+    """Remove the formatting markers (**bold**, *italic*, __underline__, [link](url)) from a survey text."""
+    s = str(text or "")
+    s = re.sub(r"\[([^\]\n]+)\]\(([^)\s]+)\)", r"\1", s)
+    s = re.sub(r"\*\*([^*\n]+)\*\*", r"\1", s)
+    s = re.sub(r"__([^_\n]+)__", r"\1", s)
+    s = re.sub(r"(^|[^*\w])\*([^*\s][^*\n]*?)\*(?!\*)", r"\1\2", s)
+    return s
+
+
 @router.get("/api/builder/surveys/{survey_id}/responses/export.csv")
 def export_builder_responses(
     survey_id: str,
@@ -701,7 +711,7 @@ def export_builder_responses(
     writer = csv.writer(buf)
     columns: list[tuple[str, str]] = []
     for q in questions:
-        title = q.get("title") or q.get("label") or q.get("id")
+        title = plain_text(q.get("title") or q.get("label") or q.get("id"))
         columns.append((f"{title} [{q.get('id')}]", q.get("id")))
         if (q.get("config") or {}).get("allowVoice"):
             columns.append((f"{title} - voice messages [{q.get('id')}__voice]", f"{q.get('id')}__voice"))
