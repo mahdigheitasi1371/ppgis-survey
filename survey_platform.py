@@ -250,11 +250,53 @@ def condition_matches(condition: dict[str, Any] | None, answers: dict[str, Any])
     return value == expected
 
 
+def branch_skipped(definition: dict[str, Any], answers: dict[str, Any]) -> set[str]:
+    """Question ids skipped by skip logic ("if answer X, continue at question Y / end").
+
+    Mirrors branchSkipped() in survey-experience.js: rules live in
+    question.config.branches as [{"index": option_index, "goto": question_id | "__end"}].
+    """
+    questions = definition.get("questions", []) or []
+    skipped: set[str] = set()
+    for i, question in enumerate(questions):
+        qid = question.get("id")
+        if qid in skipped or not condition_matches(question.get("logic"), answers):
+            continue
+        config = question.get("config") or {}
+        rules = config.get("branches") or []
+        if not isinstance(rules, list) or not rules:
+            continue
+        value = answers.get(qid)
+        if is_missing(value):
+            continue
+        options = ["Yes", "No"] if question.get("type") == "yes_no" else (config.get("options") or [])
+        rule = next(
+            (
+                r for r in rules
+                if isinstance(r, dict) and r.get("goto") and isinstance(r.get("index"), int)
+                and 0 <= r["index"] < len(options) and options[r["index"]] == value
+            ),
+            None,
+        )
+        if not rule:
+            continue
+        if rule["goto"] == "__end":
+            end = len(questions)
+        else:
+            end = next((k for k, item in enumerate(questions) if item.get("id") == rule["goto"]), -1)
+        if end <= i:
+            continue
+        for k in range(i + 1, end):
+            skipped.add(questions[k].get("id"))
+    return skipped
+
+
 def validate_required(definition: dict[str, Any], answers: dict[str, Any]) -> None:
+    skipped = branch_skipped(definition, answers)
     for question in definition.get("questions", []):
         qid = question.get("id")
         qtype = question.get("type")
-        if qtype in {"info", "section"}:
+        if qtype in {"info", "section"} or qid in skipped:
             continue
         if not condition_matches(question.get("logic"), answers):
             continue

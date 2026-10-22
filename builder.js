@@ -230,12 +230,23 @@ function addLanguageVersion(code){
   setSaveState(`${languageName(code)} added – fill in the ${languageName(code)} version under each question`);
 }
 
+function branchEditor(q){
+  const opts=q.type==='yes_no'?['Yes','No']:(q.config?.options||[]);
+  const index=state.questions.findIndex(x=>x.id===q.id);
+  const later=state.questions.slice(index+1);
+  const rules=Array.isArray(q.config?.branches)?q.config.branches:[];
+  const targetLabel=x=>{const n=state.questions.findIndex(y=>y.id===x.id)+1; return x.type==='section'?`${n}. Section: ${x.title||'Section'}`:`${n}. ${x.title||LABEL[x.type]||'Question'}`;};
+  const rows=opts.map((opt,i)=>{const cur=rules.find(r=>r&&r.index===i)?.goto||'';
+    return `<div class="branch-row"><span class="branch-if">If “${esc(opt||`Option ${i+1}`)}”</span><select data-branch-index="${i}" aria-label="Where to continue if ${escAttr(opt)}"><option value="">→ next question</option>${later.map(x=>`<option value="${x.id}" ${cur===x.id?'selected':''}>→ ${esc(targetLabel(x).slice(0,70))}</option>`).join('')}<option value="__end" ${cur==='__end'?'selected':''}>→ end of survey</option></select></div>`;}).join('');
+  return `<div class="field-section"><h4>Skip logic</h4><small class="small-help">Choose where the survey continues after each answer. Questions in between are skipped (not shown, not required).</small>${rows||'<small class="small-help">Add choices first.</small>'}</div>`;
+}
 function questionEditorHtml(q){
   const c=q.config||{};
   let html=`<div class="field-section">${field('Question',textInput(`qTitle_${q.id}`,q.title))}${field('Description / help text',`<textarea id="qDescription_${q.id}" rows="2">${esc(q.description||'')}</textarea>`)}${!['info','section'].includes(q.type)?`<label class="check"><input id="qRequired_${q.id}" type="checkbox" ${q.required?'checked':''}><span>Required question</span></label>`:''}</div>`;
   html+=translationFields(q);
   if(q.type==='photo_choice') html+=`<div class="field-section"><h4>Photo choices</h4>${photoChoiceEditor(q)}</div>`;
   else if(OPTS.has(q.type)) html+=`<div class="field-section"><h4>Choices</h4>${choiceEditor(q)}</div>`;
+  if(['single_choice','dropdown','yes_no'].includes(q.type)) html+=branchEditor(q);
   if(q.type==='matrix') html+=`<div class="field-section"><h4>Matrix</h4>${field('Rows',`<textarea id="matrixRows_${q.id}">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols_${q.id}">${esc((c.columns||[]).join('\n'))}</textarea>`)}</div>`;
   if(['rating','slider','number'].includes(q.type)) html+=`<div class="field-section"><h4>Range</h4><div class="field-row">${field('Minimum',`<input id="qMin_${q.id}" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax_${q.id}" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep_${q.id}" type="number" value="${c.step??1}">`)}</div>`;
   if(q.type.startsWith('map_')) html+=mapSettings(q);
@@ -326,6 +337,7 @@ function syncQuestionField(q,target){
   if(checkMap[id]){q.config[checkMap[id]]=target.checked;return}
   if(id==='allocationUnit'){q.config.unit=target.value;return}
   if(id==='consentLabel'){q.config.checkboxLabel=target.value;return}
+  if(target.matches('[data-branch-index]')){const i=Number(target.dataset.branchIndex);q.config.branches=(Array.isArray(q.config.branches)?q.config.branches:[]).filter(r=>r&&r.index!==i);if(target.value)q.config.branches.push({index:i,goto:target.value});return}
   if(id==='sectionOnePage'){q.config.onePage=target.checked;return}
   if(id==='sectionHideHeading'){q.config.hideHeading=target.checked;return}
   if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns'||key==='popupOptions')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}

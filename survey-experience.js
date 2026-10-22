@@ -8,6 +8,41 @@
   const baseRender = render;
   let currentStep = 0;
 
+  // ---- Skip logic: "if this answer is chosen, continue at question X (or end the survey)" ----
+  // Questions between the choice question and the target are treated as hidden: not shown,
+  // not required, not counted and not submitted.
+  const baseVisible = visible;
+  function branchSkipped() {
+    const qs = def?.questions || [];
+    const skipped = new Set();
+    for (let i = 0; i < qs.length; i += 1) {
+      const q = qs[i];
+      if (skipped.has(q.id) || !baseVisible(q)) continue;
+      const rules = Array.isArray(q.config?.branches) ? q.config.branches : [];
+      if (!rules.length) continue;
+      const value = ans[q.id];
+      if (value === undefined || value === null || value === '') continue;
+      const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.config?.options || []);
+      const rule = rules.find(r => r && r.goto && Number.isInteger(r.index) && opts[r.index] !== undefined && opts[r.index] === value);
+      if (!rule) continue;
+      const end = rule.goto === '__end' ? qs.length : qs.findIndex(x => x.id === rule.goto);
+      if (end <= i) continue;
+      for (let k = i + 1; k < end; k += 1) skipped.add(qs[k].id);
+    }
+    return skipped;
+  }
+  visible = function (q) {
+    if (q && branchSkipped().has(q.id)) return false;
+    return baseVisible(q);
+  };
+  const baseSubmit = submit;
+  submit = function (e) {
+    try {
+      (def?.questions || []).forEach(q => { if (!visible(q) && Object.prototype.hasOwnProperty.call(ans, q.id)) delete ans[q.id]; });
+    } catch (_) {}
+    return baseSubmit.call(this, e);
+  };
+
   function activeQuestions() {
     return (def?.questions || []).filter(q => visible(q));
   }
@@ -320,6 +355,7 @@
       if (fill) fill.style.width = `${Math.round((currentStep / Math.max(1, qs.length)) * 100)}%`;
       if (next) {
         next.textContent = currentStep === qs.length ? (preview ? 'Preview complete' : 'Submit →') : 'Next →';
+        next.dataset.lastSource = next.textContent;
         next.disabled = preview && currentStep === qs.length;
       }
       if (MAP_TYPES.has(q.type)) {
@@ -334,6 +370,17 @@
     }
     if (scrollTop && !document.body.classList.contains('map-page-active')) window.scrollTo({top:0,behavior:'smooth'});
   }
+
+  function refreshNextLabel() {
+    if (currentStep <= 0) return;
+    const qs = pages();
+    const next = document.querySelector('#experienceNav [data-next]');
+    if (!next || currentStep > qs.length) return;
+    const text = currentStep === qs.length ? (preview ? 'Preview complete' : 'Submit →') : 'Next →';
+    if (next.textContent !== text && !(window.SurveyLanguage && next.dataset.lastSource === text)) { next.dataset.lastSource = text; next.textContent = text; }
+    next.disabled = preview && currentStep === qs.length;
+  }
+  document.addEventListener('change', () => setTimeout(refreshNextLabel, 0));
 
   function setupWizard() {
     if (!def) return;
