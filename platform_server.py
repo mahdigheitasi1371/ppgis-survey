@@ -46,7 +46,7 @@ def survey_html() -> HTMLResponse:
     html = html.replace("survey.js?v=1", "survey.js?v=6")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=8">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=3">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=4">')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=11"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=5"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')

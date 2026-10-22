@@ -193,3 +193,31 @@
   }
   body.survey-modern.survey-has-bg .survey-intro-logos img{height:34px;max-width:130px}
 }
+
+/* ------------------------------------------------------------------
+   Text sizes for participants (calmer, fits phone and desktop better).
+   Adjust the numbers here to fine-tune. Inputs stay at 16px on phones
+   so iPhones do not zoom in when a field is tapped.
+   ------------------------------------------------------------------ */
+body.survey-modern .survey-title{font-size:clamp(28px,3.4vw,38px)!important;line-height:1.12!important}
+body.survey-modern .survey-desc{font-size:16px!important}
+body.survey-modern .survey-question h3{font-size:clamp(20px,2.1vw,25px)!important;line-height:1.25!important}
+body.survey-modern .qdesc{font-size:15px!important}
+body.survey-modern .option-label{font-size:15px!important}
+body.survey-modern .answer-slot>input,body.survey-modern .answer-slot>textarea,body.survey-modern .answer-slot>select{font-size:16px!important}
+body.survey-modern .rating-btn{font-size:16px!important}
+body.survey-modern .section-block>h2{font-size:26px!important}
+body.survey-modern .section-block.section-lead>h2{font-size:20px!important}
+body.survey-modern .map-floating-panel h3{font-size:20px!important;line-height:1.25!important}
+body.survey-modern .map-floating-panel .qdesc{font-size:13.5px!important}
+@media (max-width:760px){
+  body.survey-modern .survey-title{font-size:clamp(25px,7.2vw,30px)!important}
+  body.survey-modern .survey-desc{font-size:15px!important}
+  body.survey-modern .survey-question h3{font-size:19px!important}
+  body.survey-modern .qdesc{font-size:14px!important}
+  body.survey-modern .option-label{font-size:15px!important}
+  body.survey-modern .section-block>h2{font-size:21px!important}
+  body.survey-modern .section-block.section-lead>h2{font-size:17px!important}
+  body.survey-modern .map-floating-panel h3{font-size:16px!important}
+  body.survey-modern .map-floating-panel .qdesc{font-size:12.5px!important}
+}
