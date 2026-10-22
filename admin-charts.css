@@ -65,3 +65,15 @@
 .row-actions{display:flex;gap:6px;justify-content:flex-end}
 .btn-danger[disabled]{opacity:.45;cursor:not-allowed}
 @media(max-width:760px){.hbar{grid-template-columns:1fr auto;grid-template-areas:"l v" "t t"}.hbar-label{grid-area:l}.hbar-value{grid-area:v}.hbar-track{grid-area:t}.chart-map{height:240px}}
+
+/* Phone layout for the dashboard */
+@media (max-width:720px){
+  .top-actions .btn{white-space:nowrap}
+  .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .metric{padding:12px 14px!important}
+  .metric-value{font-size:22px!important}
+  .admin-grid section>.card .row-wrap>.row-wrap{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+  .admin-grid section>.card .row-wrap>.row-wrap .btn{width:100%;justify-content:center;min-height:42px;font-size:14px;padding:8px 10px}
+  .admin-grid .leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important}
+  .chart-count,.chart-caption,.col-value,.chart-index,#liveText{font-size:12px!important}
+}

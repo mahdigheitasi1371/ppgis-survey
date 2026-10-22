@@ -188,6 +188,20 @@
       maxPitch: 75, attributionControl: false, dragRotate: true, touchPitch: true
     });
     map.addControl(new maplibregl.AttributionControl({compact: true}), 'bottom-left');
+    // On phones start with the attribution collapsed to the (i) button so it does not cover the map.
+    if (window.matchMedia?.('(max-width: 760px)').matches) {
+      const attrib = el.querySelector('.maplibregl-ctrl-attrib');
+      if (attrib) {
+        // MapLibre opens the compact attribution once the credits have loaded; close it that first time.
+        const watch = new MutationObserver(() => {
+          if (!attrib.classList.contains('maplibregl-compact-show')) return;
+          attrib.classList.remove('maplibregl-compact-show');
+          watch.disconnect();
+        });
+        watch.observe(attrib, {attributes: true, attributeFilter: ['class']});
+        setTimeout(() => watch.disconnect(), 15000);
+      }
+    }
     map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'top-right');
     map.addControl(new ViewControl({rotateLeft: tr('rotateLeft'), rotateRight: tr('rotateRight'), tiltMore: tr('tiltMore'), tiltLess: tr('tiltLess')}), 'top-right');
     const basemapBtn = cardEl?.querySelector('[data-3d-basemap]');

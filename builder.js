@@ -145,6 +145,15 @@ function newQuestion(type){
 function renderPalette(){
   const palette=$('#palette');
   palette.innerHTML=Object.entries(GROUPS).map(([group,items])=>`<section class="group-block"><div class="group-title">${esc(group)}</div><div class="question-type-grid">${items.map(([type,label])=>`<button type="button" class="qtype-btn" data-add-type="${type}"><span class="qtype-icon">＋</span><span>${esc(label)}</span></button>`).join('')}</div></section>`).join('');
+  // Phones: "Add questions" opens and closes the list of question types.
+  const panel=palette.closest('.palette-panel'), heading=panel?.querySelector('.panel-heading');
+  if(panel&&heading&&!heading.dataset.toggleReady){
+    heading.dataset.toggleReady='1';
+    const setOpen=open=>{panel.classList.toggle('open',open);heading.setAttribute('aria-expanded',open?'true':'false');};
+    heading.addEventListener('click',()=>setOpen(!panel.classList.contains('open')));
+    heading.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(!panel.classList.contains('open'));}});
+    palette.addEventListener('click',e=>{if(e.target.closest('.qtype-btn')&&window.matchMedia('(max-width: 720px)').matches)setTimeout(()=>setOpen(false),0);});
+  }
 }
 
 function questionPreview(q){
@@ -541,7 +550,7 @@ $('#settingsBody').addEventListener('input',event=>syncSettings(event.target));
 $('#settingsBody').addEventListener('change',event=>syncSettings(event.target));
 $('#settingsBody').addEventListener('click',event=>{ const rm=event.target.closest('[data-remove-logo]'); if(rm) syncSettings(rm); });
 const previewFabBtn=$('#previewFabBtn');
-if(previewFabBtn){ previewFabBtn.addEventListener('click',()=>$('#previewPanel').classList.toggle('open')); }
+if(previewFabBtn){ previewFabBtn.addEventListener('click',()=>{ const open=$('#previewPanel').classList.toggle('open'); previewFabBtn.innerHTML=open?'&#10005;':'&#9664;'; previewFabBtn.setAttribute('aria-label',open?'Close live preview':'Open live preview'); }); }
 const previewDeviceButtons=$$('#previewPanel [data-device]');
 if(previewDeviceButtons.length){
   previewDeviceButtons.forEach(btn=>btn.addEventListener('click',()=>{
