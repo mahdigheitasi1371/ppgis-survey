@@ -130,3 +130,8 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .survey-modern .section-block.section-lead .qdesc{margin:0}
 .survey-modern .section-block.section-lead .qdesc:empty{display:none}
 @media(max-width:720px){.survey-modern .section-block.section-lead{padding:18px 20px;margin-bottom:10px}.survey-modern .section-block.section-lead>h2{font-size:21px}}
+
+/* Several questions on one page (section set to 'all questions on one page') */
+.survey-modern .survey-question.page-group-item{margin-bottom:12px}
+.survey-modern .survey-question.page-group-item + .survey-question.page-group-item{animation:none}
+@media(max-width:720px){.survey-modern .survey-question.page-group-item{margin-bottom:10px}}

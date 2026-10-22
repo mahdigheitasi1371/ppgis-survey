@@ -146,6 +146,14 @@
     const list = [];
     for (let i = 0; i < qs.length; i += 1) {
       const q = qs[i], next = qs[i + 1];
+      // Section set to "all questions on one page": group every following question up to the
+      // next section heading. Map questions keep their own full-screen page.
+      if (q.type === 'section' && q.config?.onePage) {
+        const group = [];
+        let j = i + 1;
+        while (j < qs.length && qs[j].type !== 'section' && !MAP_TYPES.has(qs[j].type)) { group.push(qs[j]); j += 1; }
+        if (group.length) { list.push({lead:q, main:group[0], group}); i = j - 1; continue; }
+      }
       if (q.type === 'section' && next && !CONTENT_TYPES.has(next.type) && !MAP_TYPES.has(next.type)) {
         list.push({lead:q, main:next});
         i += 1;
@@ -241,8 +249,13 @@
 
   function nextStep() {
     const qs = pages();
-    const q = currentQuestion();
-    if (q && !validateCurrent(q)) return;
+    const page = currentPage();
+    const onPage = page ? (page.group || [page.main]) : [];
+    const invalid = onPage.filter(item => !validateCurrent(item));
+    if (invalid.length) {
+      if (onPage.length > 1) document.querySelector(`[data-qid="${invalid[0].id}"]`)?.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
     if (currentStep < qs.length) {
       currentStep += 1;
       showCurrentStep(true);
@@ -286,11 +299,22 @@
         leadCard?.classList.remove('experience-question-hidden');
         leadCard?.classList.add('section-lead');
       }
-      const card = document.querySelector(`[data-qid="${q.id}"]`);
-      card?.classList.remove('experience-question-hidden');
+      document.querySelectorAll('.page-group-item').forEach(el => el.classList.remove('page-group-item'));
+      (page.group || [q]).forEach(item => {
+        const card = document.querySelector(`[data-qid="${item.id}"]`);
+        card?.classList.remove('experience-question-hidden');
+        if (page.group) {
+          card?.classList.add('page-group-item');
+          // two options per row on phones only when every option is short (e.g. age groups)
+          card?.querySelectorAll('.option-list').forEach(list => {
+            const labels = [...list.querySelectorAll('.option-label')].map(l => (l.textContent || '').trim());
+            list.classList.toggle('options-short', labels.length > 1 && labels.every(text => text.length <= 16 && !text.split(/\s+/).some(word => word.length > 11)));
+          });
+        }
+      });
       // Count only real questions (not section headings or information texts)
       const realTotal = activeQuestions().filter(item => !CONTENT_TYPES.has(item.type)).length;
-      const realDone = qs.slice(0, currentStep).filter(p => !CONTENT_TYPES.has(p.main.type)).length;
+      const realDone = qs.slice(0, currentStep).reduce((n, p) => n + (p.group ? p.group.filter(x => !CONTENT_TYPES.has(x.type)).length : (CONTENT_TYPES.has(p.main.type) ? 0 : 1)), 0);
       if (label) label.textContent = realTotal ? `${Math.max(1, realDone)} / ${realTotal}` : `${currentStep} / ${qs.length}`;
       if (fill) fill.style.width = `${Math.round((currentStep / Math.max(1, qs.length)) * 100)}%`;
       if (next) {
