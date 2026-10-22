@@ -154,6 +154,7 @@
         while (j < qs.length && qs[j].type !== 'section' && !MAP_TYPES.has(qs[j].type)) { group.push(qs[j]); j += 1; }
         if (group.length) { list.push({lead:q, main:group[0], group}); i = j - 1; continue; }
       }
+      if (q.type === 'section' && q.config?.hideHeading) continue;
       if (q.type === 'section' && next && !CONTENT_TYPES.has(next.type) && !MAP_TYPES.has(next.type)) {
         list.push({lead:q, main:next});
         i += 1;
@@ -175,7 +176,7 @@
   }
 
   function sectionLabel(q) {
-    const sections = (def?.questions || []).filter(item => item.type === 'section');
+    const sections = (def?.questions || []).filter(item => item.type === 'section' && !item.config?.hideHeading);
     const index = sections.findIndex(item => item.id === q.id);
     const word = window.SurveyLanguage?.t?.('section') || 'Section';
     return sections.length > 1 && index >= 0 ? `${word} ${index + 1} / ${sections.length}` : word;
@@ -294,7 +295,7 @@
       const page = qs[currentStep - 1];
       const q = page.main;
       document.querySelectorAll('.section-lead').forEach(el => el.classList.remove('section-lead'));
-      if (page.lead) {
+      if (page.lead && !page.lead.config?.hideHeading) {
         const leadCard = document.querySelector(`[data-qid="${page.lead.id}"]`);
         leadCard?.classList.remove('experience-question-hidden');
         leadCard?.classList.add('section-lead');

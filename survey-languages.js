@@ -131,7 +131,7 @@
   function savedFeatures(q){const v=ans[q.id];return Array.isArray(v?.features)?v.features:[];}
 
   function patchQuestion(q,card){
-    const kicker=card.querySelector('.step-kicker-modern');if(kicker&&TYPE_KEYS[q.type]){if(q.type==='section'){const secs=(def?.questions||[]).filter(x=>x.type==='section'),idx=secs.findIndex(x=>x.id===q.id);kicker.textContent=secs.length>1&&idx>=0?`${t('section')} ${idx+1} / ${secs.length}`:t('section');}else kicker.textContent=t(TYPE_KEYS[q.type]);}
+    const kicker=card.querySelector('.step-kicker-modern');if(kicker&&TYPE_KEYS[q.type]){if(q.type==='section'){const secs=(def?.questions||[]).filter(x=>x.type==='section'&&!x.config?.hideHeading),idx=secs.findIndex(x=>x.id===q.id);kicker.textContent=secs.length>1&&idx>=0?`${t('section')} ${idx+1} / ${secs.length}`:t('section');}else kicker.textContent=t(TYPE_KEYS[q.type]);}
     if(q.type==='dropdown'){
       const select=card.querySelector('select');if(select){if(select.options[0])select.options[0].textContent=t('select');const translated=q.__translation?.options||[];(q.config?.options||[]).forEach((value,i)=>{if(select.options[i+1])select.options[i+1].textContent=translated[i]||value;});}
     }
