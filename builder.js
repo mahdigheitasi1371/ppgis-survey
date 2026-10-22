@@ -13,7 +13,7 @@ const GROUPS = {
     ['yes_no','Yes / No'],['single_choice','Single choice'],['multiple_choice','Multiple choice'],['photo_choice','Photo choice'],['dropdown','Dropdown'],['rating','Rating scale'],['slider','Slider'],['matrix','Matrix / Likert']
   ],
   'Date & time': [['date','Date'],['time','Time'],['datetime','Date & time']],
-  'Map & location': [['map_multi','Point map'],['map_line','Line map'],['map_polygon','Polygon map']],
+  'Map & location': [['map_multi','Point map'],['map_3d','3D point map'],['map_line','Line map'],['map_polygon','Polygon map']],
   'Photos, media & files': [['photo','Photo'],['photos','Multiple photos'],['audio','Voice recording'],['video','Video recording'],['file','File upload'],['signature','Signature']],
   'Priorities & trade-offs': [['ranking','Rank order'],['allocation','Resource allocation']],
   'Content & consent': [['info','Information text'],['section','Section heading'],['consent','Consent checkbox']]
@@ -130,6 +130,7 @@ function newQuestion(type){
   if(type==='slider') Object.assign(q.config,{min:0,max:100,step:1});
   if(type==='matrix') Object.assign(q.config,{rows:['Statement 1','Statement 2'],columns:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree']});
   if(type==='map_multi') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxPoints:1,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});
+  if(type==='map_3d') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,zoom3d:17,pitch:60,maxPoints:10,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this place',options:['Positive','Neutral','Negative']}});
   if(type==='map_line') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxFeatures:10,maxVertices:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});
   if(type==='map_polygon') Object.assign(q.config,{lat:51.5136,lng:7.4653,zoom:12,maxFeatures:10,maxVertices:30,allowGeo:true,allowCitySearch:true,mapPage:true,popup:{enabled:false,type:'single_choice',question:'Tell us more about this vertex',options:['Positive','Neutral','Negative']}});
   if(type==='photo') q.config.maxFiles=1;
@@ -152,6 +153,7 @@ function questionPreview(q){
   if(OPTS.has(q.type)) return (c.options||[]).join(' · ');
   if(q.type==='matrix') return `${(c.rows||[]).length} rows × ${(c.columns||[]).length} choices`;
   if(q.type==='map_multi') return `Point map · max ${c.maxPoints||1}`;
+  if(q.type==='map_3d') return `3D point map · max ${c.maxPoints||10} · tilt ${c.pitch||60}°`;
   if(q.type==='map_line') return `Line map · ${c.maxFeatures||10} lines · ${c.maxVertices||30} vertices each`;
   if(q.type==='map_polygon') return `Polygon map · ${c.maxFeatures||10} polygons · ${c.maxVertices||30} vertices each`;
   if(['photo','photos','audio','video','file','signature'].includes(q.type)) return 'Media response';
@@ -178,12 +180,12 @@ function photoChoiceEditor(q){
   }).join('')}</div><button class="btn small" type="button" id="addPhotoChoice">+ Add photo option</button><label class="check"><input id="photoChoiceMultiple_${q.id}" type="checkbox" ${c.multiple?'checked':''}><span>Allow selecting multiple photos</span></label>`;
 }
 function mapSettings(q){
-  const c=q.config||{}; const isPoint=q.type==='map_multi'; const isPolygon=q.type==='map_polygon';
+  const c=q.config||{}; const isPoint=q.type==='map_multi'||q.type==='map_3d'; const isPolygon=q.type==='map_polygon';
   return `<div class="field-section"><h4>Map configuration</h4>${isPoint?field('Maximum points',`<input id="maxPoints" type="number" min="1" max="50" value="${Number(c.maxPoints)||1}">`):`${field(`Maximum ${isPolygon?'polygons':'lines'}`,`<input id="maxFeatures" type="number" min="1" max="50" value="${Number(c.maxFeatures)||10}">`)}${field('Maximum vertices per feature',`<input id="maxVertices" type="number" min="${isPolygon?3:2}" max="100" value="${Number(c.maxVertices)||30}">`)}`}<div class="field-row">${field('Latitude',`<input id="lat" type="number" step=".0001" value="${Number(c.lat)||51.5136}">`)}${field('Longitude',`<input id="lng" type="number" step=".0001" value="${Number(c.lng)||7.4653}">`)}</div>${field('Zoom',`<input id="zoom" type="number" min="3" max="19" value="${Number(c.zoom)||12}">`)}<label class="check"><input id="allowGeo" type="checkbox" ${c.allowGeo!==false?'checked':''}><span>Offer "Use my location"</span></label><label class="check"><input id="allowCitySearch" type="checkbox" ${c.allowCitySearch!==false?'checked':''}><span>Offer city/place search</span></label></div>${popupSettings(q)}`;
 }
 function popupSettings(q){
   const c=q.config||{}; const p=c.popup||{}; const enabled=!!p.enabled; const ptype=p.type||'single_choice';
-  const unitLabel=q.type==='map_multi'?'point':'vertex';
+  const unitLabel=(q.type==='map_multi'||q.type==='map_3d')?'point':'vertex';
   return `<div class="field-section"><h4>Pop-up question</h4><label class="check"><input id="popupEnabled" type="checkbox" ${enabled?'checked':''}><span>Ask a follow-up question per ${unitLabel}</span></label>${enabled?`${field('Follow-up type',`<select id="popupType"><option value="single_choice" ${ptype==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${ptype==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${ptype==='open_text'?'selected':''}>Open text</option></select>`)}${field('Follow-up question text',textInput('popupQuestion',p.question||'Tell us more about this place'))}${ptype==='single_choice'?field('Choices',`<textarea id="popupOptions" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}`:''}</div>`;
 }
 function extraLanguages(){ normalizeState(); return state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); }
@@ -250,6 +252,7 @@ function questionEditorHtml(q){
   if(q.type==='matrix') html+=`<div class="field-section"><h4>Matrix</h4>${field('Rows',`<textarea id="matrixRows_${q.id}">${esc((c.rows||[]).join('\n'))}</textarea>`)}${field('Columns',`<textarea id="matrixCols_${q.id}">${esc((c.columns||[]).join('\n'))}</textarea>`)}</div>`;
   if(['rating','slider','number'].includes(q.type)) html+=`<div class="field-section"><h4>Range</h4><div class="field-row">${field('Minimum',`<input id="qMin_${q.id}" type="number" value="${c.min??''}">`)}${field('Maximum',`<input id="qMax_${q.id}" type="number" value="${c.max??''}">`)}</div>${field('Step',`<input id="qStep_${q.id}" type="number" value="${c.step??1}">`)}</div>`;
   if(q.type.startsWith('map_')) html+=mapSettings(q);
+  if(q.type==='map_3d') html+=`<div class="field-section"><h4>3D view</h4><small class="small-help">Participants first see a normal map (latitude, longitude and zoom above). When they tap a place or search for it, the map flies in and tilts into 3D with buildings; only then can they place points.</small><div class="field-row">${field('3D zoom level',`<input id="zoom3d" type="number" min="15" max="19" step="0.5" value="${Number(c.zoom3d)||17}">`,'15 = neighbourhood, 17 = street, 19 = single building')}${field('Tilt (degrees)',`<input id="pitch" type="number" min="30" max="75" value="${Number(c.pitch)||60}">`,'30 = gentle, 75 = almost street level')}</div></div>`;
   if(['photo','photos','file'].includes(q.type)) html+=`<div class="field-section"><h4>Files</h4>${field('Maximum files',`<input id="maxFiles_${q.id}" type="number" min="1" max="20" value="${c.maxFiles||1}">`)}</div>`;
   if(['audio','video'].includes(q.type)) html+=`<div class="field-section"><h4>Recording</h4>${field('Maximum duration (seconds)',`<input id="maxDuration_${q.id}" type="number" min="1" value="${c.maxDuration||180}">`)}<label class="check"><input id="allowRecord_${q.id}" type="checkbox" ${c.allowRecord!==false?'checked':''}><span>Live recording</span></label><label class="check"><input id="allowUpload_${q.id}" type="checkbox" ${c.allowUpload!==false?'checked':''}><span>File upload</span></label></div>`;
   if(q.type==='allocation') html+=`<div class="field-section"><h4>Allocation</h4>${field('Total',`<input id="allocationTotal_${q.id}" type="number" value="${c.total||100}">`)}${field('Unit',textInput(`allocationUnit_${q.id}`,c.unit||'points'))}</div>`;
@@ -331,7 +334,7 @@ function syncQuestionField(q,target){
   if(id==='popupOptions'){q.config.popup=q.config.popup||{};q.config.popup.options=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixRows'){q.config.rows=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixCols'){q.config.columns=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
-  const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total'};
+  const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total',zoom3d:'zoom3d',pitch:'pitch'};
   if(numberMap[id]){q.config[numberMap[id]]=target.value===''?'':Number(target.value);return}
   const checkMap={allowGeo:'allowGeo',allowCitySearch:'allowCitySearch',allowRecord:'allowRecord',allowUpload:'allowUpload'};
   if(checkMap[id]){q.config[checkMap[id]]=target.checked;return}

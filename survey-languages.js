@@ -135,7 +135,7 @@
     if(q.type==='dropdown'){
       const select=card.querySelector('select');if(select){if(select.options[0])select.options[0].textContent=t('select');const translated=q.__translation?.options||[];(q.config?.options||[]).forEach((value,i)=>{if(select.options[i+1])select.options[i+1].textContent=translated[i]||value;});}
     }
-    if(!q.type?.startsWith('map_'))return;
+    if(!q.type?.startsWith('map_')||q.type==='map_3d')return; // the 3D map translates its own labels
     const d=mapDescriptor(q),terms=q.type==='map_multi'?{items:d.max===1?(currentLanguage==='de'?'Ort':'location'):(currentLanguage==='de'?'Orte':'locations')} : featureTerms(q);
     const input=card.querySelector('[data-city-input]');if(input)input.placeholder=t('searchPlace');
     const search=card.querySelector('[data-city-search]');if(search)search.textContent=t('search');

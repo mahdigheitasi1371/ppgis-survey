@@ -175,13 +175,13 @@
     const features = [];
     values.forEach(v => {
       if (!v) return;
-      if (q.type === 'map_multi') (v.points || []).forEach(p => features.push({kind: 'point', p}));
+      if (q.type === 'map_multi' || q.type === 'map_3d') (v.points || []).forEach(p => features.push({kind: 'point', p}));
       else (Array.isArray(v.features) ? v.features : (v.points ? [{points: v.points}] : [])).forEach(f => features.push({kind: q.type === 'map_line' ? 'line' : 'polygon', pts: f.points || []}));
     });
-    const noun = q.type === 'map_multi' ? 'points' : q.type === 'map_line' ? 'lines' : 'polygons';
+    const noun = (q.type === 'map_multi' || q.type === 'map_3d') ? 'points' : q.type === 'map_line' ? 'lines' : 'polygons';
     let html = `${stat(String(features.length), `${noun} from ${values.length} ${values.length === 1 ? 'response' : 'responses'}`)}<div class="chart-map" data-map></div>`;
     const popup = q.config?.popup;
-    if (popup?.enabled && q.type === 'map_multi') {
+    if (popup?.enabled && (q.type === 'map_multi' || q.type === 'map_3d')) {
       const answers = features.map(f => f.p?.popupAnswer).filter(answered);
       if (popup.type === 'rating') html += `<div class="chart-sub">${esc(popup.question || 'Pop-up question')}</div>` + numericChart({type: 'rating', config: {min: 1, max: 5}}, answers);
       else if (popup.type === 'open_text') html += `<div class="chart-sub">${esc(popup.question || 'Pop-up question')}</div>` + textChart(answers);

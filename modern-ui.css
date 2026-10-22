@@ -135,3 +135,7 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .survey-modern .survey-question.page-group-item{margin-bottom:12px}
 .survey-modern .survey-question.page-group-item + .survey-question.page-group-item{animation:none}
 @media(max-width:720px){.survey-modern .survey-question.page-group-item{margin-bottom:10px}}
+
+/* 3D map question */
+.map3d-marker{width:18px;height:18px;border-radius:50%;background:var(--accent,#2f6f5e);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:default}
+.map3d-card .maplibregl-ctrl-top-right{margin-top:env(safe-area-inset-top,0px)}

@@ -692,7 +692,7 @@ def export_builder_responses(
     definition = parse_definition(survey)
     questions = [
         q for q in definition.get("questions", [])
-        if q.get("type") not in {"info", "section", "map_multi", "map_line", "map_polygon"}
+        if q.get("type") not in {"info", "section", "map_multi", "map_3d", "map_line", "map_polygon"}
     ]
     rows = db.execute(
         "SELECT * FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at", (survey_id,)
@@ -743,7 +743,7 @@ def export_builder_responses_shp(
     definition = parse_definition(survey)
     map_questions = [
         q for q in definition.get("questions", [])
-        if q.get("type") in {"map_multi", "map_line", "map_polygon"}
+        if q.get("type") in {"map_multi", "map_3d", "map_line", "map_polygon"}
     ]
     if not map_questions:
         raise HTTPException(status_code=404, detail="This survey has no map questions to export")
@@ -751,9 +751,10 @@ def export_builder_responses_shp(
         "SELECT * FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at", (survey_id,)
     ).fetchall()
 
-    kind_by_type = {"map_multi": "point", "map_line": "line", "map_polygon": "polygon"}
+    kind_by_type = {"map_multi": "point", "map_3d": "point3d", "map_line": "line", "map_polygon": "polygon"}
     shape_by_type = {
         "map_multi": shapefile.POINT,
+        "map_3d": shapefile.POINT,
         "map_line": shapefile.POLYLINE,
         "map_polygon": shapefile.POLYGON,
     }
@@ -784,7 +785,7 @@ def export_builder_responses_shp(
                 resp_id = row["id"]
                 submitted = row["submitted_at"]
 
-                if qtype == "map_multi":
+                if qtype in ("map_multi", "map_3d"):
                     for idx, point in enumerate(value.get("points") or []):
                         lat, lng = point.get("lat"), point.get("lng")
                         if lat is None or lng is None:

@@ -2,7 +2,7 @@
 (function () {
   if (typeof question === 'undefined' || typeof render === 'undefined') return;
 
-  const MAP_TYPES = new Set(['map_multi', 'map_line', 'map_polygon']);
+  const MAP_TYPES = new Set(['map_multi', 'map_line', 'map_polygon', 'map_3d']);
   const baseQuestion = question;
   const baseMapInit = mapInit;
   const baseRender = render;
@@ -262,7 +262,7 @@
     }
 
     let invalid = missing(value);
-    if (q.type === 'map_multi') invalid = !(value?.points?.length >= 1);
+    if (q.type === 'map_multi' || q.type === 'map_3d') invalid = !(value?.points?.length >= 1);
     if (q.type === 'map_line' || q.type === 'map_polygon') invalid = savedFeatures(q, value).length < 1;
     if (q.type === 'matrix') invalid = (q.config?.rows || []).some(row => !value?.[row]);
     if (q.type === 'allocation') {
@@ -364,6 +364,7 @@
           ensureMapReady(q);
           const entry = maps.get(q.id);
           entry?.m?.invalidateSize?.();
+          entry?.m?.resize?.();
           setTimeout(() => entry?.m?.invalidateSize?.(), 120);
         });
       }
@@ -396,6 +397,7 @@
   question = function (q) {
     const element = baseQuestion(q);
     if (!MAP_TYPES.has(q.type)) return element;
+    if (q.type === 'map_3d') return window.PPGIS3D ? window.PPGIS3D.card(q, element) : element;
 
     const c = q.config || {};
     const d = mapDescriptor(q);
@@ -437,6 +439,12 @@
 
   mapInit = function (q) {
     if (!MAP_TYPES.has(q.type)) return baseMapInit(q);
+    if (q.type === 'map_3d') {
+      const active3d = currentQuestion();
+      if (!active3d || active3d.id !== q.id || !window.PPGIS3D) return;
+      window.PPGIS3D.init(q, {maps, api: API, getAnswer: id => ans[id], setAnswer: (id, value) => set(id, value), popup: cfg => popup(cfg)});
+      return;
+    }
     const active = currentQuestion();
     if (!active || active.id !== q.id) return;
     if (maps.has(q.id) || !$(`#map_${q.id}`)) return;

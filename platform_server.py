@@ -37,18 +37,19 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 def builder_html() -> HTMLResponse:
     """Serve the rebuilt builder exactly as committed, without runtime rewriting."""
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    html = html.replace("builder.js?v=1", "builder.js?v=17")
+    html = html.replace("builder.js?v=1", "builder.js?v=18")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
     html = html.replace("survey.js?v=1", "survey.js?v=6")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=9">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=10">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=8">')
-    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=16"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=6"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=2"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=17"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=1"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
@@ -56,7 +57,7 @@ def survey_html() -> HTMLResponse:
 
 def styled_html(name: str) -> HTMLResponse:
     html = (BASE_DIR / name).read_text(encoding="utf-8")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=9">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=10">')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
@@ -181,6 +182,7 @@ for filename, media_type in {
     "languages.css": "text/css",
     "survey-mobile-v2.css": "text/css",
     "survey-experience.js": "application/javascript",
+    "survey-map3d.js": "application/javascript",
     "survey-languages.js": "application/javascript",
     "survey-runtime-fixes.js": "application/javascript",
     "survey-mobile-v2.js": "application/javascript",
