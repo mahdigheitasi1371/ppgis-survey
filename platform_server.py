@@ -58,13 +58,13 @@ def survey_html() -> HTMLResponse:
     html = html.replace("survey.js?v=1", "survey.js?v=6")
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=13">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=11">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=12">')
     html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=9"></script>')
     html = inject_before(html, "</body>", '<script src="survey-voice.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=19"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=2"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=3"></script>')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 

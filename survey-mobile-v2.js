@@ -1,4 +1,5 @@
-// Mobile-only map controls: keep map clear and reveal secondary tools on demand.
+// Mobile-only map controls: the map card shows only the question; the ⋯ button reveals
+// the instructions, search and other options.
 (function(){
   const mobile=()=>window.matchMedia('(max-width: 760px)').matches;
 
@@ -12,10 +13,15 @@
     const toggle=document.createElement('button');
     toggle.type='button';
     toggle.className='map-mobile-tools-toggle';
-    toggle.setAttribute('aria-label','Map tools');
+    const lang=String(window.SurveyLanguage?.get?.()||document.documentElement.lang||'en').slice(0,2);
+    const label=lang==='de'?'Anleitung und Optionen anzeigen':'Show instructions and options';
+    toggle.setAttribute('aria-label',label);
+    toggle.title=label;
     toggle.setAttribute('aria-expanded','false');
     toggle.textContent='⋯';
-    panel.appendChild(toggle);
+    toggle.classList.add('map-tools-hint');
+    const heading=panel.querySelector('h3');
+    if(heading)heading.after(toggle);else panel.prepend(toggle);
 
     const setOpen=open=>{
       panel.classList.toggle('mobile-tools-open',open);
@@ -33,6 +39,7 @@
     toggle.addEventListener('click',e=>{
       e.preventDefault();
       e.stopPropagation();
+      toggle.classList.remove('map-tools-hint');
       setOpen(!panel.classList.contains('mobile-tools-open'));
     });
 
