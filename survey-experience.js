@@ -111,8 +111,8 @@
       if (!q) return;
       card.classList.add('experience-question-hidden');
       if (MAP_TYPES.has(q.type)) return;
-      // Only section headings get a small label ('Section 2 / 6'); questions show no type label.
-      if (q.type === 'section' && !card.querySelector('.step-kicker-modern')) {
+      // No small labels above questions or section titles (removed on request).
+      if (false) {
         const heading = card.querySelector('h3,h2');
         if (heading) {
           const kicker = document.createElement('div');
