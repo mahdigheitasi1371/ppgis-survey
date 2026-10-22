@@ -82,7 +82,10 @@
     box-shadow:0 8px 24px rgba(9,30,18,.16)!important;
     backdrop-filter:blur(16px)!important;
   }
-  .map-panel-handle,.map-floating-panel .step-kicker-modern,.map-floating-panel .qdesc{display:none!important}
+  .map-panel-handle,.map-floating-panel .step-kicker-modern{display:none!important}
+  /* Map instructions stay visible on phones; very long texts scroll inside the card */
+  body.survey-modern .map-floating-panel .qdesc{display:block!important;-webkit-line-clamp:unset!important;overflow:auto!important;max-height:26svh!important;white-space:pre-line!important;font-size:13px!important;line-height:1.42!important;color:#43524a!important;margin:2px 0 7px!important}
+  body.survey-modern .map-floating-panel .qdesc:empty{display:none!important}
   .map-floating-panel h3{
     font-size:18px!important;
     line-height:1.2!important;
@@ -219,7 +222,7 @@ body.survey-modern .map-floating-panel .qdesc{font-size:13.5px!important}
   body.survey-modern .section-block>h2{font-size:21px!important}
   body.survey-modern .section-block.section-lead>h2{font-size:17px!important}
   body.survey-modern .map-floating-panel h3{font-size:16px!important}
-  body.survey-modern .map-floating-panel .qdesc{font-size:12.5px!important}
+  body.survey-modern .map-floating-panel .qdesc{font-size:13px!important}
 }
 
 /* Compact layout when several questions share one page (section: "all questions on one page") */
