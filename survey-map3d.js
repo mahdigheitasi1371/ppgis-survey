@@ -21,9 +21,10 @@
       sources: {
         s2: {type: 'raster', tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'], tileSize: 256, maxzoom: 15,
              attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2016</a> by EOX (CC BY 4.0)'},
-        aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: 256, minzoom: 10, maxzoom: 20, // server sends 512 px images (sharp on high-resolution screens)
-                 bounds: [5.85, 50.32, 9.47, 52.54],
-                 attribution: 'Luftbild © <a href="https://www.bezreg-koeln.nrw.de/geobasis-nrw" target="_blank" rel="noopener">Geobasis NRW</a> (dl-de/zero-2-0)'},
+        // Official aerial photos via our server: NRW (Geobasis NRW) and Spain (PNOA, IGN).
+        // On high-resolution screens ask for one zoom level more (tileSize 128) so photos stay sharp.
+        aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: (window.devicePixelRatio || 1) >= 1.5 ? 128 : 256, minzoom: 9, maxzoom: 20,
+                 attribution: 'Luftbilder: © <a href="https://www.bezreg-koeln.nrw.de/geobasis-nrw" target="_blank" rel="noopener">Geobasis NRW</a> (dl-de/zero-2-0) · PNOA cedido por © <a href="https://www.ign.es" target="_blank" rel="noopener">Instituto Geográfico Nacional</a> (CC BY 4.0)'},
         omt: {type: 'vector', url: 'https://tiles.openfreemap.org/planet', attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}
       },
       layers: [

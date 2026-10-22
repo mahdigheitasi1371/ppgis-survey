@@ -103,8 +103,12 @@ backups in `/var/backups/ppgis` (14 days kept).
 
 ## Optional: sharp satellite images worldwide in the 3D map
 
-Inside North Rhine-Westphalia the 3D map uses the official NRW aerial photos (10 cm, free).
-For sharp images everywhere else, add a free Esri key (2 million map tiles per month free):
+The 3D map uses free official aerial photos, fetched and cached by this server (no key needed):
+- **North Rhine-Westphalia:** Geobasis NRW, 10 cm (Datenlizenz Deutschland Zero 2.0)
+- **Spain** (incl. Balearic and Canary Islands): PNOA, Instituto Geográfico Nacional (CC BY 4.0)
+
+Other places show a 10 m satellite image. For sharp images everywhere else you can add an Esri key
+(first 2 million map tiles per month at no cost; the account may ask for payment details):
 
 1. Create a free account at https://location.arcgis.com and create an **API key** with the
    privilege **Basemaps** (basemap styles / static basemap tiles).
@@ -113,5 +117,5 @@ For sharp images everywhere else, add a free Esri key (2 million map tiles per m
    ```bash
    echo 'ESRI_API_KEY=PASTE_YOUR_KEY_HERE' | sudo tee -a /etc/ppgis-survey.env > /dev/null && sudo systemctl restart ppgis-survey
    ```
-Without a key the 3D map still works: NRW aerial photos inside NRW, 10 m satellite images elsewhere.
+Without a key the 3D map still works: official photos in NRW and Spain, 10 m satellite images elsewhere.
 Aerial photo tiles are cached in `/opt/ppgis-survey/tile_cache` (safe to delete; they are fetched again).

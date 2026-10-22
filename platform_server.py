@@ -59,7 +59,7 @@ def survey_html() -> HTMLResponse:
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=12">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=8">')
-    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=7"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=8"></script>')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=17"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
@@ -86,15 +86,20 @@ def _remote_json(url: str) -> dict:
 
 
 # --- Aerial photo tiles for the 3D map ---------------------------------------
-# Official NRW aerial photos (DOP, 10 cm, Datenlizenz Deutschland Zero 2.0) fetched from the
-# Geobasis NRW WMS and served from this server as normal web-map tiles. Same-origin tiles work
-# in WebGL maps, participants' browsers never contact a third party, and tiles are cached on disk.
+# Free official aerial photos, fetched by this server and served as normal web-map tiles:
+#   * North Rhine-Westphalia: Geobasis NRW DOP, 10 cm (Datenlizenz Deutschland Zero 2.0), WMS
+#   * Spain: PNOA maxima actualidad, Instituto Geografico Nacional (CC BY 4.0), WMTS
+# Same-origin tiles work in WebGL maps, participants' browsers never contact a third party,
+# and tiles are cached on disk (tile_cache/, safe to delete). Tiles are 256 px; the 3D map asks
+# for one zoom level more on high-resolution screens, so photos stay sharp there too.
 import math
 import threading
+import time
 
-TILE_CACHE_DIR = BASE_DIR / "tile_cache" / "aerial512"  # 512 px images for sharp display on high-resolution screens
-DOP_WMS = "https://www.wms.nrw.de/geobasis/wms_nw_dop"
+TILE_CACHE_DIR = BASE_DIR / "tile_cache" / "aerial256"
 _tile_lock = threading.Lock()
+MISS_RETRY_SECONDS = 7 * 24 * 3600   # try again after a week where no photo was found
+BLANK_TILE_BYTES = 2500             # a uniform (empty) 256 px JPEG is smaller than this
 
 
 def _tile_bbox_3857(z: int, x: int, y: int) -> tuple[float, float, float, float]:
@@ -105,33 +110,78 @@ def _tile_bbox_3857(z: int, x: int, y: int) -> tuple[float, float, float, float]
     return minx, maxy - span, minx + span, maxy
 
 
-@app.get("/api/tiles/aerial/{z}/{x}/{y}.jpg", include_in_schema=False)
-def aerial_tile(z: int, x: int, y: int):
-    if not (8 <= z <= 20) or not (0 <= x < 2 ** z) or not (0 <= y < 2 ** z):
-        raise HTTPException(status_code=404, detail="Tile out of range")
-    path = TILE_CACHE_DIR / str(z) / str(x) / f"{y}.jpg"
-    headers = {"Cache-Control": "public, max-age=2592000"}
-    if path.is_file():
-        return FileResponse(path, media_type="image/jpeg", headers=headers)
+def _tile_center_lnglat(z: int, x: int, y: int) -> tuple[float, float]:
+    n = 2 ** z
+    lng = (x + 0.5) / n * 360.0 - 180.0
+    lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + 0.5) / n))))
+    return lng, lat
+
+
+def _nrw_url(z: int, x: int, y: int) -> str:
     minx, miny, maxx, maxy = _tile_bbox_3857(z, x, y)
-    url = DOP_WMS + "?" + urlencode({
+    return "https://www.wms.nrw.de/geobasis/wms_nw_dop?" + urlencode({
         "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": "nw_dop_rgb", "STYLES": "",
-        "CRS": "EPSG:3857", "BBOX": f"{minx},{miny},{maxx},{maxy}", "WIDTH": "512", "HEIGHT": "512",
+        "CRS": "EPSG:3857", "BBOX": f"{minx},{miny},{maxx},{maxy}", "WIDTH": "256", "HEIGHT": "256",
         "FORMAT": "image/jpeg",
     })
+
+
+def _pnoa_url(z: int, x: int, y: int) -> str:
+    return "https://www.ign.es/wmts/pnoa-ma?" + urlencode({
+        "request": "getTile", "layer": "OI.OrthoimageCoverage", "TileMatrixSet": "GoogleMapsCompatible",
+        "TileMatrix": str(z), "TileCol": str(x), "TileRow": str(y), "format": "image/jpeg",
+    })
+
+
+# (name, [lon_min, lat_min, lon_max, lat_max] boxes, max zoom, url builder) - most specific first
+AERIAL_SOURCES = [
+    ("NRW", [(5.85, 50.32, 9.47, 52.54)], 20, _nrw_url),
+    ("PNOA", [(-9.6, 35.8, 4.5, 43.95), (-18.3, 27.5, -13.3, 29.5)], 20, _pnoa_url),
+]
+
+
+def _fetch_image(url: str) -> bytes | None:
     try:
         with urlopen(Request(url, headers={"User-Agent": "ppgis-survey/1.0"}), timeout=15) as response:
             data = response.read()
             if not response.headers.get("Content-Type", "").startswith("image/"):
-                raise ValueError("not an image")
-    except Exception as exc:  # noqa: BLE001 - outside NRW or service unavailable
-        print(f"aerial tile {z}/{x}/{y} not available: {exc}", flush=True)  # visible in: journalctl -u ppgis-survey
-        raise HTTPException(status_code=404, detail="Aerial photo not available")
+                return None
+            return data if len(data) >= BLANK_TILE_BYTES else None
+    except Exception as exc:  # noqa: BLE001
+        print(f"aerial source error {url[:80]}: {exc}", flush=True)  # visible in: journalctl -u ppgis-survey
+        return None
+
+
+@app.get("/api/tiles/aerial/{z}/{x}/{y}.jpg", include_in_schema=False)
+def aerial_tile(z: int, x: int, y: int):
+    if not (8 <= z <= 20) or not (0 <= x < 2 ** z) or not (0 <= y < 2 ** z):
+        raise HTTPException(status_code=404, detail="Tile out of range")
+    folder = TILE_CACHE_DIR / str(z) / str(x)
+    path, miss = folder / f"{y}.jpg", folder / f"{y}.none"
+    headers = {"Cache-Control": "public, max-age=2592000"}
+    if path.is_file():
+        return FileResponse(path, media_type="image/jpeg", headers=headers)
+    if miss.is_file() and time.time() - miss.stat().st_mtime < MISS_RETRY_SECONDS:
+        raise HTTPException(status_code=404, detail="No aerial photo here")
+    lng, lat = _tile_center_lnglat(z, x, y)
+    candidates = [src for src in AERIAL_SOURCES
+                  if z <= src[2] and any(a <= lng <= c and b <= lat <= d for a, b, c, d in src[1])]
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No aerial photo here")
+    data = None
+    for _name, _boxes, _maxz, build in candidates:
+        data = _fetch_image(build(z, x, y))
+        if data:
+            break
     with _tile_lock:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        folder.mkdir(parents=True, exist_ok=True)
+        if not data:
+            miss.touch()
+            raise HTTPException(status_code=404, detail="No aerial photo here")
         tmp = path.with_suffix(".tmp")
         tmp.write_bytes(data)
         tmp.replace(path)
+        miss.unlink(missing_ok=True)
     return Response(content=data, media_type="image/jpeg", headers=headers)
 
 
