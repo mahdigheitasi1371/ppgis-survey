@@ -699,15 +699,21 @@ def export_builder_responses(
     ).fetchall()
     buf = io.StringIO()
     writer = csv.writer(buf)
-    header = ["response_id", "submitted_at"] + [
-        f"{q.get('title') or q.get('label') or q.get('id')} [{q.get('id')}]" for q in questions
-    ]
+    columns: list[tuple[str, str]] = []
+    for q in questions:
+        title = q.get("title") or q.get("label") or q.get("id")
+        columns.append((f"{title} [{q.get('id')}]", q.get("id")))
+        if (q.get("config") or {}).get("allowVoice"):
+            columns.append((f"{title} - voice messages [{q.get('id')}__voice]", f"{q.get('id')}__voice"))
+    header = ["response_id", "submitted_at"] + [label for label, _ in columns]
     writer.writerow(header)
     for row in rows:
         answers = safe_json_loads(row["answers_json"], {})
         values = []
-        for q in questions:
-            value = answers.get(q.get("id"), "")
+        for _label, key in columns:
+            value = answers.get(key, "")
+            if key.endswith("__voice") and isinstance(value, list):
+                value = "; ".join(f"{v.get('name', 'voice')} (media {v.get('token', '')})" for v in value if isinstance(v, dict))
             if isinstance(value, (dict, list)):
                 value = json.dumps(value, ensure_ascii=False)
             values.append(value)

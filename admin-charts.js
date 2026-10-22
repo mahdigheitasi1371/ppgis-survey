@@ -226,6 +226,21 @@
     return `<article class="card analysis-card chart-card chart-wide"><div class="chart-head"><h3>Responses per day</h3></div>${columns(shown, {caption: shown.length < bins.length ? 'Last 30 days' : ''})}</article>`;
   }
 
+  function voiceList(q, responses) {
+    if (!q.config?.allowVoice) return '';
+    const items = [];
+    responses.forEach(r => (Array.isArray(r.answers?.[`${q.id}__voice`]) ? r.answers[`${q.id}__voice`] : []).forEach(v => v?.token && items.push(v)));
+    if (!items.length) return '<p class="chart-empty">No voice messages yet.</p>';
+    const buttons = items.slice(0, 8).map((v, i) => `<button type="button" class="btn btn-sm" data-play-voice="${esc(v.token)}">▶ ${i + 1}</button>`).join(' ');
+    return `<div class="chart-sub">🎤 ${items.length} voice message${items.length === 1 ? '' : 's'}</div><div class="voice-buttons">${buttons}</div>${items.length > 8 ? '<div class="chart-caption">First 8 shown – all are listed in the CSV export.</div>' : ''}`;
+  }
+
+  // play a voice message (uses the dashboard's media() helper, which sends the admin key)
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('[data-play-voice]');
+    if (b && typeof window.media === 'function') window.media(b.dataset.playVoice);
+  });
+
   // ---------- main ----------
   function render(container, def, responses) {
     ensureTip();
@@ -246,7 +261,7 @@
       else if (q.type === 'matrix') body = matrixChart(q, values);
       else if (q.type.startsWith('map_')) { mapChart(q, values, card); return; }
       else if (MEDIA.has(q.type)) body = mediaChart(values);
-      else if (TEXT.has(q.type)) body = textChart(values);
+      else if (TEXT.has(q.type)) body = textChart(values.filter(v => v !== '[voice message]')) + voiceList(q, responses);
       else body = textChart(values.map(v => typeof v === 'object' ? JSON.stringify(v) : v));
       card.innerHTML += body;
     });

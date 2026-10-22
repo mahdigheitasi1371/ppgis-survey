@@ -141,3 +141,14 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .map3d-card .maplibregl-ctrl-top-right{margin-top:env(safe-area-inset-top,0px)}
 .map3d-viewctrl button{font-size:17px;line-height:1;font-weight:700;color:#24302a}
 .map3d-card .maplibregl-ctrl-group button{width:34px;height:34px}
+
+/* Voice messages on open-text questions */
+.voice-box{margin-top:12px;display:grid;gap:8px}
+.voice-hint{margin:0;font-size:13px;color:#5b6a62}
+.voice-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.voice-rec.recording{background:#b4412b;border-color:#b4412b;color:#fff}
+.voice-status{font-size:13px;color:#5b6a62}
+.voice-list{display:grid;gap:6px}
+.voice-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f3f6f3;border-radius:12px;padding:8px 10px;font-size:13.5px}
+.voice-item audio{height:34px;max-width:100%}
+.voice-name{font-weight:600}

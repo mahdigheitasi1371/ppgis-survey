@@ -38,7 +38,11 @@
   const baseSubmit = submit;
   submit = function (e) {
     try {
-      (def?.questions || []).forEach(q => { if (!visible(q) && Object.prototype.hasOwnProperty.call(ans, q.id)) delete ans[q.id]; });
+      (def?.questions || []).forEach(q => {
+        if (visible(q)) return;
+        delete ans[q.id];
+        delete ans[`${q.id}__voice`];
+      });
     } catch (_) {}
     return baseSubmit.call(this, e);
   };
@@ -396,7 +400,10 @@
 
   question = function (q) {
     const element = baseQuestion(q);
-    if (!MAP_TYPES.has(q.type)) return element;
+    if (!MAP_TYPES.has(q.type)) {
+      if (!window.PPGISVoice) return element;
+      return window.PPGISVoice.enhance(q, element, {get ans() { return ans; }, set: (id, value) => set(id, value), api: API, slug: def?.slug, preview});
+    }
     if (q.type === 'map_3d') return window.PPGIS3D ? window.PPGIS3D.card(q, element) : element;
 
     const c = q.config || {};
