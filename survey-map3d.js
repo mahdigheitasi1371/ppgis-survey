@@ -10,12 +10,69 @@
 
   const LIB = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl';
   const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+  // Aerial view: NRW aerial photos (served by our own server, see /api/tiles/aerial) on top of
+  // Sentinel-2 cloudless satellite imagery (EOX, CC BY 4.0) for areas outside NRW, with
+  // OpenStreetMap 3D buildings and street names from OpenFreeMap.
+  function aerialStyle(api) {
+    return {
+      version: 8,
+      glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+      sources: {
+        s2: {type: 'raster', tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'], tileSize: 256, maxzoom: 15,
+             attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2016</a> by EOX (CC BY 4.0)'},
+        aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: 256, minzoom: 10, maxzoom: 20,
+                 bounds: [5.85, 50.32, 9.47, 52.54],
+                 attribution: 'Luftbild © <a href="https://www.bezreg-koeln.nrw.de/geobasis-nrw" target="_blank" rel="noopener">Geobasis NRW</a> (dl-de/zero-2-0)'},
+        omt: {type: 'vector', url: 'https://tiles.openfreemap.org/planet', attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}
+      },
+      layers: [
+        {id: 'bg', type: 'background', paint: {'background-color': '#24302a'}},
+        {id: 's2', type: 'raster', source: 's2'},
+        {id: 'aerial', type: 'raster', source: 'aerial'},
+        {id: 'ppgis-3d-buildings', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14,
+         paint: {'fill-extrusion-color': '#ece7de',
+                 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
+                 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
+                 'fill-extrusion-opacity': 0.72}},
+        {id: 'road-names', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 14,
+         layout: {'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'symbol-placement': 'line'},
+         paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,.75)', 'text-halo-width': 1.4}},
+        {id: 'place-names', type: 'symbol', source: 'omt', 'source-layer': 'place',
+         layout: {'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 14},
+         paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,.8)', 'text-halo-width': 1.6}}
+      ]
+    };
+  }
+
+  // Map buttons to rotate and tilt the 3D view (also possible with two fingers / right mouse button)
+  class ViewControl {
+    constructor(labels) { this.labels = labels; }
+    onAdd(map) {
+      this.map = map;
+      const box = document.createElement('div');
+      box.className = 'maplibregl-ctrl maplibregl-ctrl-group map3d-viewctrl';
+      const btn = (txt, label, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = txt; b.title = label; b.setAttribute('aria-label', label);
+        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
+        box.appendChild(b);
+      };
+      btn('↺', this.labels.rotateLeft, () => map.easeTo({bearing: map.getBearing() - 45, duration: 450}));
+      btn('↻', this.labels.rotateRight, () => map.easeTo({bearing: map.getBearing() + 45, duration: 450}));
+      btn('⤒', this.labels.tiltMore, () => map.easeTo({pitch: Math.min(75, map.getPitch() + 15), duration: 400}));
+      btn('⤓', this.labels.tiltLess, () => map.easeTo({pitch: Math.max(0, map.getPitch() - 15), duration: 400}));
+      this.box = box;
+      return box;
+    }
+    onRemove() { this.box?.remove(); this.map = undefined; }
+  }
   const DETAIL_ZOOM = 15; // at or above this zoom a tap places a point; below it a tap flies into 3D
 
   const TEXT = {
     en: {
       step1: 'Step 1: Search or tap the area you want to look at more closely.',
-      step2: 'Step 2: Tap the exact spot to place a point (up to {n}). Drag with two fingers or right mouse button to rotate and tilt.',
+      step2: 'Step 2: Tap the exact spot to place a point (up to {n}). Turn and tilt the view with the ↺ ↻ ⤒ ⤓ buttons, two fingers or the right mouse button.',
+      rotateLeft: 'Rotate left', rotateRight: 'Rotate right', tiltMore: 'Tilt more', tiltLess: 'Tilt less', showMap: 'Map view', showAerial: 'Aerial view',
       overview: '← Choose another area', undo: 'Undo', clear: 'Clear', search: 'Search', searchPh: 'Search a street or place',
       useLocation: '◎ Use my location', count: '{n} / {max} selected', max: 'Maximum of {max} points reached.',
       added: 'Point added. Add another point or continue.', flying: 'Opening the 3D view…', cleared: 'Points cleared.',
@@ -25,7 +82,8 @@
     },
     de: {
       step1: 'Schritt 1: Suchen Sie den Bereich oder tippen Sie darauf, um ihn genauer anzusehen.',
-      step2: 'Schritt 2: Tippen Sie auf die genaue Stelle, um einen Punkt zu setzen (bis zu {n}). Mit zwei Fingern oder der rechten Maustaste drehen und neigen Sie die Ansicht.',
+      step2: 'Schritt 2: Tippen Sie auf die genaue Stelle, um einen Punkt zu setzen (bis zu {n}). Drehen und neigen Sie die Ansicht mit ↺ ↻ ⤒ ⤓, mit zwei Fingern oder der rechten Maustaste.',
+      rotateLeft: 'Nach links drehen', rotateRight: 'Nach rechts drehen', tiltMore: 'Stärker neigen', tiltLess: 'Weniger neigen', showMap: 'Kartenansicht', showAerial: 'Luftbild',
       overview: '← Anderen Bereich wählen', undo: 'Rückgängig', clear: 'Löschen', search: 'Suchen', searchPh: 'Straße oder Ort suchen',
       useLocation: '◎ Meinen Standort verwenden', count: '{n} / {max} gewählt', max: 'Maximal {max} Punkte erreicht.',
       added: 'Punkt gesetzt. Setzen Sie einen weiteren Punkt oder fahren Sie fort.', flying: '3D-Ansicht wird geöffnet…', cleared: 'Punkte gelöscht.',
@@ -80,7 +138,7 @@
         ${desc}
         <div class="map-point-limit" data-3d-step>${escHtml(tr('step1'))}</div>
         ${search}
-        <div class="map-actions-row">${geo}<button class="map-action" type="button" data-3d-overview hidden>${escHtml(tr('overview'))}</button><button class="map-action" type="button" data-3d-undo>${escHtml(tr('undo'))}</button><button class="map-action" type="button" data-3d-clear>${escHtml(tr('clear'))}</button></div>
+        <div class="map-actions-row">${geo}<button class="map-action" type="button" data-3d-overview hidden>${escHtml(tr('overview'))}</button><button class="map-action" type="button" data-3d-basemap>${escHtml(tr((c.background || 'aerial') === 'map' ? 'showAerial' : 'showMap'))}</button><button class="map-action" type="button" data-3d-undo>${escHtml(tr('undo'))}</button><button class="map-action" type="button" data-3d-clear>${escHtml(tr('clear'))}</button></div>
         <div class="map-location-status" data-3d-status></div>
         <div class="map-count" data-3d-count>${escHtml(tr('count', {n: 0, max}))}</div>
         <div class="error-text" data-error></div>
@@ -110,15 +168,25 @@
     catch (_) { setStatus(tr('noLib')); ctx.maps.delete(q.id); return; }
     if (!document.body.contains(el)) { ctx.maps.delete(q.id); return; }
 
+    let basemap = (c.background || 'aerial') === 'map' ? 'map' : 'aerial';
+    const styleFor = kind => ctx.style || (kind === 'map' ? STYLE : aerialStyle(ctx.api));
     const map = new maplibregl.Map({
-      container: el, style: ctx.style || STYLE, center: home.center, zoom: home.zoom, pitch: 0, bearing: 0,
-      maxPitch: 75, attributionControl: {compact: true}, dragRotate: true, touchPitch: true
+      container: el, style: styleFor(basemap), center: home.center, zoom: home.zoom, pitch: 0, bearing: 0,
+      maxPitch: 75, attributionControl: false, dragRotate: true, touchPitch: true
     });
+    map.addControl(new maplibregl.AttributionControl({compact: true}), 'bottom-left');
     map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'top-right');
+    map.addControl(new ViewControl({rotateLeft: tr('rotateLeft'), rotateRight: tr('rotateRight'), tiltMore: tr('tiltMore'), tiltLess: tr('tiltLess')}), 'top-right');
+    const basemapBtn = cardEl?.querySelector('[data-3d-basemap]');
+    basemapBtn?.addEventListener('click', () => {
+      basemap = basemap === 'map' ? 'aerial' : 'map';
+      map.setStyle(styleFor(basemap));
+      basemapBtn.textContent = tr(basemap === 'map' ? 'showAerial' : 'showMap');
+    });
     ctx.maps.set(q.id, {m: map, kind: '3d'});
 
     // 3D buildings: use the style's own extrusion layer if it has one, otherwise add one
-    map.on('load', () => {
+    map.on('style.load', () => {
       const style = map.getStyle() || {};
       const hasExtrusion = (style.layers || []).some(l => l.type === 'fill-extrusion');
       if (hasExtrusion) return;
