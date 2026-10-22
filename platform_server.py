@@ -45,10 +45,10 @@ def builder_html() -> HTMLResponse:
 def survey_html() -> HTMLResponse:
     html = (BASE_DIR / "survey.html").read_text(encoding="utf-8")
     html = html.replace("survey.js?v=1", "survey.js?v=6")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=11">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=12">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=8">')
-    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=4"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=5"></script>')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=17"></script>')
     html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
@@ -58,7 +58,7 @@ def survey_html() -> HTMLResponse:
 
 def styled_html(name: str) -> HTMLResponse:
     html = (BASE_DIR / name).read_text(encoding="utf-8")
-    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=11">')
+    html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=12">')
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 

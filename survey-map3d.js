@@ -30,10 +30,10 @@
         {id: 's2', type: 'raster', source: 's2'},
         {id: 'aerial', type: 'raster', source: 'aerial'},
         {id: 'ppgis-3d-buildings', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14,
-         paint: {'fill-extrusion-color': '#ece7de',
+         paint: {'fill-extrusion-color': '#e6e0d4', 'fill-extrusion-vertical-gradient': true,
                  'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
                  'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
-                 'fill-extrusion-opacity': 0.72}},
+                 'fill-extrusion-opacity': 1}},
         {id: 'road-names', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 14,
          layout: {'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'symbol-placement': 'line'},
          paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,.75)', 'text-halo-width': 1.4}},
@@ -196,10 +196,10 @@
         map.addLayer({
           id: 'ppgis-3d-buildings', type: 'fill-extrusion', source: vectorSource[0], 'source-layer': 'building', minzoom: 14,
           paint: {
-            'fill-extrusion-color': '#d8d2c6',
+            'fill-extrusion-color': '#e0d9cc', 'fill-extrusion-vertical-gradient': true,
             'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
             'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
-            'fill-extrusion-opacity': 0.88
+            'fill-extrusion-opacity': 1
           }
         });
       } catch (_) { /* style without a building layer: the map still works in 3D, just without extruded buildings */ }
@@ -214,6 +214,10 @@
         const dot = document.createElement('div');
         dot.className = 'map3d-marker';
         dot.title = `${i + 1}`;
+        dot.addEventListener('click', ev => {
+          ev.stopPropagation();
+          if (map.getZoom() < DETAIL_ZOOM - 0.01) flyIntoDetail(p.lng, p.lat);
+        });
         markers.push(new maplibregl.Marker({element: dot, anchor: 'center'}).setLngLat([p.lng, p.lat]).addTo(map));
       });
       if (countEl) countEl.textContent = tr('count', {n: points().length, max});
@@ -225,9 +229,10 @@
       cardEl?.classList.toggle('map3d-detail', detail);
     }
     function flyIntoDetail(lng, lat) {
-      setStatus(tr('flying'));
-      map.flyTo({center: [lng, lat], zoom: detailZoom, pitch, bearing: -20, speed: 1.4, essential: true});
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      map.easeTo({center: [lng, lat], zoom: detailZoom, pitch, bearing: -20, duration: reduce ? 0 : 700, essential: true});
       map.once('moveend', () => { setStatus(''); updateStage(); });
+      updateStage();
     }
 
     map.on('zoomend', updateStage);
