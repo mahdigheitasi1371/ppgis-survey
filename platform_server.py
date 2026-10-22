@@ -62,7 +62,7 @@ def survey_html() -> HTMLResponse:
     html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=10"></script>')
     html = inject_before(html, "</body>", '<script src="survey-voice.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-experience.js?v=20"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=7"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=8"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="text-format.js?v=1"></script>')

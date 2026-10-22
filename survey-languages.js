@@ -198,7 +198,7 @@
   }
 
   function languageKey(){return sourceDefinition?.slug?`survey-language:${sourceDefinition.slug}`:'survey-language:preview';}
-  function chooseInitialLanguage(){const langs=languagesOf(sourceDefinition),allowed=new Set(langs.map(x=>x.code)),requested=new URLSearchParams(location.search).get('lang')?.toLowerCase(),remembered=(typeof safeStorage!=='undefined'?safeStorage.getItem(languageKey()):null)?.toLowerCase(),browser=(navigator.language||'').toLowerCase().split('-')[0],fallback=String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();currentLanguage=[requested,remembered,browser,fallback].find(x=>x&&allowed.has(x))||langs[0]?.code||'en';}
+  function chooseInitialLanguage(){const langs=languagesOf(sourceDefinition),allowed=new Set(langs.map(x=>x.code)),requested=new URLSearchParams(location.search).get('lang')?.toLowerCase(),remembered=(typeof safeStorage!=='undefined'?safeStorage.getItem(languageKey()):null)?.toLowerCase(),browser=(navigator.language||'').toLowerCase().split('-')[0],fallback=String(sourceDefinition?.settings?.defaultLanguage||'en').toLowerCase();currentLanguage=[requested,fallback].find(x=>x&&allowed.has(x))||langs[0]?.code||'en';void remembered;void browser;}
 
   function installSelector(){
     if(!sourceDefinition)return;const langs=languagesOf(sourceDefinition);if(langs.length<2)return;const topbar=document.getElementById('respondentTopbar');if(!topbar)return;let holder=topbar.querySelector('.respondent-language');
@@ -211,7 +211,7 @@
   }
 
   render=function(){
-    if(def&&!sourceDefinition){sourceDefinition=clone(def);chooseInitialLanguage();ans.__language=currentLanguage;}
+    if(def&&!sourceDefinition){sourceDefinition=clone(def);chooseInitialLanguage();ans.__language=currentLanguage;document.documentElement.lang=currentLanguage;document.documentElement.dir=['ar','fa'].includes(currentLanguage.split('-')[0])?'rtl':'ltr';}
     if(sourceDefinition)def=localizedDefinition(sourceDefinition,currentLanguage);
     finalRender();installSelector();patchRenderedLabels();
     if(!observer){
