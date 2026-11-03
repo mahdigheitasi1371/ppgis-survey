@@ -270,11 +270,20 @@
       const list = points();
       if (list.length >= max) { setStatus(tr('max', {max})); return; }
       const p = {lat: +e.lngLat.lat.toFixed(6), lng: +e.lngLat.lng.toFixed(6)};
-      if (c.popup?.enabled && typeof ctx.popup === 'function') {
-        p.popupAnswer = await ctx.popup(c.popup);
+      if (c.popup?.enabled && (typeof ctx.ask === 'function' || typeof ctx.popup === 'function')) {
+        // Small pop-up next to the place (falls back to the dialog in older pages)
+        const askAt = (cfg, step) => typeof ctx.ask !== 'function' ? ctx.popup(cfg) : new Promise(resolve => {
+          let settled = false;
+          const pop = new maplibregl.Popup({closeButton: true, closeOnClick: true, maxWidth: '260px', offset: 12, className: 'ask-maplibre'});
+          const finish = value => { if (settled) return; settled = true; pop.remove(); resolve(value); };
+          pop.setLngLat([p.lng, p.lat]).setDOMContent(ctx.ask(cfg, finish, step)).addTo(map);
+          pop.on('close', () => { if (!settled) { settled = true; resolve(undefined); } });
+        });
+        const total = c.popup2?.enabled ? 2 : 1;
+        p.popupAnswer = await askAt(c.popup, {index: 1, total});
         if (p.popupAnswer === undefined) return;
-        if (c.popup2?.enabled) {
-          p.popupAnswer2 = await ctx.popup(c.popup2);
+        if (total === 2) {
+          p.popupAnswer2 = await askAt(c.popup2, {index: 2, total});
           if (p.popupAnswer2 === undefined) return;
         }
       }

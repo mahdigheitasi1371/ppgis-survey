@@ -63,6 +63,42 @@
     const s = Array.from(bytes, b => chars[b % chars.length]).join('');
     return `${s.slice(0, 4)}-${s.slice(4)}`;
   }
+  // Small pop-up next to a marked place: the follow-up question with tappable answers (no dropdown).
+  // done(value) is called with the answer, or never if the participant closes the pop-up.
+  const ASK_TEXT = {de: {save: 'Speichern', step: 'Frage {a} von {b}', placeholder: 'Ihre Antwort…'}, en: {save: 'Save', step: 'Question {a} of {b}', placeholder: 'Your answer…'}};
+  const askText = (key, vars) => Object.entries(vars || {}).reduce((t, [k, v]) => t.replace(`{${k}}`, v), (ASK_TEXT[uiLang()] || ASK_TEXT.en)[key]);
+  function askForm(cfg, done, step) {
+    const el = document.createElement('div');
+    el.className = 'ask-pop';
+    const type = cfg?.type || 'single_choice';
+    const head = step && step.total > 1 ? `<div class="ask-step">${esc(askText('step', {a: step.index, b: step.total}))}</div>` : '';
+    el.innerHTML = `${head}<div class="ask-q">${esc(cfg?.question || '')}</div><div class="ask-body"></div>`;
+    const body = el.querySelector('.ask-body');
+    const pick = value => { el.querySelectorAll('button').forEach(b => { b.disabled = true; }); done(value); };
+    if (type === 'rating') {
+      body.className = 'ask-body ask-rating';
+      [1, 2, 3, 4, 5].forEach(n => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = String(n);
+        b.addEventListener('click', ev => { ev.stopPropagation(); pick(n); }); body.appendChild(b);
+      });
+    } else if (type === 'open_text') {
+      body.innerHTML = `<textarea rows="2" placeholder="${esc(askText('placeholder'))}"></textarea><button type="button" class="ask-save">${esc(askText('save'))}</button>`;
+      const ta = body.querySelector('textarea');
+      body.querySelector('button').addEventListener('click', ev => { ev.stopPropagation(); pick(ta.value.trim()); });
+      setTimeout(() => ta.focus(), 60);
+    } else {
+      body.className = 'ask-body ask-opts';
+      (cfg?.options || []).forEach(opt => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'ask-opt'; b.textContent = opt;
+        b.addEventListener('click', ev => { ev.stopPropagation(); pick(opt); }); body.appendChild(b);
+      });
+    }
+    // Clicks inside the pop-up must not reach the map (that would add another point)
+    ['click', 'dblclick', 'mousedown', 'touchstart', 'pointerdown', 'wheel'].forEach(t => el.addEventListener(t, ev => ev.stopPropagation(), {passive: t === 'touchstart' || t === 'wheel'}));
+    return el;
+  }
+  window.PPGISAsk = {form: askForm};
+
   const baseSubmit = submit;
   submit = async function (e) {
     if (!preview && stopRuleActive()) {
@@ -518,7 +554,7 @@
     if (q.type === 'map_3d') {
       const active3d = currentQuestion();
       if (!active3d || active3d.id !== q.id || !window.PPGIS3D) return;
-      window.PPGIS3D.init(q, {maps, api: API, getAnswer: id => ans[id], setAnswer: (id, value) => set(id, value), popup: cfg => popup(cfg)});
+      window.PPGIS3D.init(q, {maps, api: API, getAnswer: id => ans[id], setAnswer: (id, value) => set(id, value), popup: cfg => popup(cfg), ask: askForm});
       return;
     }
     const active = currentQuestion();
@@ -661,6 +697,43 @@
       if (removeButton) removeButton.disabled = features.length === 0;
     };
 
+    // Follow-up question(s) in a small pop-up next to the new place. Closing it cancels the place.
+    function askAt(latlng, cfg, step) {
+      return new Promise(resolve => {
+        let settled = false;
+        const finish = value => { if (settled) return; settled = true; m.closePopup(pop); resolve(value); };
+        const pad = {tl: [20, 20], br: [20, 20]};
+        try {
+          const panel = card?.querySelector('.map-floating-panel');
+          const pr = panel?.getBoundingClientRect(), mr = mapElement.getBoundingClientRect();
+          if (pr && pr.width) {
+            if (pr.width > mr.width * 0.7) pad.tl = [16, Math.max(20, pr.bottom - mr.top + 12)];
+            else pad.tl = [Math.max(20, pr.right - mr.left + 12), 20];
+          }
+          if (window.matchMedia('(max-width: 760px)').matches) pad.br = [16, 90];
+        } catch (_) {}
+        const pop = L.popup({className: 'ask-leaflet', maxWidth: 260, minWidth: 190, autoPan: true,
+          autoPanPaddingTopLeft: pad.tl, autoPanPaddingBottomRight: pad.br, closeButton: true, closeOnClick: true, autoClose: true})
+          .setLatLng(latlng).setContent(askForm(cfg, finish, step)).openOn(m);
+        pop.on('remove', () => { if (!settled) { settled = true; resolve(undefined); } });
+      });
+    }
+    async function askFollowUps(latlng, point) {
+      const total = c.popup2?.enabled ? 2 : 1;
+      const temp = L.circleMarker(latlng, {radius:7, weight:2, fillOpacity:.45, dashArray:'3 3', interactive:false}).addTo(helper);
+      try {
+        point.popupAnswer = await askAt(latlng, c.popup, {index: 1, total});
+        if (point.popupAnswer === undefined) return false;
+        if (total === 2) {
+          point.popupAnswer2 = await askAt(latlng, c.popup2, {index: 2, total});
+          if (point.popupAnswer2 === undefined) return false;
+        }
+        return true;
+      } finally {
+        helper.removeLayer(temp);
+      }
+    }
+
     async function addVertex(latlng) {
       if (q.type === 'map_multi') {
         let current = [...pointValues()];
@@ -670,14 +743,7 @@
           return;
         }
         const point = {lat:latlng.lat,lng:latlng.lng};
-        if (c.popup?.enabled) {
-          point.popupAnswer = await popup(c.popup);
-          if (point.popupAnswer === undefined) return;
-          if (c.popup2?.enabled) {
-            point.popupAnswer2 = await popup(c.popup2);
-            if (point.popupAnswer2 === undefined) return;
-          }
-        }
+        if (c.popup?.enabled && !(await askFollowUps(latlng, point))) return;
         current.push(point);
         set(q.id, {geometry:d.geometry,points:current});
         if (status) status.textContent = d.max === 1 ? 'Location selected. Click another place to move it.' : 'Point added. Add another point or continue.';
@@ -696,14 +762,7 @@
         return;
       }
       const point = {lat:latlng.lat,lng:latlng.lng};
-      if (c.popup?.enabled) {
-        point.popupAnswer = await popup(c.popup);
-        if (point.popupAnswer === undefined) return;
-        if (c.popup2?.enabled) {
-          point.popupAnswer2 = await popup(c.popup2);
-          if (point.popupAnswer2 === undefined) return;
-        }
-      }
+      if (c.popup?.enabled && !(await askFollowUps(latlng, point))) return;
       draft.push(point);
       writeFeatures(features, draft);
       if (status) {

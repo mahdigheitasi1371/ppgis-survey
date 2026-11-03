@@ -171,3 +171,22 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 .participation-code-title{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent,#2f6f5e)}
 .participation-code-value{font:700 30px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;margin:8px 0 10px;color:#17251d;user-select:all}
 .participation-code p{font-size:13px;line-height:1.5;color:#4f6056;margin:12px 0 0;text-align:left}
+
+/* Follow-up question next to a marked place (map pop-up) */
+.ask-leaflet .leaflet-popup-content-wrapper,.ask-maplibre .maplibregl-popup-content{border-radius:14px;box-shadow:0 10px 30px rgba(9,30,18,.22);padding:0}
+.ask-leaflet .leaflet-popup-content{margin:0;padding:12px 14px;width:auto!important;min-width:190px}
+.ask-maplibre .maplibregl-popup-content{padding:12px 14px}
+.ask-leaflet a.leaflet-popup-close-button{width:28px;height:28px;font-size:20px;line-height:26px;color:#5b6a62}
+.ask-maplibre .maplibregl-popup-close-button{width:28px;height:28px;font-size:20px;color:#5b6a62}
+.ask-pop{font:inherit;color:#17251d;max-width:240px}
+.ask-step{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent,#2f6f5e);margin:0 22px 3px 0}
+.ask-q{font-size:13.5px;font-weight:700;line-height:1.35;margin:0 22px 9px 0}
+.ask-opts{display:grid;gap:5px}
+.ask-opt{display:block;width:100%;text-align:left;border:1px solid #d6e0d9;background:#fff;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;line-height:1.25;color:#17251d;cursor:pointer;min-height:36px}
+.ask-opt:hover,.ask-opt:focus-visible{border-color:var(--accent,#2f6f5e);background:#eef5f0;outline:none}
+.ask-rating{display:flex;gap:5px}
+.ask-rating button{flex:1;min-width:34px;height:38px;border:1px solid #d6e0d9;background:#fff;border-radius:10px;font:inherit;font-weight:700;cursor:pointer}
+.ask-rating button:hover,.ask-rating button:focus-visible{border-color:var(--accent,#2f6f5e);background:#eef5f0;outline:none}
+.ask-body textarea{width:100%;min-height:58px;border:1px solid #d6e0d9;border-radius:10px;padding:7px 9px;font:inherit;font-size:16px;resize:vertical;box-sizing:border-box}
+.ask-save{margin-top:6px;width:100%;min-height:36px;border:0;border-radius:10px;background:var(--accent,#2f6f5e);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+@media (max-width:760px){.ask-opt{min-height:40px;font-size:13.5px}.ask-q{font-size:13.5px}}
