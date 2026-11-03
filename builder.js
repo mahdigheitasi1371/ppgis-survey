@@ -195,7 +195,12 @@ function mapSettings(q){
 function popupSettings(q){
   const c=q.config||{}; const p=c.popup||{}; const enabled=!!p.enabled; const ptype=p.type||'single_choice';
   const unitLabel=(q.type==='map_multi'||q.type==='map_3d')?'point':'vertex';
-  return `<div class="field-section"><h4>Pop-up question</h4><label class="check"><input id="popupEnabled" type="checkbox" ${enabled?'checked':''}><span>Ask a follow-up question per ${unitLabel}</span></label>${enabled?`${field('Follow-up type',`<select id="popupType"><option value="single_choice" ${ptype==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${ptype==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${ptype==='open_text'?'selected':''}>Open text</option></select>`)}${field('Follow-up question text',textInput('popupQuestion',p.question||'Tell us more about this place'))}${ptype==='single_choice'?field('Choices',`<textarea id="popupOptions" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}`:''}</div>`;
+  return `<div class="field-section"><h4>Pop-up question</h4><label class="check"><input id="popupEnabled" type="checkbox" ${enabled?'checked':''}><span>Ask a follow-up question per ${unitLabel}</span></label>${enabled?`${field('Follow-up type',`<select id="popupType"><option value="single_choice" ${ptype==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${ptype==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${ptype==='open_text'?'selected':''}>Open text</option></select>`)}${field('Follow-up question text',textInput('popupQuestion',p.question||'Tell us more about this place'))}${ptype==='single_choice'?field('Choices',`<textarea id="popupOptions" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}${popup2Settings(q)}`:''}</div>`;
+}
+// Optional second follow-up question, asked right after the first one for the same place.
+function popup2Settings(q){
+  const p=q.config?.popup2||{}; const on=!!p.enabled; const t=p.type||'single_choice';
+  return `<div class="popup2-block"><label class="check"><input id="popup2Enabled" type="checkbox" ${on?'checked':''}><span>Ask a second follow-up question</span></label>${on?`${field('Second question type',`<select id="popup2Type"><option value="single_choice" ${t==='single_choice'?'selected':''}>Single choice</option><option value="rating" ${t==='rating'?'selected':''}>Rating (1–5)</option><option value="open_text" ${t==='open_text'?'selected':''}>Open text</option></select>`)}${field('Second question text',textInput('popup2Question',p.question||''))}${t==='single_choice'?field('Choices',`<textarea id="popup2Options" rows="3">${esc((p.options||[]).join('\n'))}</textarea>`,'One choice per line.'):''}`:''}<small class="small-help">Use this to split a question that asks two things at once. Participants answer both questions, one after the other, for each place they mark.</small></div>`;
 }
 function extraLanguages(){ normalizeState(); return state.settings.languages.filter(x=>x.code!==state.settings.defaultLanguage); }
 function addLanguageSelect(){
@@ -222,6 +227,10 @@ function translationFields(q){
     if(q.type.startsWith('map_') && c.popup?.enabled){
       extra+=field('Pop-up question',`<input data-tr-lang="${L}" data-tr-key="popupQuestion" value="${escAttr(t.popupQuestion||'')}" placeholder="${escAttr(c.popup.question||'')}">`);
       if((c.popup.type||'single_choice')==='single_choice') extra+=field('Pop-up choices',`<textarea rows="${Math.max(3,(c.popup.options||[]).length)}" data-tr-lang="${L}" data-tr-key="popupOptions" placeholder="${escAttr(lines(c.popup.options))}">${esc(lines(t.popupOptions))}</textarea>`,'One per line, same order.');
+      if(c.popup2?.enabled){
+        extra+=field('Second pop-up question',`<input data-tr-lang="${L}" data-tr-key="popupQuestion2" value="${escAttr(t.popupQuestion2||'')}" placeholder="${escAttr(c.popup2.question||'')}">`);
+        if((c.popup2.type||'single_choice')==='single_choice') extra+=field('Second pop-up choices',`<textarea rows="${Math.max(3,(c.popup2.options||[]).length)}" data-tr-lang="${L}" data-tr-key="popupOptions2" placeholder="${escAttr(lines(c.popup2.options))}">${esc(lines(t.popupOptions2))}</textarea>`,'One per line, same order.');
+      }
     }
     return `<div class="translation-block lang-version"><div class="lang-version-title">${esc(lang.name||languageName(L))} version</div>${field('Question text',`<input data-tr-lang="${L}" data-tr-key="title" value="${escAttr(t.title||'')}" placeholder="${escAttr(q.title||'')}">`)}${field('Description / help text',`<textarea rows="2" data-tr-lang="${L}" data-tr-key="description" placeholder="${escAttr(q.description||'')}">${esc(t.description||'')}</textarea>`)}${extra}</div>`;
   }).join('');
@@ -342,6 +351,9 @@ function syncQuestionField(q,target){
   if(id==='popupType'){q.config.popup=q.config.popup||{};q.config.popup.type=target.value;const body=document.querySelector(`[data-qid="${q.id}"] .question-card-body`);if(body)body.innerHTML=questionEditorHtml(q);return}
   if(id==='popupQuestion'){q.config.popup=q.config.popup||{};q.config.popup.question=target.value;return}
   if(id==='popupOptions'){q.config.popup=q.config.popup||{};q.config.popup.options=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
+  if(id==='popup2Enabled'||id==='popup2Type'){q.config.popup2=q.config.popup2||{type:'single_choice',question:'',options:[]};if(id==='popup2Enabled')q.config.popup2.enabled=target.checked;else q.config.popup2.type=target.value;const body=document.querySelector(`[data-qid="${q.id}"] .question-card-body`);if(body)body.innerHTML=questionEditorHtml(q);return}
+  if(id==='popup2Question'){q.config.popup2=q.config.popup2||{};q.config.popup2.question=target.value;return}
+  if(id==='popup2Options'){q.config.popup2=q.config.popup2||{};q.config.popup2.options=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixRows'){q.config.rows=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   if(id==='matrixCols'){q.config.columns=target.value.split('\n').map(x=>x.trim()).filter(Boolean);return}
   const numberMap={qMin:'min',qMax:'max',qStep:'step',maxPoints:'maxPoints',maxFeatures:'maxFeatures',maxVertices:'maxVertices',lat:'lat',lng:'lng',zoom:'zoom',maxFiles:'maxFiles',maxDuration:'maxDuration',allocationTotal:'total',zoom3d:'zoom3d',pitch:'pitch'};
@@ -355,7 +367,7 @@ function syncQuestionField(q,target){
   if(id==='allowVoice'){q.config.allowVoice=target.checked;return}
   if(id==='map3dBackground'){q.config.background=target.value;return}
   if(id==='sectionHideHeading'){q.config.hideHeading=target.checked;return}
-  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns'||key==='popupOptions')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
+  if(target.matches('[data-tr-lang]')){const tr=ensureQuestionTranslation(target.dataset.trLang,q.id); const key=target.dataset.trKey; tr[key]=(key==='options'||key==='rows'||key==='columns'||key==='popupOptions'||key==='popupOptions2')?target.value.split('\n').map(x=>x.trim()).filter(Boolean):target.value;}
 }
 // Titles may contain formatting markers (**bold** etc.); the question list shows them as plain text.
 function plainTitle(t){ return window.PPGISFormat ? window.PPGISFormat.strip(t||'') : (t||''); }
@@ -431,7 +443,9 @@ async function autoTranslateLanguage(code){
           columns:q.type==='matrix'?(q.config.columns||[]):null,
           checkboxLabel:q.type==='consent'?(q.config.checkboxLabel||''):null,
           popupQuestion:q.config?.popup?.question||null,
-          popupOptions:q.config?.popup?.options||null
+          popupOptions:q.config?.popup?.options||null,
+          popupQuestion2:q.config?.popup2?.enabled?(q.config.popup2.question||null):null,
+          popupOptions2:q.config?.popup2?.enabled?(q.config.popup2.options||null):null
         }))
       }
     };
@@ -452,6 +466,8 @@ async function autoTranslateLanguage(code){
       if(qt.checkboxLabel) target.checkboxLabel=qt.checkboxLabel;
       if(qt.popupQuestion) target.popupQuestion=qt.popupQuestion;
       if(Array.isArray(qt.popupOptions)) target.popupOptions=qt.popupOptions;
+      if(qt.popupQuestion2) target.popupQuestion2=qt.popupQuestion2;
+      if(Array.isArray(qt.popupOptions2)) target.popupOptions2=qt.popupOptions2;
     });
     setSaveState('Translated');
     if($('#settingsOverlay').classList.contains('open')) renderSettings();

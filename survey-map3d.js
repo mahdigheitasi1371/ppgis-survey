@@ -273,6 +273,10 @@
       if (c.popup?.enabled && typeof ctx.popup === 'function') {
         p.popupAnswer = await ctx.popup(c.popup);
         if (p.popupAnswer === undefined) return;
+        if (c.popup2?.enabled) {
+          p.popupAnswer2 = await ctx.popup(c.popup2);
+          if (p.popupAnswer2 === undefined) return;
+        }
       }
       list.push(p); save(list); draw(); setStatus(tr('added'));
     });

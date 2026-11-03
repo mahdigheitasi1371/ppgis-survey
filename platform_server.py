@@ -38,7 +38,7 @@ def inject_before(html: str, marker: str, fragment: str) -> str:
 def builder_html() -> HTMLResponse:
     """Serve the rebuilt builder exactly as committed, without runtime rewriting."""
     html = (BASE_DIR / "builder.html").read_text(encoding="utf-8")
-    html = html.replace("builder.js?v=1", "builder.js?v=23")
+    html = html.replace("builder.js?v=1", "builder.js?v=24")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
@@ -59,10 +59,10 @@ def survey_html() -> HTMLResponse:
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="modern-ui.css?v=15">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="languages.css?v=1">')
     html = inject_before(html, "</head>", '<link rel="stylesheet" href="survey-mobile-v2.css?v=13">')
-    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=10"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-map3d.js?v=11"></script>')
     html = inject_before(html, "</body>", '<script src="survey-voice.js?v=2"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=20"></script>')
-    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=8"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-experience.js?v=21"></script>')
+    html = inject_before(html, "</body>", '<script src="survey-languages.js?v=9"></script>')
     html = inject_before(html, "</body>", '<script src="survey-runtime-fixes.js?v=2"></script>')
     html = inject_before(html, "</body>", '<script src="survey-mobile-v2.js?v=3"></script>')
     html = inject_before(html, "</body>", '<script src="text-format.js?v=1"></script>')

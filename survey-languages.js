@@ -58,7 +58,7 @@
       if(qt.title)q.title=qt.title; if(qt.description)q.description=qt.description;
       q.__translation=qt; q.config||={};
       if(q.type==='consent'&&qt.checkboxLabel)q.config.checkboxLabel=qt.checkboxLabel;
-      if(q.type?.startsWith('map_')&&q.config.popup){if(qt.popupQuestion)q.config.popup.question=qt.popupQuestion;if(Array.isArray(qt.popupOptions)&&qt.popupOptions.length)q.config.popup.options=qt.popupOptions;}
+      if(q.type?.startsWith('map_')&&q.config.popup){if(qt.popupQuestion)q.config.popup.question=qt.popupQuestion;if(Array.isArray(qt.popupOptions)&&qt.popupOptions.length)q.config.popup.options=qt.popupOptions;}if(q.type?.startsWith('map_')&&q.config.popup2){if(qt.popupQuestion2)q.config.popup2.question=qt.popupQuestion2;if(Array.isArray(qt.popupOptions2)&&qt.popupOptions2.length)q.config.popup2.options=qt.popupOptions2;}
       return q;
     });
     return localized;

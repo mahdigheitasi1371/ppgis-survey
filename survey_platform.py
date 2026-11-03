@@ -20,7 +20,7 @@ from typing import Any
 import zipfile
 
 import shapefile
-from fastapi import APIRouter, Body, File, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -107,6 +107,8 @@ def admin_guard(x_admin_key: str | None) -> None:
 
 def normalize_slug(value: str) -> str:
     value = value.strip().lower().replace("_", "-")
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"), ("é", "e"), ("è", "e"), ("á", "a"), ("à", "a"), ("ó", "o"), ("í", "i"), ("ñ", "n"), ("ç", "c")):
+        value = value.replace(a, b)
     value = SLUG_RE.sub("-", value).strip("-")
     return value[:64] or f"survey-{uuid.uuid4().hex[:8]}"
 
@@ -200,6 +202,8 @@ class TranslateQuestion(BaseModel):
     checkboxLabel: str | None = None
     popupQuestion: str | None = None
     popupOptions: list[str] | None = None
+    popupQuestion2: str | None = None
+    popupOptions2: list[str] | None = None
 
 
 class TranslateSurvey(BaseModel):
@@ -424,6 +428,7 @@ def close_survey(
 
 @router.post("/api/builder/export-docx")
 def export_questionnaire_docx(
+    request: Request,
     definition: dict = Body(...),
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ):
@@ -432,7 +437,13 @@ def export_questionnaire_docx(
     if not isinstance(definition.get("questions"), list):
         raise HTTPException(status_code=400, detail="No questions to export")
     from survey_docx import build_docx
-    data = build_docx(definition)
+    survey_url = ""
+    if definition.get("slug"):
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+        proto = request.headers.get("x-forwarded-proto") or "https"
+        if host and not host.startswith(("127.", "localhost")):
+            survey_url = f"{proto}://{host}/survey.html?slug={definition['slug']}"
+    data = build_docx(definition, survey_url)
     name = normalize_slug(definition.get("slug") or definition.get("title") or "survey") or "survey"
     return Response(
         content=data,
@@ -511,6 +522,10 @@ def translate_survey(
             entry["popupQuestion"] = qt["popupQuestion"]
         if isinstance(qt.get("popupOptions"), list):
             entry["popupOptions"] = qt["popupOptions"]
+        if qt.get("popupQuestion2"):
+            entry["popupQuestion2"] = qt["popupQuestion2"]
+        if isinstance(qt.get("popupOptions2"), list):
+            entry["popupOptions2"] = qt["popupOptions2"]
         questions_out[q.id] = entry
 
     return {
@@ -810,6 +825,7 @@ def export_builder_responses_shp(
             writer.field("subm_at", "C", size=30)
             writer.field("idx", "N", size=6)
             writer.field("popup", "C", size=254)
+            writer.field("popup2", "C", size=254)
             count = 0
 
             for row in rows:
@@ -826,7 +842,8 @@ def export_builder_responses_shp(
                         if lat is None or lng is None:
                             continue
                         writer.point(float(lng), float(lat))
-                        writer.record(resp_id, qid, submitted, idx, shp_field_value(point.get("popupAnswer")))
+                        writer.record(resp_id, qid, submitted, idx, shp_field_value(point.get("popupAnswer")),
+                                      shp_field_value(point.get("popupAnswer2")))
                         count += 1
                 else:
                     min_pts = 2 if qtype == "map_line" else 3
@@ -846,7 +863,9 @@ def export_builder_responses_shp(
                         else:
                             writer.poly([coords])
                         popups = [p.get("popupAnswer") for p in pts if p.get("popupAnswer") is not None]
-                        writer.record(resp_id, qid, submitted, idx, shp_field_value(popups) if popups else "")
+                        popups2 = [p.get("popupAnswer2") for p in pts if p.get("popupAnswer2") is not None]
+                        writer.record(resp_id, qid, submitted, idx, shp_field_value(popups) if popups else "",
+                                      shp_field_value(popups2) if popups2 else "")
                         count += 1
 
             if count == 0:

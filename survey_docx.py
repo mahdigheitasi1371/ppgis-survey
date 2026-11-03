@@ -248,39 +248,130 @@ def _lang_name(definition: dict, code: str) -> str:
     return LANGUAGE_NAMES.get(code, code.upper())
 
 
-def build_docx(definition: dict) -> bytes:
+TYPE_LABELS_DE = {
+    "short_text": "Kurzer Text", "long_text": "Offene Frage", "number": "Zahl", "email": "E-Mail", "phone": "Telefon",
+    "yes_no": "Ja / Nein", "single_choice": "Einfachauswahl", "multiple_choice": "Mehrfachauswahl",
+    "photo_choice": "Bildauswahl", "dropdown": "Auswahlliste", "rating": "Bewertungsskala", "slider": "Schieberegler",
+    "matrix": "Matrix / Likert", "date": "Datum", "time": "Uhrzeit", "datetime": "Datum und Uhrzeit",
+    "map_multi": "Punktkarte", "map_3d": "3D-Punktkarte", "map_line": "Linienkarte", "map_polygon": "Flächenkarte",
+    "photo": "Foto", "photos": "Mehrere Fotos", "audio": "Sprachaufnahme", "video": "Video", "file": "Datei-Upload",
+    "signature": "Unterschrift", "ranking": "Rangfolge", "allocation": "Punkteverteilung", "info": "Informationstext",
+    "section": "Abschnitt", "consent": "Einwilligung",
+}
+LANGUAGE_NAMES_DE = {"en": "Englisch", "de": "Deutsch", "fr": "Französisch", "es": "Spanisch", "it": "Italienisch",
+                     "nl": "Niederländisch", "pl": "Polnisch", "pt": "Portugiesisch", "tr": "Türkisch", "ar": "Arabisch",
+                     "uk": "Ukrainisch", "ru": "Russisch", "fa": "Persisch", "zh": "Chinesisch", "ja": "Japanisch"}
+LANGUAGE_NAMES_EN = {"en": "English", "de": "German", "fr": "French", "es": "Spanish", "it": "Italian", "nl": "Dutch",
+                     "pl": "Polish", "pt": "Portuguese", "tr": "Turkish", "ar": "Arabic", "uk": "Ukrainian", "ru": "Russian",
+                     "fa": "Persian", "zh": "Chinese", "ja": "Japanese"}
+# Row labels: (German, English)
+LABELS = {
+    "title": ("Titel der Befragung", "Survey title"), "intro": ("Einführung", "Introduction"),
+    "thanks": ("Dankesnachricht", "Thank-you message"), "question": ("Frage", "Question"), "text": ("Text", "Text"),
+    "section": ("Abschnittsbezeichnung", "Section title"), "help": ("Erläuterung", "Instruction / help text"),
+    "options": ("Antwortmöglichkeiten", "Answer options"), "rows": ("Zeilen (Aussagen)", "Rows (statements)"),
+    "columns": ("Spalten (Antwortskala)", "Columns (answer scale)"), "consent": ("Text der Einwilligung", "Checkbox text"),
+    "popup": ("Auf dem Bildschirm erscheinende Frage", "Pop-up question after each mark"),
+    "popup_opts": ("Antwortoptionen", "Pop-up answer options"),
+    "popup2": ("Zweite auf dem Bildschirm erscheinende Frage", "Second pop-up question"),
+    "popup2_opts": ("Antwortoptionen (zweite Frage)", "Second pop-up answer options"),
+    "popup_type": ("Antworttyp", "Answer type"), "settings": ("Einstellungen", "Settings"),
+    "skip": ("Filterführung", "Skip logic"),
+}
+
+
+def _num_de(v) -> str:
+    return f"{float(v):.4f}".replace(".", ",")
+
+
+def _settings(qtype: str, c: dict) -> list[tuple[str, str]]:
+    """Language-independent settings as (German, English) sentences. Settings that only repeat
+    the question's own help text (rating scale, ranking order, voice message) are left out."""
+    out = []
+    if qtype == "number" and (c.get("min") not in (None, "") or c.get("max") not in (None, "")):
+        lo = c.get("min") if c.get("min") not in (None, "") else "–∞"
+        hi = c.get("max") if c.get("max") not in (None, "") else "∞"
+        out.append((f"Wertebereich: {lo} bis {hi}", f"Allowed range: {lo} to {hi}"))
+    if qtype == "slider":
+        out.append((f"Skala von {c.get('min', 0)} bis {c.get('max', 100)}", f"Scale from {c.get('min', 0)} to {c.get('max', 100)}"))
+    if qtype in ("map_multi", "map_3d"):
+        n = c.get("maxPoints") or 10
+        out.append((f"Teilnehmende können bis zu {n} Punkt{'e' if int(n) != 1 else ''} setzen; erneutes Tippen auf einen Punkt löscht ihn",
+                    f"Participants can mark up to {n} point{'s' if int(n) != 1 else ''}; tapping a point again deletes it"))
+    if qtype in ("map_line", "map_polygon"):
+        n = c.get("maxFeatures") or 1
+        de_kind, en_kind = ("Linie(n)", "line(s)") if qtype == "map_line" else ("Fläche(n)", "area(s)")
+        extra_de = f", jeweils mit bis zu {c['maxVertices']} Eckpunkten" if c.get("maxVertices") else ""
+        extra_en = f", each with up to {c['maxVertices']} corner points" if c.get("maxVertices") else ""
+        out.append((f"Teilnehmende können bis zu {n} {de_kind} zeichnen{extra_de}", f"Participants can draw up to {n} {en_kind}{extra_en}"))
+    if qtype.startswith("map_"):
+        if c.get("lat") not in (None, "") and c.get("lng") not in (None, ""):
+            out.append((f"Karte öffnet bei {_num_de(c['lat'])}° N, {_num_de(c['lng'])}° O, Zoomstufe {c.get('zoom', 12)}",
+                        f"Map opens at {float(c['lat']):.4f}° N, {float(c['lng']):.4f}° E, zoom {c.get('zoom', 12)}"))
+        de_tools = [t for t, on in (("Ortssuche", c.get("allowCitySearch") is not False), ("„Meinen Standort verwenden“", c.get("allowGeo") is not False)) if on]
+        en_tools = [t for t, on in (("place search", c.get("allowCitySearch") is not False), ("“use my location”", c.get("allowGeo") is not False)) if on]
+        if en_tools:
+            out.append(("Werkzeuge: " + ", ".join(de_tools), "Tools: " + ", ".join(en_tools)))
+    if qtype == "map_3d":
+        bg_de, bg_en = ("Straßenkarte", "street map") if c.get("background") == "map" else ("Luftbilder", "aerial photos")
+        out.append((f"3D-Nahansicht mit Zoomstufe {c.get('zoom3d') or 17}, Neigung {c.get('pitch') or 60}°, Hintergrund: {bg_de}",
+                    f"3D close-up at zoom {c.get('zoom3d') or 17}, tilt {c.get('pitch') or 60}°, background: {bg_en}"))
+    if qtype in ("photo", "photos", "file"):
+        out.append((f"Bis zu {c.get('maxFiles') or 1} Datei(en)", f"Up to {c.get('maxFiles') or 1} file(s)"))
+    if qtype in ("audio", "video"):
+        out.append((f"Bis zu {c.get('maxDuration') or 180} Sekunden", f"Up to {c.get('maxDuration') or 180} seconds"))
+    if qtype == "allocation":
+        out.append((f"Zu verteilen: {c.get('total') or 100} {c.get('unit') or 'Punkte'}", f"Total to distribute: {c.get('total') or 100} {c.get('unit') or 'points'}"))
+    return out
+
+
+def build_docx(definition: dict, survey_url: str = "") -> bytes:
     doc = Doc()
     settings = definition.get("settings") or {}
     langs = _lang_list(definition)
     main = langs[0]
+    german = "de" in langs                      # German labels next to the English ones
     trans = definition.get("translations") or {}
     questions = [q for q in (definition.get("questions") or []) if isinstance(q, dict)]
 
-    def tq(code, qid):  # translation of one question
+    def tq(code, qid):
         return ((trans.get(code) or {}).get("questions") or {}).get(qid) or {}
 
-    def ts(code):  # translation of the survey texts
+    def ts(code):
         return (trans.get(code) or {}).get("survey") or {}
 
-    label_w = 2050
+    def lab(key):
+        de, en = LABELS[key]
+        return f"{de}\n{en}" if german and de != en else en
+
+    def pick(code, pair):  # pick the German or English version of a fixed sentence for a language column
+        return pair[0] if code == "de" else pair[1]
+
+    label_w = 2250
     lang_w = (PAGE_WIDTH - label_w) // len(langs)
     widths = [label_w] + [lang_w] * len(langs)
 
     def lang_header():
-        cells = [cell([para(run("", bold=True), style="CellHead")], label_w, shade=ACCENT)]
+        cells = [cell([para("", style="CellHead")], label_w, shade=ACCENT)]
         for code in langs:
-            name = _lang_name(definition, code) + ("  (main language)" if code == main else "")
+            name = _lang_name(definition, code)
+            if code == main:
+                name += "  (Hauptsprache)" if code == "de" else "  (main language)"
             cells.append(cell([para(run(name, bold=True, color="FFFFFF"), style="CellHead")], lang_w, shade=ACCENT))
         return row(cells, header=True)
 
-    def text_row(label, per_lang: list[list[str]]):
-        cells = [cell([para(run(label, bold=True), style="CellLabel")], label_w, shade=LIGHT)]
-        cells += [cell(p, lang_w) for p in per_lang]
-        return row(cells, cant_split=False)
+    def label_cell(key):
+        return cell([para(run(lab(key), bold=True), style="CellLabel")], label_w, shade=LIGHT)
 
-    def shared_row(label, paragraphs):
-        return row([cell([para(run(label, bold=True), style="CellLabel")], label_w, shade=LIGHT),
-                    cell(paragraphs, lang_w * len(langs), span=len(langs))], cant_split=False)
+    def text_row(key, per_lang):
+        return row([label_cell(key)] + [cell(p, lang_w) for p in per_lang], cant_split=False)
+
+    def per_lang_items(key, items_by_lang):
+        """A row whose cells hold a bullet list in each language (settings, skip logic)."""
+        cells = [label_cell(key)]
+        for code in langs:
+            cells.append(cell([para(content, style="ListCell", num=1) for content in items_by_lang(code)], lang_w))
+        return row(cells, cant_split=False)
 
     def translated_text(original, getter, block=True):
         out = []
@@ -302,27 +393,32 @@ def build_docx(definition: dict) -> bytes:
                 out.append(option_paragraphs(doc, values or [], numbered))
         return out
 
-    # Question numbers (sections and information texts are not numbered)
     numbers, n = {}, 0
     for q in questions:
         if q.get("type") not in NOT_A_QUESTION:
             n += 1
             numbers[q.get("id")] = n
 
-    def target_name(qid):
+    def target_name(qid, code):
+        de = code == "de"
         if qid == "__end":
-            return "end of survey"
+            return "Ende der Befragung" if de else "end of survey"
         for q in questions:
             if q.get("id") == qid:
                 if q.get("type") == "section":
-                    return f"section “{strip(q.get('title') or 'Section')}”"
-                if q.get("id") in numbers:
-                    return f"Q{numbers[q['id']]}"
-                return f"“{strip(q.get('title') or 'information text')}”"
-        return "a later question"
+                    t = strip((tq(code, qid).get("title") if code != main else None) or q.get("title") or "")
+                    return f"Abschnitt „{t}“" if de else f"section “{t}”"
+                if qid in numbers:
+                    return f"Frage {numbers[qid]}" if de else f"Q{numbers[qid]}"
+                return "Informationstext" if de else "information text"
+        return "spätere Frage" if de else "a later question"
 
     title = definition.get("title") or "Survey"
     body = doc.body
+    today = _dt.date.today().strftime("%d.%m.%Y")
+    lang_de = ", ".join(LANGUAGE_NAMES_DE.get(c, c.upper()) for c in langs)
+    lang_en = ", ".join(LANGUAGE_NAMES_EN.get(c, c.upper()) for c in langs)
+    link = survey_url or (definition.get("slug") or "")
 
     # ---- cover
     body.append(para(inline_runs(doc, strip(title)), style="Title"))
@@ -330,122 +426,108 @@ def build_docx(definition: dict) -> bytes:
         other = ts(code).get("title")
         if other:
             body.append(para(run(strip(other), color=GREY, size=30), style="Subtitle"))
-    meta = (f"Questionnaire – all questions and instructions · "
-            f"{len(numbers)} questions · languages: {', '.join(_lang_name(definition, c) for c in langs)} · "
-            f"exported {_dt.date.today().strftime('%d.%m.%Y')}")
-    body.append(para(run(meta, color=GREY), style="Meta"))
-    if definition.get("slug"):
-        body.append(para(run(f"Survey link name: {definition['slug']}", color=GREY), style="Meta"))
+    if german:
+        body.append(para(run(f"Online-Befragung – alle Fragen und Erläuterungen – {len(numbers)} nummerierte Fragen – "
+                             f"Sprachen: {lang_de} – exportiert am {today}", color=GREY), style="Meta"))
+    body.append(para(run(f"Online questionnaire – all questions and instructions · {len(numbers)} numbered questions · "
+                         f"languages: {lang_en} · exported {today}", color=GREY), style="Meta"))
+    if link:
+        if german:
+            body.append(para(run("Link zur Befragung: ", color=GREY) + run(link, color=GREY), style="Meta"))
+        body.append(para(run("Survey link: ", color=GREY) + run(link, color=GREY), style="Meta"))
+    if german:
+        body.append(para(run("So lesen Sie dieses Dokument: Zu jeder Frage werden Fragetyp, Angabe, ob eine Antwort "
+                             "erforderlich ist, sowie alle Sprachversionen nebeneinander aufgeführt.", italic=True, color=GREY), style="Meta"))
     body.append(para(run("How to read this document: each question is shown with its type, whether an answer is required, "
-                         "and all language versions side by side. Grey notes in square brackets mark texts that have not "
-                         "been translated yet (participants then see the main-language text).", italic=True, color=GREY),
-                     style="Meta"))
+                         "and all language versions side by side.", italic=True, color=GREY), style="Meta"))
 
     # ---- welcome and closing texts
-    body.append(para(run("Welcome page and closing text"), style="Heading1"))
+    body.append(para(run("Startseite und Abschluss / Welcome page and closing text" if german else "Welcome page and closing text"), style="Heading1"))
     rows = [lang_header(),
-            text_row("Survey title", translated_text(title, lambda c: ts(c).get("title"), block=False)),
-            text_row("Introduction", translated_text(definition.get("description"), lambda c: ts(c).get("description"))),
-            text_row("Thank-you message", translated_text(settings.get("thankYou"), lambda c: ts(c).get("thankYou")))]
+            text_row("title", translated_text(title, lambda c: ts(c).get("title"), block=False))]
+    if str(definition.get("description") or "").strip():
+        rows.append(text_row("intro", translated_text(definition.get("description"), lambda c: ts(c).get("description"))))
+    rows.append(text_row("thanks", translated_text(settings.get("thankYou"), lambda c: ts(c).get("thankYou"))))
     body.append(table(rows, widths))
 
     # ---- questions
-    body.append(para(run("Questions"), style="Heading1"))
+    body.append(para(run("Fragen / Questions" if german else "Questions"), style="Heading1"))
     for q in questions:
         qtype = q.get("type") or ""
         c = q.get("config") or {}
         qid = q.get("id")
-        type_label = TYPE_LABELS.get(qtype, qtype)
+        type_en, type_de = TYPE_LABELS.get(qtype, qtype), TYPE_LABELS_DE.get(qtype, qtype)
 
         if qtype == "section":
-            body.append(para(run("Section: ", color=ACCENT) + inline_runs(doc, strip(q.get("title") or "Section")), style="Heading2", keep_next=True))
+            body.append(para(run("Abschnitt: " if german else "Section: ", color=ACCENT) + inline_runs(doc, strip(q.get("title") or "Section")), style="Heading2", keep_next=True))
         else:
-            head = f"Q{numbers[qid]}. " if qid in numbers else "Information · "
-            body.append(para(run(head, color=ACCENT) + inline_runs(doc, strip(q.get("title") or type_label)), style="Heading3", keep_next=True))
+            head = f"{'Frage' if german else 'Q'}{' ' if german else ''}{numbers[qid]}. " if qid in numbers else "Information · "
+            body.append(para(run(head, color=ACCENT) + inline_runs(doc, strip(q.get("title") or type_en)), style="Heading3", keep_next=True))
 
-        facts = [type_label]
+        facts_en, facts_de = [type_en], [type_de]
         if qtype not in NOT_A_QUESTION:
-            facts.append("required" if q.get("required") else "optional")
+            facts_en.append("required" if q.get("required") else "optional")
+            facts_de.append("Pflichtfrage" if q.get("required") else "freiwillig")
         if qtype == "section":
             if c.get("onePage"):
-                facts.append("all questions of this section on one page")
+                facts_en.append("all questions of this section on one page")
+                facts_de.append("alle Fragen dieses Abschnitts auf einer Seite")
             if c.get("hideHeading"):
-                facts.append("heading hidden from participants")
-        body.append(para(run(" · ".join(facts), color=GREY, size=18), style="Meta", keep_next=True))
+                facts_en.append("heading hidden from participants")
+                facts_de.append("Überschrift für Teilnehmende ausgeblendet")
+        facts = (" · ".join(facts_de) + "   |   " if german else "") + " · ".join(facts_en)
+        body.append(para(run(facts, color=GREY, size=18), style="Meta", keep_next=True))
 
         rows = [lang_header(),
-                text_row("Section title" if qtype == "section" else ("Text" if qtype == "info" else "Question"),
+                text_row("section" if qtype == "section" else ("text" if qtype == "info" else "question"),
                          translated_text(q.get("title"), lambda code: tq(code, qid).get("title"), block=False))]
         if str(q.get("description") or "").strip() or any(tq(code, qid).get("description") for code in langs[1:]):
-            rows.append(text_row("Instruction / help text",
-                                 translated_text(q.get("description"), lambda code: tq(code, qid).get("description"))))
-
+            rows.append(text_row("help", translated_text(q.get("description"), lambda code: tq(code, qid).get("description"))))
         if qtype in OPTION_TYPES:
-            rows.append(text_row("Answer options", translated_list(c.get("options") or [], lambda code: tq(code, qid).get("options"),
-                                                                   numbered=qtype != "multiple_choice")))
+            rows.append(text_row("options", translated_list(c.get("options") or [], lambda code: tq(code, qid).get("options"),
+                                                            numbered=qtype != "multiple_choice")))
         if qtype == "yes_no":
-            rows.append(text_row("Answer options", [option_paragraphs(doc, list(YES_NO.get(code, YES_NO["en"])), False) for code in langs]))
+            rows.append(text_row("options", [option_paragraphs(doc, list(YES_NO.get(code, YES_NO["en"])), False) for code in langs]))
         if qtype == "matrix":
-            rows.append(text_row("Rows (statements)", translated_list(c.get("rows") or [], lambda code: tq(code, qid).get("rows"))))
-            rows.append(text_row("Columns (answer scale)", translated_list(c.get("columns") or [], lambda code: tq(code, qid).get("columns"))))
+            rows.append(text_row("rows", translated_list(c.get("rows") or [], lambda code: tq(code, qid).get("rows"))))
+            rows.append(text_row("columns", translated_list(c.get("columns") or [], lambda code: tq(code, qid).get("columns"))))
         if qtype == "consent":
-            rows.append(text_row("Checkbox text", translated_text(c.get("checkboxLabel") or "I agree",
-                                                                  lambda code: tq(code, qid).get("checkboxLabel"), block=False)))
-        popup = c.get("popup") or {}
-        if qtype.startswith("map_") and popup.get("enabled"):
-            rows.append(text_row("Pop-up question after each mark",
-                                 translated_text(popup.get("question"), lambda code: tq(code, qid).get("popupQuestion"), block=False)))
-            if (popup.get("type") or "single_choice") == "single_choice":
-                rows.append(text_row("Pop-up answer options",
-                                     translated_list(popup.get("options") or [], lambda code: tq(code, qid).get("popupOptions"))))
-            else:
-                rows.append(shared_row("Pop-up answer type", [para(run("Rating 1–5" if popup.get("type") == "rating" else "Free text"), style="CellText")]))
-
-        # language-independent settings
-        details = []
-        if qtype in ("rating", "slider"):
-            details.append(f"Scale from {c.get('min', 1 if qtype == 'rating' else 0)} to {c.get('max', 5 if qtype == 'rating' else 100)}"
-                           + (f", step {c.get('step')}" if qtype == "slider" and c.get("step") not in (None, "", 1) else ""))
-        if qtype == "number" and (c.get("min") not in (None, "") or c.get("max") not in (None, "")):
-            details.append(f"Allowed range: {c.get('min', '–')} to {c.get('max', '–')}")
-        if qtype in ("map_multi", "map_3d"):
-            details.append(f"Participants can mark up to {c.get('maxPoints') or 10} point(s); tapping a point again deletes it")
-        if qtype in ("map_line", "map_polygon"):
-            kind = "line(s)" if qtype == "map_line" else "area(s)"
-            details.append(f"Participants can draw up to {c.get('maxFeatures') or 1} {kind}" +
-                           (f", each with up to {c['maxVertices']} corner points" if c.get("maxVertices") else ""))
+            rows.append(text_row("consent", translated_text(c.get("checkboxLabel") or "I agree", lambda code: tq(code, qid).get("checkboxLabel"), block=False)))
         if qtype.startswith("map_"):
-            if c.get("lat") not in (None, "") and c.get("lng") not in (None, ""):
-                details.append(f"Map opens at {float(c['lat']):.4f}° N, {float(c['lng']):.4f}° E, zoom {c.get('zoom', 12)}")
-            tools = [t for t, on in (("place search", c.get("allowCitySearch") is not False), ("“use my location”", c.get("allowGeo") is not False)) if on]
-            if tools:
-                details.append("Tools: " + ", ".join(tools))
-        if qtype == "map_3d":
-            details.append(f"3D close-up at zoom {c.get('zoom3d') or 17}, tilt {c.get('pitch') or 60}°, background: "
-                           + ("street map" if c.get("background") == "map" else "aerial photos"))
-        if qtype in ("photo", "photos", "file"):
-            details.append(f"Up to {c.get('maxFiles') or 1} file(s)")
-        if qtype in ("audio", "video"):
-            details.append(f"Up to {c.get('maxDuration') or 180} seconds")
-        if qtype == "allocation":
-            details.append(f"Total to distribute: {c.get('total') or 100} {c.get('unit') or 'points'}")
-        if qtype in ("long_text", "short_text") and c.get("allowVoice"):
-            details.append("Participants may also answer with a voice message (up to 3 minutes)")
-        if qtype == "ranking":
-            details.append("Participants put the options in order (1 = most important)")
-        if details:
-            rows.append(shared_row("Settings", [para(inline_runs(doc, d), style="ListCell", num=1) for d in details]))
+            for key, okey, popup, qk, ok in (("popup", "popup_opts", c.get("popup") or {}, "popupQuestion", "popupOptions"),
+                                             ("popup2", "popup2_opts", c.get("popup2") or {}, "popupQuestion2", "popupOptions2")):
+                if not popup.get("enabled") or (key == "popup2" and not (c.get("popup") or {}).get("enabled")):
+                    continue
+                rows.append(text_row(key, translated_text(popup.get("question"), lambda code, qk=qk: tq(code, qid).get(qk), block=False)))
+                ptype = popup.get("type") or "single_choice"
+                if ptype == "single_choice":
+                    rows.append(text_row(okey, translated_list(popup.get("options") or [], lambda code, ok=ok: tq(code, qid).get(ok))))
+                else:
+                    pair = ("Bewertung 1–5", "Rating 1–5") if ptype == "rating" else ("Freitext", "Free text")
+                    rows.append(per_lang_items("popup_type", lambda code, pair=pair: [run(pick(code, pair))]))
+
+        sets = _settings(qtype, c)
+        if sets:
+            rows.append(per_lang_items("settings", lambda code: [inline_runs(doc, pick(code, s)) for s in sets]))
 
         branches = [b for b in (c.get("branches") or []) if isinstance(b, dict) and b.get("goto")]
         if branches and qtype in ("single_choice", "dropdown", "yes_no"):
-            opts = list(YES_NO["en"]) if qtype == "yes_no" else (c.get("options") or [])
-            rules = []
-            for b in sorted(branches, key=lambda r: r.get("index", 0)):
-                i = b.get("index", 0)
-                label = opts[i] if isinstance(i, int) and 0 <= i < len(opts) else f"option {i + 1}"
-                rules.append(para(run("If “") + inline_runs(doc, strip(label)) + run(f"” → continue with {target_name(b['goto'])}"), style="ListCell", num=1))
-            rules.append(para(run("All other answers → next question", color=GREY), style="ListCell", num=1))
-            rows.append(shared_row("Skip logic", rules))
+            def skip_items(code):
+                if qtype == "yes_no":
+                    opts = list(YES_NO.get(code, YES_NO["en"]))
+                else:
+                    opts = (tq(code, qid).get("options") if code != main else None) or c.get("options") or []
+                items = []
+                for b in sorted(branches, key=lambda r: r.get("index", 0)):
+                    i = b.get("index", 0)
+                    label = strip(opts[i]) if isinstance(i, int) and 0 <= i < len(opts) else f"{i + 1}"
+                    if code == "de":
+                        items.append(run(f"Wenn „{label}“ → {target_name(b['goto'], code)}"))
+                    else:
+                        items.append(run(f"If “{label}” → {target_name(b['goto'], code)}"))
+                items.append(run("Alle anderen Antworten → nächste Frage" if code == "de" else "All other answers → next question", color=GREY))
+                return items
+            rows.append(per_lang_items("skip", skip_items))
 
         body.append(table(rows, widths))
         body.append(para("", style="Spacer"))

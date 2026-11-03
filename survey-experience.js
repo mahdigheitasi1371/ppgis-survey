@@ -605,6 +605,10 @@
         if (c.popup?.enabled) {
           point.popupAnswer = await popup(c.popup);
           if (point.popupAnswer === undefined) return;
+          if (c.popup2?.enabled) {
+            point.popupAnswer2 = await popup(c.popup2);
+            if (point.popupAnswer2 === undefined) return;
+          }
         }
         current.push(point);
         set(q.id, {geometry:d.geometry,points:current});
@@ -627,6 +631,10 @@
       if (c.popup?.enabled) {
         point.popupAnswer = await popup(c.popup);
         if (point.popupAnswer === undefined) return;
+        if (c.popup2?.enabled) {
+          point.popupAnswer2 = await popup(c.popup2);
+          if (point.popupAnswer2 === undefined) return;
+        }
       }
       draft.push(point);
       writeFeatures(features, draft);

@@ -12,6 +12,7 @@
 // Single-series charts: one colour (the platform accent), values in text colour, hover tooltips.
 (function () {
   'use strict';
+  const plain = t => (window.PPGISFormat ? window.PPGISFormat.strip(t || '') : (t || ''));
 
   const CONTENT = new Set(['info', 'section']);
   const TEXT = new Set(['short_text', 'long_text', 'email', 'phone', 'date', 'time', 'datetime']);
@@ -180,12 +181,17 @@
     });
     const noun = (q.type === 'map_multi' || q.type === 'map_3d') ? 'points' : q.type === 'map_line' ? 'lines' : 'polygons';
     let html = `${stat(String(features.length), `${noun} from ${values.length} ${values.length === 1 ? 'response' : 'responses'}`)}<div class="chart-map" data-map></div>`;
-    const popup = q.config?.popup;
-    if (popup?.enabled && (q.type === 'map_multi' || q.type === 'map_3d')) {
-      const answers = features.map(f => f.p?.popupAnswer).filter(answered);
-      if (popup.type === 'rating') html += `<div class="chart-sub">${esc(popup.question || 'Pop-up question')}</div>` + numericChart({type: 'rating', config: {min: 1, max: 5}}, answers);
-      else if (popup.type === 'open_text') html += `<div class="chart-sub">${esc(popup.question || 'Pop-up question')}</div>` + textChart(answers);
-      else html += `<div class="chart-sub">${esc(popup.question || 'Pop-up question')}</div>` + choiceChart({type: 'single_choice', config: {options: popup.options || []}}, answers);
+    // Charts for the pop-up question(s) asked for each point
+    const popupChart = (popup, key, fallback) => {
+      const answers = features.map(f => f.p?.[key]).filter(answered);
+      const head = `<div class="chart-sub">${esc(plain(popup.question) || fallback)}</div>`;
+      if (popup.type === 'rating') return head + numericChart({type: 'rating', config: {min: 1, max: 5}}, answers);
+      if (popup.type === 'open_text') return head + textChart(answers);
+      return head + choiceChart({type: 'single_choice', config: {options: popup.options || []}}, answers);
+    };
+    if ((q.type === 'map_multi' || q.type === 'map_3d') && q.config?.popup?.enabled) {
+      html += popupChart(q.config.popup, 'popupAnswer', 'Pop-up question');
+      if (q.config.popup2?.enabled) html += popupChart(q.config.popup2, 'popupAnswer2', 'Second pop-up question');
     }
     card.innerHTML += html;
     const el = card.querySelector('[data-map]');
@@ -198,7 +204,8 @@
     features.forEach(f => {
       if (f.kind === 'point' && Number.isFinite(+f.p?.lat) && Number.isFinite(+f.p?.lng)) {
         const mk = L.circleMarker([+f.p.lat, +f.p.lng], {radius: 6, color: '#ffffff', weight: 2, fillColor: accent, fillOpacity: 0.85});
-        if (answered(f.p.popupAnswer)) mk.bindTooltip(esc(String(f.p.popupAnswer)));
+        const tip = [f.p.popupAnswer, f.p.popupAnswer2].filter(answered).map(x => esc(String(x))).join('<br>');
+        if (tip) mk.bindTooltip(tip);
         mk.addTo(layer);
       } else if (f.pts?.length) {
         const ll = f.pts.filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lng)).map(p => [+p.lat, +p.lng]);
