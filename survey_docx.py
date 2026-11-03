@@ -403,6 +403,8 @@ def build_docx(definition: dict, survey_url: str = "") -> bytes:
         de = code == "de"
         if qid == "__end":
             return "Ende der Befragung" if de else "end of survey"
+        if qid == "__stop":
+            return "Ende der Befragung, es werden keine Daten gespeichert" if de else "end of survey, no data are saved"
         for q in questions:
             if q.get("id") == qid:
                 if q.get("type") == "section":

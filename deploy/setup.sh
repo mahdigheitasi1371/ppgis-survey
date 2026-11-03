@@ -213,6 +213,9 @@ else
   certbot --nginx --non-interactive --agree-tos --redirect -m "$EMAIL" "${ARGS[@]}"
 fi
 
+say "Limiting server logs with IP addresses to 7 days"
+bash "$APP_DIR/deploy/privacy-logs.sh" || warn "Could not set the log retention (run deploy/privacy-logs.sh by hand)."
+
 say "Done."
 echo "  Survey builder : http://$DOMAIN/   (https once the certificate is issued)"
 echo "  Admin          : http://$DOMAIN/admin.html"

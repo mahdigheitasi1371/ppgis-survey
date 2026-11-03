@@ -165,3 +165,9 @@ body.survey-welcome-active .respondent-brand-logos{visibility:hidden}
 /* One combined logo image (e.g. TU · DAAD · LLP in a row): show it larger */
 .survey-modern .survey-intro-logos img:only-child{height:auto!important;max-height:64px!important;max-width:min(100%,420px)!important;width:auto}
 @media(max-width:760px){.survey-modern .survey-intro-logos img:only-child{max-height:46px!important;max-width:100%!important}}
+
+/* Participation code on the thank-you page */
+.participation-code{margin:22px auto 0;max-width:460px;padding:18px 18px 14px;border:1px solid var(--border,#dfe6e1);border-radius:16px;background:#f3f7f4;text-align:center}
+.participation-code-title{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent,#2f6f5e)}
+.participation-code-value{font:700 30px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;margin:8px 0 10px;color:#17251d;user-select:all}
+.participation-code p{font-size:13px;line-height:1.5;color:#4f6056;margin:12px 0 0;text-align:left}

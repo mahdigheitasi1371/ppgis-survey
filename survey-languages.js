@@ -163,7 +163,7 @@
     const step=document.getElementById('respondentStepLabel');if(step&&(!/\d+\s*\/\s*\d+/.test(step.textContent)))step.textContent=copy.welcome;
     const start=document.querySelector('[data-start-survey]');if(start)start.textContent=`${copy.start} →`;
     const back=document.querySelector('[data-prev]');if(back)back.textContent=`← ${copy.back}`;
-    const next=document.querySelector('[data-next]');if(next){const text=next.textContent||'';if(next.disabled&&preview)next.textContent=copy.preview;else if(/submit|absenden|envoyer|enviar|invia|verzenden|wyślij|gönder|إرسال|ارسال|надіслати|отправить|提交|送信/i.test(text))next.textContent=`${copy.submit} →`;else next.textContent=`${copy.next} →`;}
+    const next=document.querySelector('[data-next]');if(next){const text=next.textContent||'';if(next.disabled&&preview)next.textContent=copy.preview;else if(next.dataset.stop==='1'){}else if(/submit|absenden|envoyer|enviar|invia|verzenden|wyślij|gönder|إرسال|ارسال|надіслати|отправить|提交|送信/i.test(text))next.textContent=`${copy.submit} →`;else next.textContent=`${copy.next} →`;}
     const submit=document.getElementById('submit');if(submit)submit.textContent=preview?copy.previewMode:copy.submitResponse;
     const holder=document.querySelector('.respondent-language');if(holder)holder.setAttribute('aria-label',copy.language);
     document.querySelectorAll('.error-text').forEach(el=>{const qid=el.closest('[data-qid]')?.dataset.qid;const q=def?.questions?.find(x=>x.id===qid);el.textContent=localizeEnglishText(el.textContent,q);});

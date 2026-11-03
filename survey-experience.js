@@ -25,7 +25,7 @@
       const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.config?.options || []);
       const rule = rules.find(r => r && r.goto && Number.isInteger(r.index) && opts[r.index] !== undefined && opts[r.index] === value);
       if (!rule) continue;
-      const end = rule.goto === '__end' ? qs.length : qs.findIndex(x => x.id === rule.goto);
+      const end = (rule.goto === '__end' || rule.goto === '__stop') ? qs.length : qs.findIndex(x => x.id === rule.goto);
       if (end <= i) continue;
       for (let k = i + 1; k < end; k += 1) skipped.add(qs[k].id);
     }
@@ -35,8 +35,44 @@
     if (q && branchSkipped().has(q.id)) return false;
     return baseVisible(q);
   };
+  // An answer whose skip rule says "end without saving" (e.g. no consent): the survey ends and nothing is sent.
+  function stopRuleActive() {
+    const qs = def?.questions || [];
+    const skipped = branchSkipped();
+    return qs.some(q => {
+      if (skipped.has(q.id) || !baseVisible(q)) return false;
+      const rules = Array.isArray(q.config?.branches) ? q.config.branches : [];
+      const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.config?.options || []);
+      return rules.some(r => r && r.goto === '__stop' && Number.isInteger(r.index) && opts[r.index] !== undefined && opts[r.index] === ans[q.id]);
+    });
+  }
+  const uiLang = () => String(window.SurveyLanguage?.get?.() || document.documentElement.lang || 'en').slice(0, 2);
+  const END_TEXT = {
+    de: {stopTitle: 'Vielen Dank für Ihr Interesse', stop: 'Ohne Ihre Einwilligung ist eine Teilnahme an dieser Befragung nicht möglich. Es wurden keine Daten gespeichert.',
+      finish: 'Beenden →', codeTitle: 'Ihr Teilnahmecode', copy: 'Code kopieren', copied: 'Kopiert',
+      code: 'Bitte notieren Sie sich diesen Code (z. B. mit einem Foto oder Screenshot). Bis zum Ende der Datenerhebung können Sie mit diesem Code Auskunft über Ihre Daten sowie deren Berichtigung oder Löschung verlangen. Wenden Sie sich dazu an die in der Datenschutzinformation genannte Kontaktperson. Danach werden die Daten anonymisiert und können Ihnen nicht mehr zugeordnet werden.'},
+    en: {stopTitle: 'Thank you for your interest', stop: 'Without your consent, you cannot take part in this survey. No data have been saved.',
+      finish: 'Finish →', codeTitle: 'Your participation code', copy: 'Copy code', copied: 'Copied',
+      code: 'Please write this code down (for example with a photo or screenshot). Until the end of data collection, you can use this code to request information about your data, or to have it corrected or deleted. To do so, contact the person named in the data protection information. After that, the data are anonymised and can no longer be linked to you.'}
+  };
+  const endText = key => (END_TEXT[uiLang()] || END_TEXT.en)[key];
+  function newParticipationCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const s = Array.from(bytes, b => chars[b % chars.length]).join('');
+    return `${s.slice(0, 4)}-${s.slice(4)}`;
+  }
   const baseSubmit = submit;
-  submit = function (e) {
+  submit = async function (e) {
+    if (!preview && stopRuleActive()) {
+      e?.preventDefault?.();
+      try { safeStorage.removeItem(`survey-draft:${def.slug}`); } catch (_) {}
+      const host = document.getElementById('surveyRoot');
+      if (host) host.innerHTML = `<div class="card thanks"><h1>${esc(endText('stopTitle'))}</h1><p class="survey-desc">${esc(endText('stop'))}</p></div>`;
+      document.getElementById('experienceNav')?.remove();
+      return;
+    }
     try {
       (def?.questions || []).forEach(q => {
         if (visible(q)) return;
@@ -44,7 +80,21 @@
         delete ans[`${q.id}__voice`];
       });
     } catch (_) {}
-    return baseSubmit.call(this, e);
+    const useCode = !preview && def?.settings?.participationCode;
+    if (useCode && !ans.__participationCode) ans.__participationCode = newParticipationCode();
+    const code = ans.__participationCode;
+    const result = await baseSubmit.call(this, e);
+    const thanks = document.querySelector('#surveyRoot .thanks');
+    if (useCode && code && thanks && !thanks.querySelector('.participation-code')) {
+      const box = document.createElement('div');
+      box.className = 'participation-code';
+      box.innerHTML = `<div class="participation-code-title">${esc(endText('codeTitle'))}</div><div class="participation-code-value">${esc(code)}</div><button type="button" class="btn">${esc(endText('copy'))}</button><p>${esc(endText('code'))}</p>`;
+      box.querySelector('button').addEventListener('click', async ev => {
+        try { await navigator.clipboard.writeText(code); ev.target.textContent = endText('copied'); } catch (_) {}
+      });
+      thanks.appendChild(box);
+    }
+    return result;
   };
 
   function activeQuestions() {
@@ -260,6 +310,21 @@
       return false;
     }
 
+    // Number limits from the builder (e.g. age: at least 18)
+    if (q.type === 'number' && value !== undefined && value !== null && value !== '') {
+      const c = q.config || {}, n = Number(value);
+      const lo = c.min === '' || c.min === undefined || c.min === null ? null : Number(c.min);
+      const hi = c.max === '' || c.max === undefined || c.max === null ? null : Number(c.max);
+      if (!Number.isFinite(n) || (lo !== null && n < lo) || (hi !== null && n > hi)) {
+        const de = uiLang() === 'de';
+        if (error) error.textContent = lo !== null && hi !== null
+          ? (de ? `Bitte geben Sie eine Zahl zwischen ${lo} und ${hi} ein.` : `Please enter a number between ${lo} and ${hi}.`)
+          : lo !== null ? (de ? `Bitte geben Sie eine Zahl ab ${lo} ein.` : `Please enter a number of at least ${lo}.`)
+          : (de ? `Bitte geben Sie eine Zahl bis ${hi} ein.` : `Please enter a number of at most ${hi}.`);
+        return false;
+      }
+    }
+
     if (!q.required) {
       if (error) error.textContent = '';
       return true;
@@ -381,11 +446,14 @@
     const qs = pages();
     const next = document.querySelector('#experienceNav [data-next]');
     if (!next || currentStep > qs.length) return;
-    const text = currentStep === qs.length ? (preview ? 'Preview complete' : 'Submit →') : 'Next →';
+    const stop = currentStep === qs.length && !preview && stopRuleActive();
+    next.dataset.stop = stop ? '1' : '';
+    const text = currentStep === qs.length ? (preview ? 'Preview complete' : (stop ? endText('finish') : 'Submit →')) : 'Next →';
     if (next.textContent !== text && !(window.SurveyLanguage && next.dataset.lastSource === text)) { next.dataset.lastSource = text; next.textContent = text; }
     next.disabled = preview && currentStep === qs.length;
   }
   document.addEventListener('change', () => setTimeout(refreshNextLabel, 0));
+  document.addEventListener('click', () => setTimeout(refreshNextLabel, 0));
 
   function setupWizard() {
     if (!def) return;

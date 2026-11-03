@@ -77,3 +77,10 @@
   .admin-grid .leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important}
   .chart-count,.chart-caption,.col-value,.chart-index,#liveText{font-size:12px!important}
 }
+
+/* Participation code panel */
+.code-panel{padding:14px 16px;margin-bottom:14px;display:grid;gap:10px}
+.code-panel-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.code-find{display:flex;gap:8px;flex-wrap:wrap}
+.code-find input{flex:1 1 180px;min-width:0;font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
+.code-panel-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap}

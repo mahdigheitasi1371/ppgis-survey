@@ -93,7 +93,13 @@ db.executescript(
         ON survey_media(survey_id, created_at DESC);
     """
 )
+# Participation codes (shown to participants at the end, so they can ask for their data until anonymisation)
+if "participation_code" not in {r[1] for r in db.execute("PRAGMA table_info(survey_responses)").fetchall()}:
+    db.execute("ALTER TABLE survey_responses ADD COLUMN participation_code TEXT")
+db.execute("CREATE INDEX IF NOT EXISTS idx_survey_responses_code ON survey_responses(participation_code)")
 db.commit()
+
+PARTICIPATION_CODE_RE = re.compile(r"^[A-Z2-9]{4}-[A-Z2-9]{4}$")
 
 
 def utcnow() -> str:
@@ -151,6 +157,7 @@ def response_record(row: sqlite3.Row) -> dict[str, Any]:
         "submitted_at": row["submitted_at"],
         "answers": safe_json_loads(row["answers_json"], {}),
         "metadata": safe_json_loads(row["metadata_json"], {}),
+        "participation_code": row["participation_code"] if "participation_code" in row.keys() else None,
     }
 
 
@@ -284,7 +291,7 @@ def branch_skipped(definition: dict[str, Any], answers: dict[str, Any]) -> set[s
         )
         if not rule:
             continue
-        if rule["goto"] == "__end":
+        if rule["goto"] in ("__end", "__stop"):
             end = len(questions)
         else:
             end = next((k for k, item in enumerate(questions) if item.get("id") == rule["goto"]), -1)
@@ -580,13 +587,18 @@ def submit_public_response(slug: str, payload: ResponsePayload):
     if not row or row["status"] != "published":
         raise HTTPException(status_code=404, detail="Survey not available")
     definition = parse_definition(row)
+    code = payload.answers.pop("__participationCode", None)
     validate_required(definition, payload.answers)
+    if not ((definition.get("settings") or {}).get("participationCode") and isinstance(code, str) and PARTICIPATION_CODE_RE.match(code)):
+        code = None
+    elif db.execute("SELECT 1 FROM survey_responses WHERE survey_id = ? AND participation_code = ?", (row["id"], code)).fetchone():
+        raise HTTPException(status_code=409, detail="Please submit again")
     response_id = uuid.uuid4().hex
     now = utcnow()
     db.execute(
-        """INSERT INTO survey_responses (id, survey_id, submitted_at, answers_json, metadata_json)
-           VALUES (?, ?, ?, ?, ?)""",
-        (response_id, row["id"], now, json.dumps(payload.answers), json.dumps(payload.metadata)),
+        """INSERT INTO survey_responses (id, survey_id, submitted_at, answers_json, metadata_json, participation_code)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (response_id, row["id"], now, json.dumps(payload.answers), json.dumps(payload.metadata), code),
     )
     tokens: set[str] = set()
 
@@ -643,6 +655,21 @@ async def upload_public_media(
     )
     db.commit()
     return {"token": token, "name": original_name, "content_type": content_type, "size": len(data)}
+
+
+@router.post("/api/builder/surveys/{survey_id}/clear-codes")
+def clear_participation_codes(
+    survey_id: str,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+):
+    """Anonymisation step: remove all participation codes, so responses can no longer be linked to anyone."""
+    admin_guard(x_admin_key)
+    cur = db.execute(
+        "UPDATE survey_responses SET participation_code = NULL WHERE survey_id = ? AND participation_code IS NOT NULL",
+        (survey_id,),
+    )
+    db.commit()
+    return {"cleared": cur.rowcount}
 
 
 @router.get("/api/builder/surveys/{survey_id}/responses")
