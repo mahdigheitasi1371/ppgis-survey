@@ -579,7 +579,7 @@
     }).setView([Number(c.lat || 51.5136), Number(c.lng || 7.4653)], Number(c.zoom || 12));
     const layer = L.layerGroup().addTo(m);
     const helper = L.layerGroup().addTo(m);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19,attribution:'&copy; OpenStreetMap contributors',updateWhenIdle:false,keepBuffer:4}).addTo(m);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',updateWhenIdle:false,keepBuffer:4}).addTo(m);
     maps.set(q.id, {m,layer,helper});
 
     const value = () => ans[q.id] || {};

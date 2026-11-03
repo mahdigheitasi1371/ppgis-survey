@@ -198,7 +198,7 @@
     if (!window.L) { el.innerHTML = '<p class="chart-empty">Map library could not be loaded.</p>'; return; }
     const c = q.config || {};
     const m = L.map(el, {scrollWheelZoom: false, attributionControl: true}).setView([+c.lat || 51.5136, +c.lng || 7.4653], +c.zoom || 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'}).addTo(m);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(m);
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--chart-color').trim() || '#1f7a68';
     const layer = L.featureGroup().addTo(m);
     features.forEach(f => {

@@ -25,7 +25,7 @@
         // On high-resolution screens ask for one zoom level more (tileSize 128) so photos stay sharp.
         aerial: {type: 'raster', tiles: [`${api}/api/tiles/aerial/{z}/{x}/{y}.jpg`], tileSize: (window.devicePixelRatio || 1) >= 1.5 ? 128 : 256, minzoom: 9, maxzoom: 20,
                  attribution: 'Luftbilder: © <a href="https://www.bezreg-koeln.nrw.de/geobasis-nrw" target="_blank" rel="noopener">Geobasis NRW</a> (dl-de/zero-2-0) · PNOA cedido por © <a href="https://www.ign.es" target="_blank" rel="noopener">Instituto Geográfico Nacional</a> (CC BY 4.0)'},
-        omt: {type: 'vector', url: 'https://tiles.openfreemap.org/planet', attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}
+        omt: {type: 'vector', url: 'https://tiles.openfreemap.org/planet', attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}
       },
       layers: [
         {id: 'bg', type: 'background', paint: {'background-color': '#24302a'}},
